@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* 深色模式改为 class 驱动（配合 <html class="dark">），
+   若暂不使用可忽略，不影响默认亮色主题 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------
+   设计令牌：改这里就能整站换风格
+   --------------------------------------------------------------- */
+@theme {
+  /* 品牌色：石墨蓝，克制不刺眼 */
+  --color-brand-50: oklch(0.97 0.013 250);
+  --color-brand-100: oklch(0.93 0.03 250);
+  --color-brand-200: oklch(0.87 0.055 250);
+  --color-brand-300: oklch(0.78 0.085 250);
+  --color-brand-400: oklch(0.68 0.12 250);
+  --color-brand-500: oklch(0.59 0.15 250);
+  --color-brand-600: oklch(0.51 0.15 250);
+  --color-brand-700: oklch(0.43 0.13 250);
+  --color-brand-800: oklch(0.36 0.1 250);
+  --color-brand-900: oklch(0.29 0.075 250);
+
+  /* 正文字体：优先系统中文字体，避免中文回退成宋体 */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
+    "Noto Sans CJK SC", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* 正文栏宽 */
+  --container-prose: 46rem;
+}
+
+/* ---------------------------------------------------------------
+   基础层
+   --------------------------------------------------------------- */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-[#f6f6f6] text-slate-800 antialiased;
+    font-family: var(--font-sans);
+  }
+
+  /* 中文排版：适当放宽行高与字间距 */
+  :lang(zh-CN) {
+    line-height: 1.8;
+  }
+
+  /* 键盘可达性：统一焦点环 */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+}
+
+/* ---------------------------------------------------------------
+   组件层：正文排版微调
+   --------------------------------------------------------------- */
+@layer components {
+  /* 在 prose 基础上做中文向的修正 */
+  .prose-cn {
+    @apply prose prose-slate max-w-none bg-white p-6 rounded-xl;
+  }
+
+  .prose-cn :where(h2) {
+    @apply mt-2 scroll-mt-24 border-b border-slate-200 pb-2 text-2xl font-semibold tracking-tight;
+  }
+
+  .prose-cn :where(h3) {
+    @apply mt-2 scroll-mt-24 text-xl font-semibold tracking-tight;
+  }
+
+  .prose-cn :where(code):not(:where(pre *)) {
+    @apply rounded bg-slate-100 px-1.5 py-0.5 text-[0.875em] font-medium text-slate-800 before:content-none after:content-none;
+  }
+
+  .prose-cn :where(pre) {
+    @apply overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-800;
+  }
+
+  .prose-cn :where(blockquote) {
+    @apply border-l-4 border-brand-300 bg-brand-50/50 py-1 pr-4 font-normal not-italic text-slate-700;
+  }
+
+  .prose-cn :where(blockquote p:first-of-type)::before,
+  .prose-cn :where(blockquote p:last-of-type)::after {
+    content: none;
+  }
+
+  .prose-cn :where(img) {
+    @apply rounded-xl border border-slate-200;
+  }
+
+  .prose-cn :where(table) {
+    @apply block overflow-x-auto text-sm;
+  }
+
+  .prose-cn {
+    :where(a):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+        color: var(--tw-prose-links);
+        text-decoration: none;
+        font-weight: 500;
+    }
+  }
+}
