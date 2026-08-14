@@ -12,7 +12,7 @@ defineProps<{ post: PostLike }>()
 </script>
 
 <template>
-  <article class="group relative border-b border-slate-200 py-8 last:border-0 bg-white p-4 rounded-xl">
+  <article class="group relative border border-slate-200 py-8 bg-white p-4 mb-4 rounded-xl">
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-500">
       <time v-if="post.date" :datetime="isoDate(post.date)">
         {{ formatDate(post.date) }}

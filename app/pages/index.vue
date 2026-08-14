@@ -17,7 +17,7 @@ useSeoMeta({
   <div>
     <section class="mt-4 px-6 py-16 sm:py-20 flex items-center">
       <div class="mr-4">
-        <img src="@/assets/images/avatar.jpg" class="w-32 rounded-full border border-amber-50" alt="user avatar">
+        <img src="/images/avatar.jpg" class="w-32 rounded-full border border-amber-50" alt="user avatar">
       </div>
       <div>
         <h1 class="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
