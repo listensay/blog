@@ -21,6 +21,10 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    // Nitro 生产运行时默认只读取 NITRO_*。项目的线上密钥沿用 Nuxt 惯例命名为
+    // NUXT_*，因此把它设为备用前缀；NITRO_* 仍然继续受支持。
+    envPrefix: 'NUXT_',
+
     // nitropack 2.13 仍把数据库层放在 experimental 后面：不开这个开关，
     // useDatabase() 既不会被自动导入，连接器也不会打进产物（实测报 useDatabase is not defined）
     experimental: { database: true },
