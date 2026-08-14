@@ -4,7 +4,11 @@ const COOKIE = 'blog_admin'
 const SESSION_MS = 7 * 24 * 3600_000
 
 function config(event: H3Event) {
-  const { adminPassword, sessionSecret } = useRuntimeConfig(event)
+  const runtimeConfig = useRuntimeConfig(event)
+  // Nitro 会用 destr 解析环境变量，纯数字密码（例如 123456）会被转成 number。
+  // 认证逻辑需要比较字符串，因此在边界处统一转回字符串。
+  const adminPassword = String(runtimeConfig.adminPassword ?? '')
+  const sessionSecret = String(runtimeConfig.sessionSecret ?? '')
 
   // 没配密钥就整体关闭后台，绝不退化成「空密码可进」
   if (!adminPassword || !sessionSecret) {
@@ -16,8 +20,11 @@ function config(event: H3Event) {
 
 /** 给管理页用：密钥没配好时直接告诉用户原因，而不是让他反复试密码 */
 export function adminEnabled(event: H3Event) {
-  const { adminPassword, sessionSecret } = useRuntimeConfig(event)
-  return Boolean(adminPassword && sessionSecret)
+  const runtimeConfig = useRuntimeConfig(event)
+  return Boolean(
+    String(runtimeConfig.adminPassword ?? '')
+    && String(runtimeConfig.sessionSecret ?? ''),
+  )
 }
 
 export async function signIn(event: H3Event, password: string) {
@@ -46,7 +53,7 @@ export function signOut(event: H3Event) {
 }
 
 export async function isAdmin(event: H3Event) {
-  const { sessionSecret } = useRuntimeConfig(event)
+  const sessionSecret = String(useRuntimeConfig(event).sessionSecret ?? '')
   if (!sessionSecret) return false
 
   const token = getCookie(event, COOKIE)
