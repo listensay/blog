@@ -1,13 +1,19 @@
 <script setup lang="ts">
 const route = useRoute()
-const path = `/blog/${route.params.slug}`
+const slug = String(route.params.slug)
+const path = `/blog/${slug}`
 
-const { data: post } = await useAsyncData(`post-${path}`, () =>
-  queryCollection('blog').path(path).first(),
-)
+const { data: post } = await useAsyncData(`post-${path}`, () => {
+  let q = queryCollection('blog').path(path)
+  // 草稿不能对外：列表页和评论/点赞接口都按 draft=false 过滤，详情页也得一致，
+  // 否则 SSR 下猜到 URL 就能直接读到未发布的稿子。dev 下放开，方便自己预览。
+  if (!import.meta.dev) q = q.where('draft', '=', false)
+  return q.first()
+})
 
 if (!post.value) {
-  throw createError({ statusCode: 404, statusMessage: '文章不存在', fatal: true })
+  // 中文只写 message：h3 会对非 ASCII 的 statusMessage 发告警，将来还会清洗掉
+  throw createError({ statusCode: 404, message: '文章不存在', fatal: true })
 }
 
 // 内置的 queryCollectionItemSurroundings 按路径字母序取邻居，slug 的字母序对读者没意义，
@@ -44,13 +50,18 @@ useSeoMeta({
       </div>
 
       <h1 class="mt-4 text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
-        {{ post.title }}
+        <span
+          v-if="post.draft"
+          class="mr-2 align-middle rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700"
+        >草稿</span>{{ post.title }}
       </h1>
     </header>
 
     <div class="prose-cn mt-10">
       <ContentRenderer :value="post" />
     </div>
+
+    <PostReactions :slug="slug" />
 
     <nav
       v-if="surround?.some(Boolean)"
@@ -77,5 +88,7 @@ useSeoMeta({
         </p>
       </NuxtLink>
     </nav>
+
+    <CommentSection :slug="slug" />
   </article>
 </template>

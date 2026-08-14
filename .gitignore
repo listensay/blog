@@ -8,6 +8,8 @@ dist
 
 # Cloudflare / wrangler
 .wrangler
+.dev.vars
+.dev.vars.*
 
 # Node dependencies
 node_modules

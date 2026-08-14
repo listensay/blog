@@ -1,0 +1,19 @@
+/** 读取一篇文章的浏览量/点赞数，以及当前访客是否已点赞 */
+export default defineEventHandler(async (event) => {
+  noStore(event)
+
+  const slug = requireSlug(event)
+  const db = await useReadyDb()
+  const visitor = await visitorId(event)
+
+  const stats = await db.sql`SELECT views, likes FROM post_stats WHERE slug = ${slug}`
+  const liked = await db.sql`SELECT 1 AS ok FROM post_likes WHERE slug = ${slug} AND visitor = ${visitor}`
+
+  const row = (stats.rows ?? [])[0] as { views: number, likes: number } | undefined
+
+  return {
+    views: row?.views ?? 0,
+    likes: row?.likes ?? 0,
+    liked: ((liked.rows ?? []).length > 0),
+  }
+})
