@@ -17,9 +17,9 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="py-12 sm:py-16">
-    <header class="border-b border-slate-200 pb-8">
-      <h1 class="text-3xl font-bold tracking-tight text-slate-900">友情链接</h1>
+  <div class="py-8 sm:py-16">
+    <header class="border-b border-slate-200 pb-6 sm:pb-8">
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">友情链接</h1>
     </header>
 
     <ul v-if="friendLinks.length" class="mt-8 grid gap-4 sm:grid-cols-2">
@@ -59,6 +59,6 @@ useSeoMeta({
         </component>
       </li>
     </ul>
-    <p v-else class="py-12 text-slate-500">还没有友情链接。</p>
+    <p v-else class="py-10 text-slate-500 sm:py-12">还没有友情链接。</p>
   </div>
 </template>

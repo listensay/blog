@@ -24,9 +24,9 @@ const initial = computed(() => [...props.comment.author][0] ?? '?')
 </script>
 
 <template>
-  <div class="flex gap-3">
+  <div class="flex gap-2.5 sm:gap-3">
     <div
-      class="grid size-9 shrink-0 place-items-center rounded-full text-sm font-semibold text-white select-none"
+      class="grid size-8 shrink-0 place-items-center rounded-full text-sm font-semibold text-white select-none sm:size-9"
       :style="{ backgroundColor: `oklch(0.62 0.12 ${comment.hue})` }"
       aria-hidden="true"
     >
@@ -70,7 +70,8 @@ const initial = computed(() => [...props.comment.author][0] ?? '?')
 
       <slot name="form" />
 
-      <div v-if="!nested && comment.replies.length" class="mt-4 space-y-4 border-l-2 border-slate-100 pl-4">
+      <!-- 手机上宽度金贵：缩进和头像间距都收一档，回复层级仍看得出来 -->
+      <div v-if="!nested && comment.replies.length" class="mt-4 space-y-4 border-l-2 border-slate-100 pl-2.5 sm:pl-4">
         <slot name="replies" />
       </div>
     </div>

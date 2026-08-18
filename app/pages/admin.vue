@@ -105,7 +105,7 @@ const tabs = [
 </script>
 
 <template>
-  <div class="py-12 sm:py-16">
+  <div class="py-8 sm:py-16">
     <h1 class="text-2xl font-bold tracking-tight text-slate-900">
       评论管理
     </h1>

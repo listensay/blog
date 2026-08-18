@@ -11,8 +11,8 @@ const { count = 2 } = defineProps<{ count?: number }>()
   <div role="status" aria-busy="true" class="skeleton-group space-y-7">
     <span class="sr-only">正在加载评论…</span>
 
-    <div v-for="i in count" :key="i" aria-hidden="true" class="flex gap-3">
-      <div class="skeleton size-9 shrink-0 rounded-full" />
+    <div v-for="i in count" :key="i" aria-hidden="true" class="flex gap-2.5 sm:gap-3">
+      <div class="skeleton size-8 shrink-0 rounded-full sm:size-9" />
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
           <div class="skeleton h-4 w-20" />

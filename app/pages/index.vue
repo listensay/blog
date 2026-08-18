@@ -24,18 +24,22 @@ useSeoMeta({
 
 <template>
   <div>
-    <section v-reveal class="mt-4 px-6 py-16 sm:py-20 flex items-center">
-      <div class="mr-4">
-        <img src="/images/avatar.jpg" class="w-32 rounded-full border border-amber-50" alt="user avatar">
-      </div>
-      <div>
-        <h1 class="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+    <!-- 手机上仍是「头像在左、文字在右」，只是整体缩一号：头像 80px、
+         标题降到 text-2xl、留白收紧，好让文章列表早点进视口 -->
+    <section v-reveal class="mt-2 flex items-center gap-4 py-8 sm:mt-4 sm:gap-6 sm:px-6 sm:py-20">
+      <img
+        src="/images/avatar.jpg"
+        class="size-20 shrink-0 rounded-full border border-amber-50 object-cover sm:size-42"
+        alt="user avatar"
+      >
+      <div class="min-w-0">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-5xl">
           {{ siteConfig.author }}
         </h1>
-        <p class="mt-4 max-w-2xl text-lg leading-relaxed text-slate-600">
+        <p class="mt-1.5 max-w-2xl leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
           {{ siteConfig.description }}
         </p>
-        <div v-if="socialLinks.length" class="mt-5 flex items-center gap-2.5">
+        <div v-if="socialLinks.length" class="mt-3 flex flex-wrap items-center gap-2 sm:mt-5 sm:gap-2.5">
           <AppActionIcon
             v-for="link in socialLinks"
             :key="link.icon"
@@ -59,7 +63,7 @@ useSeoMeta({
           :post="post"
         />
       </div>
-      <p v-else class="py-12 text-slate-500">
+      <p v-else class="py-10 text-slate-500 sm:py-12">
         还没有文章。在 <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">content/blog/</code> 里新建一个 Markdown 文件就会出现在这里。
       </p>
     </section>

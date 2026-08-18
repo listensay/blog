@@ -15,5 +15,5 @@ defineProps<{ icon: SocialLink['icon'] }>()
 </script>
 
 <template>
-  <component :is="icons[icon]" :size="22" :stroke="1.8" aria-hidden="true" />
+  <component :is="icons[icon]" :size="22" stroke="1.8" aria-hidden="true" />
 </template>
