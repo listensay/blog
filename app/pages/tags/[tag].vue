@@ -25,15 +25,15 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="py-12 sm:py-16">
-    <header class="border-b border-slate-200 pb-8">
+  <div class="py-8 sm:py-16">
+    <header class="border-b border-slate-200 pb-6 sm:pb-8">
       <NuxtLink
         to="/tags"
         class="text-sm text-slate-500 transition-colors hover:text-brand-600"
       >
         ← 所有标签
       </NuxtLink>
-      <h1 class="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+      <h1 class="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
         {{ tag }}
       </h1>
       <div v-if="loading" class="skeleton mt-3 h-5 w-20" aria-hidden="true" />
@@ -49,7 +49,7 @@ useSeoMeta({
         :post="post"
       />
     </div>
-    <p v-else class="py-12 text-slate-500">
+    <p v-else class="py-10 text-slate-500 sm:py-12">
       没有找到标签为「{{ tag }}」的文章。
     </p>
   </div>

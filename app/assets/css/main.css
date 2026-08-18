@@ -48,6 +48,21 @@
 }
 
 /* ---------------------------------------------------------------
+   自定义工具类
+   --------------------------------------------------------------- */
+
+/* 藏掉滚动条但保留滚动能力。用在顶部导航那条横向轨道上：
+   手机本来就没有常驻滚动条，桌面端窄窗口下那条灰杠会把 44px 高的导航压变形 */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------
    基础层
    --------------------------------------------------------------- */
 @layer base {
@@ -70,6 +85,17 @@
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-brand-500;
   }
+
+  /* iOS Safari 会在聚焦「字号小于 16px」的输入框时自动放大整个页面，
+     而且退出时不一定缩回去，手机上填评论会变成一场灾难。
+     只在小屏强制 16px：桌面端保留 text-sm 的紧凑观感。 */
+  @media (max-width: 639px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
 }
 
 /* ---------------------------------------------------------------
@@ -78,7 +104,10 @@
 @layer components {
   /* 在 prose 基础上做中文向的修正 */
   .prose-cn {
-    @apply prose prose-slate max-w-none bg-white p-6 rounded-xl;
+    @apply prose prose-slate max-w-none bg-white p-4 rounded-xl sm:p-6;
+    /* 手机上一条长 URL 或长英文标识符就能把整页撑出横向滚动条。
+       中文本来就能任意换行，这里主要是给英文长串兜底 */
+    overflow-wrap: break-word;
   }
 
   .prose-cn :where(h2) {

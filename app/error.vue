@@ -14,8 +14,8 @@ const detail = computed(() => {
 
 <template>
   <NuxtLayout>
-    <div class="flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
-      <p class="text-6xl font-bold tracking-tight text-brand-600">
+    <div class="flex min-h-[60vh] flex-col items-center justify-center px-2 py-16 text-center sm:py-20">
+      <p class="text-5xl font-bold tracking-tight text-brand-600 sm:text-6xl">
         {{ error.statusCode }}
       </p>
       <h1 class="mt-4 text-2xl font-semibold text-slate-900">

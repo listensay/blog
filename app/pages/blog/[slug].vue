@@ -61,11 +61,11 @@ useSeoMeta({
 </script>
 
 <template>
-  <article class="py-12 sm:py-16">
+  <article class="py-8 sm:py-16">
     <ArticleSkeleton v-if="loading" />
 
     <template v-else-if="post">
-      <header class="border-b border-slate-200 pb-8">
+      <header class="border-b border-slate-200 pb-6 sm:pb-8">
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-500">
           <time v-if="post.date" :datetime="isoDate(post.date)">
             {{ formatDate(post.date) }}
@@ -77,7 +77,7 @@ useSeoMeta({
           </div>
         </div>
 
-        <h1 class="mt-4 text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
+        <h1 class="mt-3 text-2xl font-bold leading-tight tracking-tight text-slate-900 sm:mt-4 sm:text-4xl">
           <span
             v-if="post.draft"
             class="mr-2 align-middle rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700"
@@ -85,7 +85,7 @@ useSeoMeta({
         </h1>
       </header>
 
-      <div class="prose-cn mt-10">
+      <div class="prose-cn mt-6 sm:mt-10">
         <ContentRenderer :value="post" />
       </div>
 
@@ -94,7 +94,7 @@ useSeoMeta({
       <nav
         v-if="surround?.some(Boolean)"
         v-reveal
-        class="mt-16 grid gap-4 border-t border-slate-200 pt-8 sm:grid-cols-2"
+        class="mt-12 grid gap-4 border-t border-slate-200 pt-6 sm:mt-16 sm:grid-cols-2 sm:pt-8"
       >
         <NuxtLink
           v-if="surround?.[0]"

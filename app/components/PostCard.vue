@@ -12,8 +12,12 @@ defineProps<{ post: PostLike }>()
 </script>
 
 <template>
-  <article class="group relative border border-slate-200 py-8 bg-white p-4 mb-4 rounded-xl">
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-500">
+  <!-- 原来同时写了 py-8 和 p-4，两条 padding 打架，实际生效的取决于 Tailwind
+       出样式的顺序而不是 class 的书写顺序。这里拆成明确的 px/py -->
+  <article
+    class="group relative mb-3 rounded-xl border border-slate-200 bg-white px-4 py-5 sm:mb-4 sm:px-6 sm:py-7"
+  >
+    <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-slate-500 sm:gap-x-3 sm:gap-y-2 sm:text-sm">
       <time v-if="post.date" :datetime="isoDate(post.date)">
         {{ formatDate(post.date) }}
       </time>
@@ -24,7 +28,7 @@ defineProps<{ post: PostLike }>()
       </div>
     </div>
 
-    <h2 class="mt-3 text-xl font-semibold tracking-tight text-slate-900">
+    <h2 class="mt-2.5 text-lg font-semibold tracking-tight text-slate-900 sm:mt-3 sm:text-xl">
       <NuxtLink :to="post.path">
         <!-- 覆盖整卡的点击区域，同时保留标签的独立链接 -->
         <span class="absolute inset-0" aria-hidden="true" />
@@ -32,7 +36,7 @@ defineProps<{ post: PostLike }>()
       </NuxtLink>
     </h2>
 
-    <p v-if="post.description" class="mt-2 text-slate-600">
+    <p v-if="post.description" class="mt-1.5 text-sm text-slate-600 sm:mt-2 sm:text-base">
       {{ post.description }}
     </p>
   </article>
