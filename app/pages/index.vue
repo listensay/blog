@@ -41,7 +41,7 @@ useSeoMeta({
             :key="link.icon"
             :label="link.label"
             :href="link.url"
-            :color="link.icon"
+            :color="link.color"
           >
             <SocialIcon :icon="link.icon" />
           </AppActionIcon>
