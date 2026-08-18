@@ -23,6 +23,10 @@ logs
 .fleet
 .idea
 
+# Local tool state
+.freebuff
+.obsidian
+
 # Local env files
 .env
 .env.*

@@ -1,11 +1,16 @@
 <script setup lang="ts">
-const { data: posts } = await useAsyncData('category-index-posts', () =>
-  queryCollection('blog')
-    .where('draft', '=', false)
-    .select('category', 'title', 'path', 'date')
-    .order('date', 'DESC')
-    .all(),
+const { data: posts, status, error } = await useAsyncData(
+  'category-index-posts',
+  () =>
+    queryCollection('blog')
+      .where('draft', '=', false)
+      .select('category', 'title', 'path', 'date')
+      .order('date', 'DESC')
+      .all(),
+  { lazy: true },
 )
+
+const { loading } = useQueryState(status, error)
 
 // 按分类聚合，并记住每个分类下最新的一篇
 const categories = computed(() => {
@@ -33,13 +38,35 @@ useSeoMeta({
   <div class="py-12 sm:py-16">
     <header class="border-b border-slate-200 pb-8">
       <h1 class="text-3xl font-bold tracking-tight text-slate-900">分类</h1>
-      <p class="mt-2 text-slate-600">
+      <div v-if="loading" class="skeleton mt-3 h-5 w-48" aria-hidden="true" />
+      <p v-else class="mt-2 text-slate-600">
         共 {{ categories.length }} 个分类、{{ posts?.length ?? 0 }} 篇文章
       </p>
     </header>
 
-    <ul v-if="categories.length" class="mt-8 grid gap-4 sm:grid-cols-2">
-      <li v-for="c in categories" :key="c.name">
+    <div
+      v-if="loading"
+      role="status"
+      aria-busy="true"
+      class="skeleton-group mt-8 grid gap-4 sm:grid-cols-2"
+    >
+      <span class="sr-only">正在加载分类…</span>
+      <div
+        v-for="i in 4"
+        :key="i"
+        aria-hidden="true"
+        class="rounded-xl border border-slate-200 p-5"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <div class="skeleton h-6 w-28" />
+          <div class="skeleton h-5 w-12 rounded-full" />
+        </div>
+        <div class="skeleton mt-3 h-4 w-3/4" />
+      </div>
+    </div>
+
+    <ul v-else-if="categories.length" class="mt-8 grid gap-4 sm:grid-cols-2">
+      <li v-for="(c, i) in categories" :key="c.name" v-reveal="i">
         <NuxtLink
           :to="`/categories/${encodeURIComponent(c.name)}`"
           class="group flex h-full flex-col rounded-xl border border-slate-200 p-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"

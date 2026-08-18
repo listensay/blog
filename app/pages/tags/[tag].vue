@@ -2,12 +2,17 @@
 const route = useRoute()
 const tag = computed(() => decodeURIComponent(String(route.params.tag)))
 
-const { data: allPosts } = await useAsyncData('tag-page-posts', () =>
-  queryCollection('blog')
-    .where('draft', '=', false)
-    .order('date', 'DESC')
-    .all(),
+const { data: allPosts, status, error } = await useAsyncData(
+  'tag-page-posts',
+  () =>
+    queryCollection('blog')
+      .where('draft', '=', false)
+      .order('date', 'DESC')
+      .all(),
+  { lazy: true },
 )
+
+const { loading } = useQueryState(status, error)
 
 const posts = computed(() =>
   (allPosts.value ?? []).filter(p => p.tags?.includes(tag.value)),
@@ -31,11 +36,18 @@ useSeoMeta({
       <h1 class="mt-3 text-3xl font-bold tracking-tight text-slate-900">
         {{ tag }}
       </h1>
-      <p class="mt-2 text-slate-600">{{ posts.length }} 篇文章</p>
+      <div v-if="loading" class="skeleton mt-3 h-5 w-20" aria-hidden="true" />
+      <p v-else class="mt-2 text-slate-600">{{ posts.length }} 篇文章</p>
     </header>
 
-    <div v-if="posts.length">
-      <PostCard v-for="post in posts" :key="post.path" :post="post" />
+    <PostListSkeleton v-if="loading" :count="3" />
+    <div v-else-if="posts.length">
+      <PostCard
+        v-for="(post, i) in posts"
+        :key="post.path"
+        v-reveal="i"
+        :post="post"
+      />
     </div>
     <p v-else class="py-12 text-slate-500">
       没有找到标签为「{{ tag }}」的文章。
