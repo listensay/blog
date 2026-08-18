@@ -43,6 +43,14 @@ export default defineNuxtConfig({
       // 构建时自动生成 .output/server/wrangler.json，不用手写 wrangler 配置
       deployConfig: true,
       wrangler: {
+        // 固定生产 Worker 和自定义域名，避免部署到另一个同名项目后密钥不生效。
+        name: 'blog',
+        routes: [
+          {
+            pattern: 'blog.200205.net',
+            custom_domain: true,
+          },
+        ],
         d1_databases: [
           {
             // binding 必须是 DB，@nuxt/content 认这个名字
@@ -60,6 +68,10 @@ export default defineNuxtConfig({
   },
 
   app: {
+    // out-in：旧页先淡出、新页再淡入，两段不重叠，滚动位置也不会在半透明状态下跳。
+    // 具体的时长和位移在 main.css 的 .page-* 里
+    pageTransition: { name: 'page', mode: 'out-in' },
+
     head: {
       htmlAttrs: { lang: 'zh-CN' },
       meta: [

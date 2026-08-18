@@ -1,4 +1,9 @@
 <script setup lang="ts">
+// NuxtLink 得从 #components 显式引入。它是编译期自动导入的，并没有注册成全局组件，
+// 模板里写 resolveComponent('NuxtLink') 解析不到，会原样吐出一个 <NuxtLink> 标签
+// ——浏览器当成未知元素，内链就点不动了。
+import { NuxtLink } from '#components'
+
 // 外链要新窗口打开并加 noopener，内链走前端路由
 const isExternal = (url: string) => /^https?:\/\//.test(url)
 
@@ -18,9 +23,9 @@ useSeoMeta({
     </header>
 
     <ul v-if="friendLinks.length" class="mt-8 grid gap-4 sm:grid-cols-2">
-      <li v-for="link in friendLinks" :key="link.url">
+      <li v-for="(link, i) in friendLinks" :key="link.url" v-reveal="i">
         <component
-          :is="isExternal(link.url) ? 'a' : resolveComponent('NuxtLink')"
+          :is="isExternal(link.url) ? 'a' : NuxtLink"
           v-bind="isExternal(link.url)
             ? { href: link.url, target: '_blank', rel: 'noopener noreferrer' }
             : { to: link.url }"
