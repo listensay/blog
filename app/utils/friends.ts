@@ -17,4 +17,9 @@ export const friendLinks: FriendLink[] = [
     url: '/',
     description: '',
   },
+  {
+    name: '静园 · 学习打卡',
+    url: 'https://scc.200205.net/',
+    description: '',
+  },
 ]

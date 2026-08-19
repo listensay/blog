@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import BackToTop from '~/components/BackToTop.vue'
+</script>
+
 <template>
   <div class="flex min-h-screen flex-col text-slate-800">
     <SiteHeader />
@@ -7,5 +11,6 @@
       </div>
     </main>
     <SiteFooter />
+    <BackToTop />
   </div>
 </template>

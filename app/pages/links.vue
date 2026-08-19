@@ -29,7 +29,7 @@ useSeo({
           v-bind="isExternal(link.url)
             ? { href: link.url, target: '_blank', rel: 'noopener noreferrer' }
             : { to: link.url }"
-          class="group flex h-full items-center gap-4 rounded-xl border border-slate-200 p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+          class="group flex h-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
         >
           <img
             v-if="link.avatar"
