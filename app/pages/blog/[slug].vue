@@ -53,6 +53,11 @@ const { data: surround } = await useAsyncData(
   { lazy: true },
 )
 
+// 正文里的图片点开是灯箱。容器在 v-else-if 里，前端跳转时要等骨架屏换成
+// 真内容才拿得到元素，所以由 composable 监听这个 ref（见 useProseLightbox）
+const proseEl = ref<HTMLElement>()
+useProseLightbox(proseEl)
+
 useSeoMeta({
   // 取 getter 形式：lazy 之下标题要等数据回来才有
   title: () => post.value?.title,
@@ -85,7 +90,7 @@ useSeoMeta({
         </h1>
       </header>
 
-      <div class="prose-cn mt-6 sm:mt-10">
+      <div ref="proseEl" class="prose-cn mt-6 sm:mt-10">
         <ContentRenderer :value="post" />
       </div>
 

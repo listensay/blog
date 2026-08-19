@@ -139,6 +139,12 @@
     @apply rounded-xl border border-slate-200;
   }
 
+  /* 灯箱就绪后才给放大镜光标：手势提示不该出现在还点不开的时候
+     （lightbox-ready 由 useProseLightbox 在初始化成功后加上） */
+  .prose-cn.lightbox-ready :where(img) {
+    @apply cursor-zoom-in;
+  }
+
   .prose-cn :where(table) {
     @apply block overflow-x-auto text-sm;
   }
