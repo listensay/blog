@@ -26,7 +26,7 @@ useSeo({
 
 <template>
   <div class="py-8 sm:py-16">
-    <header class="border-b border-slate-200 pb-6 sm:pb-8">
+    <header class="pb-6 sm:pb-8">
       <NuxtLink
         to="/tags"
         class="text-sm text-slate-500 transition-colors hover:text-brand-600"
