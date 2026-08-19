@@ -3,7 +3,7 @@ title: 免费AI公益中转站收集
 description: 带你免费白嫖各种模型，注意！不是广告！！
 date: 2026-08-19
 slug: free-ai
-category: AI
+category: 福利
 tags: AI
 ---
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
@@ -32,7 +32,7 @@ tags: AI
 
 每天签到可获得25余额，邀请一个用户可获150余额。
 
-使用以下链接注册可获170额度，如果只获取到100额度那就是邀请码掉了。
+使用以下链接注册可获170额度。
 
 https://agentrouter.org/register?aff=QieS
 
@@ -50,7 +50,7 @@ https://agentrouter.org/register?aff=QieS
 
 每天签到可获得25余额，邀请一个用户可获50余额。
 
-使用以下链接注册可获50额度，如果没有额度那就是邀请码掉了。
+使用以下链接注册可获50额度。
 
 https://anyrouter.top/register?aff=78Jy
 
@@ -61,8 +61,6 @@ https://anyrouter.top/register?aff=78Jy
 速度可以，消耗额度有点高。
 
 每天签到可获得6-9余额。
-
-拉人没有作用，有不加余额的BUG，新用户注册没有余额只能签到。
 
 https://gorouter.app/sign-up?aff=C58L
 
@@ -87,7 +85,7 @@ https://seekai.cc/sign-up?aff=fjxq
 
 这也是一个没有测试过的站点，模型价格高。
 
-新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额，邀请人的话不清楚。
+新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额。
 
 https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
@@ -167,7 +165,7 @@ https://www.tokenrouter.com/
 
 ## 一些不明来历的AI，但是能用
 
-这些AI都不建议使用，如果你要用我也不拦着。
+这些AI都不建议使用。
 
 http://20.115.208.7:4000/v1
 
