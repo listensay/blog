@@ -1,0 +1,14 @@
+{
+  // 粘贴截图时把图片文件复制进仓库（默认行为，写出来备忘）
+  "markdown.editor.filePaste.copyIntoWorkspace": "mediaFiles",
+
+  // content/ 下的文章粘贴图片时，统一落到 public/images/。
+  // VS Code 插入的是相对当前文档的路径（../../public/images/x.png），
+  // 正好是编辑器能预览、构建时又会被 transformers/image-src.ts 改写的写法。
+  "markdown.copyFiles.destination": {
+    "/content/**/*": "${documentWorkspaceFolder}/public/images/"
+  },
+
+  // 同名文件自动加后缀，不要静默覆盖已有配图
+  "markdown.copyFiles.overwriteBehavior": "uniqueFilename"
+}
