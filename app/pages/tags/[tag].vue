@@ -18,7 +18,7 @@ const posts = computed(() =>
   (allPosts.value ?? []).filter(p => p.tags?.includes(tag.value)),
 )
 
-useSeoMeta({
+useSeo({
   title: () => `标签：${tag.value}`,
   description: () => `${siteConfig.title}中标签为 ${tag.value} 的文章`,
 })

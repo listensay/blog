@@ -33,6 +33,8 @@ export const siteConfig = {
   author: 'Immki',
   /** 站点域名：RSS 等需要绝对链接的地方都从这里取 */
   url: 'https://blog.200205.net',
+  /** 社交卡片默认图（og:image / twitter:image）。文章可用 frontmatter 的 cover 覆盖 */
+  ogImage: '/images/avatar.jpg',
   socials: [
     { icon: 'qq', label: 'QQ 群', url: 'https://qm.qq.com/q/pa2mcYXCCc', color: '#12B7F5' },
     { icon: 'email', label: '邮箱', url: 'mailto:odr233@gmail.com', color: '#ea4335' },

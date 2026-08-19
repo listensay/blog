@@ -7,7 +7,7 @@ const { data: page, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
-useSeoMeta({
+useSeo({
   title: () => page.value?.title ?? '关于',
   description: () => page.value?.description ?? siteConfig.description,
 })

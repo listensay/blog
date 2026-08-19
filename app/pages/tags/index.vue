@@ -21,7 +21,7 @@ const tagCounts = computed(() => {
 // 骨架屏用长短不一的宽度，才像一堆标签而不是一排格子
 const skeletonWidths = ['w-24', 'w-32', 'w-20', 'w-28', 'w-36', 'w-24', 'w-28', 'w-20']
 
-useSeoMeta({
+useSeo({
   title: '标签',
   description: `${siteConfig.title}的全部标签`,
 })

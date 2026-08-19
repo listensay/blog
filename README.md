@@ -103,6 +103,19 @@ curl https://你的域名/api/admin/session
 应返回 `{"enabled":true,"authed":false}`。如果线上由 GitHub 自动部署，务必先把
 评论/点赞相关提交推送到部署所使用的分支。
 
+## SEO
+
+页面元信息统一走 `app/composables/useSeo.ts`，各页面只需要给「不含站点名的标题」和描述，
+canonical、`og:*`、`twitter:*` 由它补齐。标题的站点名后缀来自 `app/plugins/head.ts` 的
+`titleTemplate`（内页「页面标题 - 站点名」，首页不传标题所以只有站点名）—— 放在插件里是因为
+出错时 `error.vue` 会**整体替换** `app.vue`，写在 app.vue 里的 `useHead` 在 404 页上不执行。
+
+结构化数据用同一个文件里的 `useJsonLd`：首页输出 WebSite + Person，文章页输出 BlogPosting +
+面包屑。`/sitemap.xml` 和 `/robots.txt` 是服务端路由（和 `feed.xml` 同一套写法），域名只有
+`app/utils/site.ts` 一个来源。上线后记得去 Google Search Console 提交一次 sitemap。
+
+`noindex` 的页面（`/admin`、错误页）不输出 canonical —— 既说别收录又指一个规范地址是矛盾信号。
+
 ## 写文章配图
 
 图片文件全部放在 `public/images/`，**正文里写相对路径**：
