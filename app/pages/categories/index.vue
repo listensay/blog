@@ -28,7 +28,7 @@ const categories = computed(() => {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'))
 })
 
-useSeoMeta({
+useSeo({
   title: '分类',
   description: `${siteConfig.title}的文章分类`,
 })

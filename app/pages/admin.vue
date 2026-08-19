@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { AdminCommentsResponse } from '~/types/blog'
 
-useSeoMeta({
+useSeo({
   title: '评论管理',
   // 后台不该被收录
-  robots: 'noindex, nofollow',
+  noindex: true,
 })
 
 type Screen = 'loading' | 'disabled' | 'guest' | 'ready'

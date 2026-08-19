@@ -58,11 +58,41 @@ const { data: surround } = await useAsyncData(
 const proseEl = ref<HTMLElement>()
 useProseLightbox(proseEl)
 
-useSeoMeta({
+useSeo({
   // 取 getter 形式：lazy 之下标题要等数据回来才有
   title: () => post.value?.title,
   description: () => post.value?.description,
+  // 有封面就用封面当社交卡片图（cover 的相对路径已由 image-src transformer 改写）
+  image: () => post.value?.cover,
+  type: 'article',
+  publishedTime: () => isoDateTime(post.value?.date),
+  // 草稿只有 dev 能看到，别让它意外进索引
+  noindex: post.value?.draft === true,
 })
+
+// 文章页的结构化数据：BlogPosting 让搜索结果能显示作者和日期，
+// BreadcrumbList 让面包屑取代结果里那串裸 URL
+useJsonLd(() => ({
+  '@type': 'BlogPosting',
+  'headline': post.value?.title ?? '',
+  'description': post.value?.description ?? '',
+  'datePublished': isoDateTime(post.value?.date),
+  'inLanguage': 'zh-CN',
+  'mainEntityOfPage': { '@type': 'WebPage', '@id': `${siteConfig.url}${path}` },
+  'image': `${siteConfig.url}${post.value?.cover || siteConfig.ogImage}`,
+  'author': { '@type': 'Person', 'name': siteConfig.author, 'url': siteConfig.url },
+  'publisher': { '@type': 'Person', 'name': siteConfig.author, 'url': siteConfig.url },
+  ...(post.value?.category ? { articleSection: post.value.category } : {}),
+  ...(post.value?.tags?.length ? { keywords: post.value.tags.join(', ') } : {}),
+  'breadcrumb': {
+    '@type': 'BreadcrumbList',
+    'itemListElement': [
+      { '@type': 'ListItem', 'position': 1, 'name': '首页', 'item': `${siteConfig.url}/` },
+      { '@type': 'ListItem', 'position': 2, 'name': '全部文章', 'item': `${siteConfig.url}/blog` },
+      { '@type': 'ListItem', 'position': 3, 'name': post.value?.title ?? '' },
+    ],
+  },
+}))
 </script>
 
 <template>

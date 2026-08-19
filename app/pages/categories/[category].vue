@@ -16,7 +16,7 @@ const { data: posts, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
-useSeoMeta({
+useSeo({
   title: () => `分类：${category.value}`,
   description: () => `${siteConfig.title}中分类为 ${category.value} 的文章`,
 })

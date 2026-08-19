@@ -10,9 +10,9 @@ const isExternal = (url: string) => /^https?:\/\//.test(url)
 // 无头像时用名字首字符占位
 const initial = (name: string) => [...name][0] ?? '?'
 
-useSeoMeta({
+useSeo({
   title: '友情链接',
-  description: '',
+  description: `${siteConfig.title}交换的友情链接`,
 })
 </script>
 

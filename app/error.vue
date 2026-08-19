@@ -10,6 +10,13 @@ const detail = computed(() => {
   if (code >= 500) return '服务端出现了一个意外错误。'
   return props.error.message || props.error.statusMessage || '请求无法完成。'
 })
+
+// 错误页有标题才不至于在浏览器标签和搜索结果里裸着，同时明确不要被收录
+useSeo({
+  title: () => (props.error.statusCode === 404 ? '页面不存在' : '出错了'),
+  description: () => detail.value,
+  noindex: true,
+})
 </script>
 
 <template>

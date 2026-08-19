@@ -12,7 +12,7 @@ const { data: posts, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
-useSeoMeta({
+useSeo({
   title: '全部文章',
   description: `${siteConfig.title}的文章列表`,
 })

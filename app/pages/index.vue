@@ -16,9 +16,27 @@ const { loading } = useQueryState(status, error)
 // url 留空的社交项不渲染，方便在 site.ts 里占位
 const socialLinks = computed(() => siteConfig.socials.filter(s => s.url))
 
-useSeoMeta({
-  title: siteConfig.title,
+useSeo({
+  // 首页不传 title：titleTemplate 会只输出站点名，不至于变成「站点名 - 站点名」
   description: siteConfig.description,
+})
+
+// 首页声明站点与作者本人，让搜索结果能把两者关联起来
+useJsonLd({
+  '@type': 'WebSite',
+  'name': siteConfig.title,
+  'description': siteConfig.description,
+  'url': `${siteConfig.url}/`,
+  'inLanguage': 'zh-CN',
+  'author': {
+    '@type': 'Person',
+    'name': siteConfig.author,
+    'url': siteConfig.url,
+    'image': `${siteConfig.url}${siteConfig.ogImage}`,
+    'sameAs': siteConfig.socials
+      .filter(s => s.url.startsWith('http'))
+      .map(s => s.url),
+  },
 })
 </script>
 
