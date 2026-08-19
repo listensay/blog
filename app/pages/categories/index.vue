@@ -55,7 +55,7 @@ useSeo({
         v-for="i in 4"
         :key="i"
         aria-hidden="true"
-        class="rounded-xl border border-slate-200 p-5"
+        class="rounded-xl border border-slate-200 bg-white p-5"
       >
         <div class="flex items-center justify-between gap-3">
           <div class="skeleton h-6 w-28" />
@@ -69,7 +69,7 @@ useSeo({
       <li v-for="(c, i) in categories" :key="c.name" v-reveal="i">
         <NuxtLink
           :to="`/categories/${encodeURIComponent(c.name)}`"
-          class="group flex h-full flex-col rounded-xl border border-slate-200 p-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+          class="group flex h-full flex-col rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
         >
           <div class="flex items-center justify-between gap-3">
             <span class="text-lg font-semibold text-slate-900 group-hover:text-brand-700">

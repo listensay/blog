@@ -13,6 +13,24 @@ const { data: posts, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
+const avatar = ref<HTMLImageElement>()
+const animateAvatar = ref(false)
+let avatarAnimationStarted = false
+
+function startAvatarAnimation() {
+  if (avatarAnimationStarted) return
+  avatarAnimationStarted = true
+  animateAvatar.value = true
+}
+
+function finishAvatarAnimation() {
+  animateAvatar.value = false
+}
+
+onMounted(() => {
+  if (avatar.value?.complete) startAvatarAnimation()
+})
+
 // url 留空的社交项不渲染，方便在 site.ts 里占位
 const socialLinks = computed(() => siteConfig.socials.filter(s => s.url))
 
@@ -46,9 +64,13 @@ useJsonLd({
          标题降到 text-2xl、留白收紧，好让文章列表早点进视口 -->
     <section v-reveal class="mt-2 flex items-center gap-4 py-8 sm:mt-4 sm:gap-6 sm:px-6 sm:py-20">
       <img
+        ref="avatar"
         src="/images/avatar.jpg"
-        class="size-20 shrink-0 rounded-full border border-amber-50 object-cover sm:size-42"
+        class="home-avatar size-20 shrink-0 rounded-full object-cover sm:size-42"
+        :class="{ 'home-avatar-jelly': animateAvatar }"
         alt="user avatar"
+        @load="startAvatarAnimation"
+        @animationend="finishAvatarAnimation"
       >
       <div class="min-w-0">
         <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-5xl">
@@ -87,3 +109,43 @@ useJsonLd({
     </section>
   </div>
 </template>
+
+<style scoped>
+.home-avatar {
+  transform-origin: center;
+}
+
+.home-avatar-jelly {
+  animation: avatar-jelly 680ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (hover: hover) {
+  .home-avatar:hover {
+    animation: avatar-jelly 680ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+}
+
+@keyframes avatar-jelly {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.78, 1.16);
+  }
+  28% {
+    opacity: 1;
+    transform: scale(1.14, 0.88);
+  }
+  50% {
+    transform: scale(0.93, 1.08);
+  }
+  70% {
+    transform: scale(1.05, 0.96);
+  }
+  86% {
+    transform: scale(0.98, 1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+</style>
