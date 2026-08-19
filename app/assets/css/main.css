@@ -156,6 +156,14 @@
         font-weight: 500;
     }
   }
+
+  /* --- 彩色标签 -----------------------------------------------------
+     只管形状，颜色由 utils/tag-color.ts 挑出的 Tailwind 类给（那里有为什么
+     不自己算 oklch 的说明）。标签页要更大一号，用 px-4 py-2 这些工具类覆盖 ——
+     工具层在组件层之后，同优先级下能盖住这里的内边距。 */
+  .tag-chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors;
+  }
 }
 
 /* ---------------------------------------------------------------

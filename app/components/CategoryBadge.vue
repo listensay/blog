@@ -1,18 +1,13 @@
 <script setup lang="ts">
-defineProps<{
-  category: string
-  /** 选中态：用于分类页高亮当前分类 */
-  active?: boolean
-}>()
+defineProps<{ category: string }>()
 </script>
 
+<!-- 分类刻意做成纯文字链接：它和标签是两种不同的东西，长得一样反而看不出区别。
+     色块留给标签，分类靠字重比旁边的日期重一点来区分。 -->
 <template>
   <NuxtLink
     :to="`/categories/${encodeURIComponent(category)}`"
-    class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
-    :class="active
-      ? 'bg-brand-600 text-white hover:bg-brand-700'
-      : 'bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-700'"
+    class="font-medium text-slate-600 underline-offset-4 transition-colors hover:text-brand-600"
   >
     {{ category }}
   </NuxtLink>

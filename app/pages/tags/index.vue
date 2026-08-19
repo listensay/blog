@@ -55,10 +55,12 @@ useSeo({
       <li v-for="([tag, count], i) in tagCounts" :key="tag" v-reveal="i">
         <NuxtLink
           :to="`/tags/${encodeURIComponent(tag)}`"
-          class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+          class="tag-chip gap-2 rounded-xl px-4 py-2 text-sm"
+          :class="tagTone(tag)"
         >
-          <span class="font-medium text-slate-900">{{ tag }}</span>
-          <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{{ count }}</span>
+          <span class="font-medium">{{ tag }}</span>
+          <!-- 计数块用半透明白：不用管外面是哪个色系，压在任何色底上都读得清 -->
+          <span class="rounded-full bg-white/70 px-2 py-0.5 text-xs">{{ count }}</span>
         </NuxtLink>
       </li>
     </ul>
