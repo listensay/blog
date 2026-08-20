@@ -2,8 +2,11 @@
 import ArticleStats from '~/components/ArticleStats.vue'
 
 const route = useRoute()
-const slug = String(route.params.slug)
-const path = `/blog/${slug}`
+const pathSegments = computed(() => Array.isArray(route.params.slug)
+  ? route.params.slug.map(String)
+  : [String(route.params.slug)])
+const slug = computed(() => pathSegments.value.at(-1) ?? '')
+const path = computed(() => `/blog/${pathSegments.value.join('/')}`)
 
 // 按文章路径稳定取色：同一篇文章刷新后颜色不变，不会造成 SSR/客户端水合闪烁。
 const headerColors = [
@@ -22,12 +25,12 @@ function colorIndex(value: string) {
   return hash % headerColors.length
 }
 
-const headerColor = headerColors[colorIndex(path)]!
+const headerColor = computed(() => headerColors[colorIndex(path.value)]!)
 
 const { data: post, status, error } = await useAsyncData(
-  `post-${path}`,
+  () => `post-${path.value}`,
   () => {
-    let q = queryCollection('blog').path(path)
+    let q = queryCollection('blog').path(path.value)
     // 草稿不能对外：列表页和评论/点赞接口都按 draft=false 过滤，详情页也得一致，
     // 否则 SSR 下猜到 URL 就能直接读到未发布的稿子。dev 下放开，方便自己预览。
     if (!import.meta.dev) q = q.where('draft', '=', false)
@@ -60,14 +63,14 @@ else {
 // 内置的 queryCollectionItemSurroundings 按路径字母序取邻居，slug 的字母序对读者没意义，
 // 这里按发布时间取：上一篇是更早的，下一篇是更新的
 const { data: surround } = await useAsyncData(
-  `surround-${path}`,
+  () => `surround-${path.value}`,
   async () => {
     const posts = await queryCollection('blog')
       .where('draft', '=', false)
       .order('date', 'DESC')
       .select('path', 'title')
       .all()
-    const i = posts.findIndex(p => p.path === path)
+    const i = posts.findIndex(p => p.path === path.value)
     if (i === -1) return [null, null]
     return [posts[i + 1] ?? null, posts[i - 1] ?? null]
   },
@@ -99,7 +102,7 @@ useJsonLd(() => ({
   'description': post.value?.description ?? '',
   'datePublished': isoDateTime(post.value?.date),
   'inLanguage': 'zh-CN',
-  'mainEntityOfPage': { '@type': 'WebPage', '@id': `${siteConfig.url}${path}` },
+  'mainEntityOfPage': { '@type': 'WebPage', '@id': `${siteConfig.url}${path.value}` },
   'image': `${siteConfig.url}${post.value?.cover || siteConfig.ogImage}`,
   'author': { '@type': 'Person', 'name': siteConfig.author, 'url': siteConfig.url },
   'publisher': { '@type': 'Person', 'name': siteConfig.author, 'url': siteConfig.url },

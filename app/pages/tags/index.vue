@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { taxonomyLink } from '../../utils/taxonomy'
+
 const { data: posts, status, error } = await useAsyncData(
   'tag-index-posts',
   () => queryCollection('blog').where('draft', '=', false).select('tags').all(),
@@ -54,7 +56,7 @@ useSeo({
     <ul v-else-if="tagCounts.length" class="mt-8 flex flex-wrap gap-3">
       <li v-for="([tag, count], i) in tagCounts" :key="tag" v-reveal="i">
         <NuxtLink
-          :to="`/tags/${encodeURIComponent(tag)}`"
+          :to="taxonomyLink('tags', tag)"
           class="tag-chip gap-2 rounded-xl px-4 py-2 text-sm"
           :class="tagTone(tag)"
         >

@@ -13,20 +13,18 @@ import { defineTransformer } from '@nuxt/content'
  * `{ path: filePath, ...content }` —— content 展开在后，这里设的 path 会保留下来。
  */
 export default defineTransformer({
-  name: 'slug-path',
+  name: 'slug-path-v2',
   extensions: ['.md'],
   transform(file) {
     const f = file as Record<string, unknown>
     const slug = typeof f.slug === 'string' ? f.slug.trim() : ''
     if (!slug) return file
 
-    // id 形如 "blog/blog/我的第一篇文章.md"：
-    // 首段是集合名，需丢弃；余下是相对 source 的目录 + 文件名
+    // id 形如 "blog/blog/ai/文章.md"：丢掉集合名和文件名，
+    // 保留中间的英文分类目录，生成 /blog/ai/article-slug。
     const parts = String(f.id).split('/')
-    parts.shift() // 去掉集合名
-    parts.pop() // 去掉文件名（由 slug 取代）
-    const dir = parts.join('/')
-
-    return { ...file, path: '/' + [dir, slug].filter(Boolean).join('/') }
+    parts.shift()
+    parts.pop()
+    return { ...file, path: '/' + [...parts, slug].join('/') }
   },
 })

@@ -1,17 +1,24 @@
 <script setup lang="ts">
+import { taxonomySlug } from '../utils/taxonomy'
+
 // lazy 的取舍见 useQueryState：客户端换路由不阻塞导航，先出骨架屏；SSR 照旧阻塞
-const { data: posts, status, error } = await useAsyncData(
+const { data: allPosts, status, error } = await useAsyncData(
   'home-posts',
   () =>
     queryCollection('blog')
       .where('draft', '=', false)
       .order('date', 'DESC')
-      .limit(5)
       .all(),
   { lazy: true },
 )
 
 const { loading } = useQueryState(status, error)
+const visiblePosts = computed(() => (allPosts.value ?? []).filter((post) => {
+  const slug = taxonomySlug(post.category || '未分类', 'category')
+  return !siteConfig.home.hiddenCategories.includes(slug)
+}))
+const posts = computed(() => visiblePosts.value
+  .slice(0, siteConfig.home.postLimit))
 
 const avatar = ref<HTMLImageElement>()
 const animateAvatar = ref(false)
@@ -85,7 +92,7 @@ useJsonLd({
             :style="{ color: authorColors[index % authorColors.length] }"
           >{{ char }}</span>
         </h1>
-        <p class="mt-1.5 max-w-2xl leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
+        <p class="max-w-2xl leading-relaxed text-slate-600 sm:text-lg">
           {{ siteConfig.description }}
         </p>
         <div v-if="socialLinks.length" class="mt-3 flex flex-wrap items-center gap-2 sm:mt-5 sm:gap-2.5">

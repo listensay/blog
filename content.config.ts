@@ -16,6 +16,8 @@ export default defineContentConfig({
         date: z.date(),
         // URL 片段：文件名用中文，网址用这个（见 transformers/slug-path.ts）
         slug: z.string(),
+        // 允许 slug-path transformer 覆盖子目录带来的默认 path
+        path: z.string().optional(),
         // 一篇文章归一个分类
         category: z.string().default('未分类'),
         tags: z.array(z.string()).default([]),
