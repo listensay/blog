@@ -35,6 +35,11 @@ export const siteConfig = {
   url: 'https://blog.200205.net',
   /** 社交卡片默认图（og:image / twitter:image）。文章可用 frontmatter 的 cover 覆盖 */
   ogImage: '/images/avatar.jpg',
+  home: {
+    postLimit: 5,
+    // 使用分类的英文 slug；这些分类不会出现在首页列表和筛选项中。
+    hiddenCategories: ['docs'],
+  },
   socials: [
     { icon: 'qq', label: 'QQ 群', url: 'https://qm.qq.com/q/pa2mcYXCCc', color: '#12B7F5' },
     { icon: 'email', label: '邮箱', url: 'mailto:odr233@gmail.com', color: '#ea4335' },

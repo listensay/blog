@@ -1,20 +1,25 @@
 <script setup lang="ts">
-const route = useRoute()
-const category = computed(() => decodeURIComponent(String(route.params.category)))
+import { taxonomyMatches } from '../../utils/taxonomy'
 
-// category 是普通字符串列，可以直接交给 SQL 过滤
-const { data: posts, status, error } = await useAsyncData(
-  () => `category-${category.value}`,
+const route = useRoute()
+const routeSlug = computed(() => String(route.params.category))
+
+const { data: allPosts, status, error } = await useAsyncData(
+  () => `category-${routeSlug.value}`,
   () =>
     queryCollection('blog')
       .where('draft', '=', false)
-      .where('category', '=', category.value)
       .order('date', 'DESC')
       .all(),
-  { watch: [category], lazy: true },
+  { watch: [routeSlug], lazy: true },
 )
 
 const { loading } = useQueryState(status, error)
+const category = computed(() => {
+  const match = allPosts.value?.find(post => post.category && taxonomyMatches(post.category, routeSlug.value, 'category'))
+  return match?.category ?? decodeURIComponent(routeSlug.value)
+})
+const posts = computed(() => (allPosts.value ?? []).filter(post => post.category === category.value))
 
 useSeo({
   title: () => `分类：${category.value}`,

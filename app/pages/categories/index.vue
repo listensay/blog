@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { taxonomyLink } from '../../utils/taxonomy'
+
 const { data: posts, status, error } = await useAsyncData(
   'category-index-posts',
   () =>
@@ -68,7 +70,7 @@ useSeo({
     <ul v-else-if="categories.length" class="mt-8 grid gap-4 sm:grid-cols-2">
       <li v-for="(c, i) in categories" :key="c.name" v-reveal="i">
         <NuxtLink
-          :to="`/categories/${encodeURIComponent(c.name)}`"
+          :to="taxonomyLink('categories', c.name)"
           class="group flex h-full flex-col rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
         >
           <div class="flex items-center justify-between gap-3">

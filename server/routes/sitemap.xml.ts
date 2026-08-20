@@ -7,6 +7,7 @@
  */
 import { queryCollection } from '@nuxt/content/server'
 import { siteConfig } from '../../app/utils/site'
+import { taxonomySlug } from '../../app/utils/taxonomy'
 
 interface SitemapEntry {
   loc: string
@@ -24,9 +25,10 @@ function escapeXml(value: string) {
     .replaceAll("'", '&apos;')
 }
 
-/** 中文分类/标签的 URL 必须 percent-encode，和站内 NuxtLink 的写法保持一致 */
+/** 分类/标签 URL 使用稳定的英文 slug。 */
 function taxonomyUrl(prefix: string, name: string) {
-  return `${siteConfig.url}/${prefix}/${encodeURIComponent(name)}`
+  const kind = prefix === 'categories' ? 'category' : 'tag'
+  return `${siteConfig.url}/${prefix}/${taxonomySlug(name, kind)}`
 }
 
 function isoDay(input: string | Date | undefined) {

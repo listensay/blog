@@ -14,7 +14,7 @@ export async function assertPostExists(event: H3Event, slug: string) {
   if (known.has(slug)) return
 
   const post = await queryCollection(event, 'blog')
-    .where('path', '=', `/blog/${slug}`)
+    .where('slug', '=', slug)
     .where('draft', '=', false)
     .select('path')
     .first()

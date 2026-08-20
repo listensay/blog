@@ -142,3 +142,32 @@ Obsidian 不认带前导斜杠的库内路径，两个编辑器都预览不出�
 - **Obsidian**（库根就是项目根，`.obsidian` 已 gitignore，仓库里的 `.obsidian/app.json` 已配好）：设置 → 文件与链接 → 「新附件的默认位置」选「在下面指定的文件夹中」填 `public/images`；「新链接格式」选「相对于当前笔记的路径」；**关掉「使用 [[Wiki 链接]]」**，否则写出来的 `![[x.png]]` 不是标准 Markdown，@nuxt/content 不认。
 - **VS Code**：`.vscode/settings.json` 里的 `markdown.copyFiles.destination` 已配好，直接粘贴即可。
 
+## 文章分类与英文链接
+
+文章可以按英文目录整理，例如：
+
+```text
+content/blog/ai/
+content/blog/python/
+content/blog/docs/
+```
+
+英文目录会进入公开网址。每篇文章仍在 frontmatter 中设置展示分类和英文文章链接：
+
+```yaml
+---
+title: Python 入门
+slug: python-getting-started
+category: Python
+tags:
+  - Python
+  - 教程
+---
+```
+
+文章地址为 `/blog/python/python-getting-started`，分类和标签地址也会统一转换成英文 slug。
+常用中文名称到英文 slug 的映射集中在 `app/utils/taxonomy.ts`，新增中文分类或标签时可在
+`TAXONOMY_ALIASES` 中补一个可读的英文名称。
+
+首页默认不显示 `Docs` 分类。需要调整时修改 `app/utils/site.ts` 中的
+`home.hiddenCategories`；这里填写分类的英文 slug，例如 `docs`、`python`。

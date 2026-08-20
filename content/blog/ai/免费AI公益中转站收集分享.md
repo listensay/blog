@@ -3,6 +3,7 @@ title: 免费AI公益中转站收集分享
 description: 带你免费白嫖各种模型，注意！不是广告！！
 date: 2026-08-19
 slug: free-ai
+path: /blog/ai/free-ai
 category: 福利
 tags:
   - AI
@@ -38,9 +39,9 @@ tags:
 
 https://agentrouter.org/register?aff=QieS
 
-![](../../public/images/Pasted%20image%2020260819182328.png)
+![](../../../public/images/Pasted%20image%2020260819182328.png)
 
-![](../../public/images/Pasted%20image%2020260819182346.png)
+![](../../../public/images/Pasted%20image%2020260819182346.png)
 
 ### AnyRouter
 
@@ -66,7 +67,7 @@ https://anyrouter.top/register?aff=78Jy
 
 https://gorouter.app/sign-up?aff=C58L
 
-![](../../public/images/Pasted%20image%2020260819191931.png)
+![](../../../public/images/Pasted%20image%2020260819191931.png)
 
 ### SeekAI
 
@@ -78,7 +79,7 @@ https://gorouter.app/sign-up?aff=C58L
 
 https://seekai.cc/sign-up?aff=fjxq
 
-![](../../public/images/Pasted%20image%2020260819192425.png)
+![](../../../public/images/Pasted%20image%2020260819192425.png)
 
 
 ### 哈吉米AI
@@ -91,7 +92,7 @@ https://seekai.cc/sign-up?aff=fjxq
 
 https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
-![](../../public/images/Pasted%20image%2020260819201700.png)
+![](../../../public/images/Pasted%20image%2020260819201700.png)
 
 ### TabToken
 
@@ -103,7 +104,7 @@ https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
 https://tabitoken.com/sign-up?aff=6boQ
 
-![](../../public/images/Pasted%20image%2020260819193750.png)
+![](../../../public/images/Pasted%20image%2020260819193750.png)
 
 
 
@@ -120,7 +121,7 @@ https://tabitoken.com/sign-up?aff=6boQ
 
 https://build.nvidia.com/models
 
-![](../../public/images/Pasted%20image%2020260819201306.png)
+![](../../../public/images/Pasted%20image%2020260819201306.png)
 
 ### FreeBuff
 
@@ -130,13 +131,13 @@ https://build.nvidia.com/models
 
 当前日期2026-8-19。近期香港无法使用，需要换到美国节点。
 
-![](../../public/images/Pasted%20image%2020260819194913.png)
+![](../../../public/images/Pasted%20image%2020260819194913.png)
 
 https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&referrer=Listensay
 
-![](../../public/images/Pasted%20image%2020260819194600.png)
+![](../../../public/images/Pasted%20image%2020260819194600.png)
 
-![](../../public/images/Pasted%20image%2020260819195329.png)
+![](../../../public/images/Pasted%20image%2020260819195329.png)
 
 ### TokenRouter
 
@@ -153,15 +154,15 @@ https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&re
 
 https://www.tokenrouter.com/
 
-![](../../public/images/Pasted%20image%2020260819195509.png)
+![](../../../public/images/Pasted%20image%2020260819195509.png)
 
 这里我推荐Hermas agent去使用这个API，你可以在前面让Agent，如果模型输出文字错乱的话就重新输出。
 
-![](../../public/images/a0df35509d5985a1c0b053a3ebe141b3.png)
+![](../../../public/images/a0df35509d5985a1c0b053a3ebe141b3.png)
 
 这是cherry studio 使用模型上下问过长的情况。
 
-![](../../public/images/5140e27e83bf476475440c97815b2628.png)
+![](../../../public/images/5140e27e83bf476475440c97815b2628.png)
 
 总而言之这个网站的免费模型输出阅读性不好，工作是没有问题的。
 
@@ -173,10 +174,10 @@ http://20.115.208.7:4000/v1
 
 不需要输入密钥使用这些模型
 
-![](../../public/images/Pasted%20image%2020260819201423.png)
+![](../../../public/images/Pasted%20image%2020260819201423.png)
 
 http://130.210.35.157:4000/v1
 
 同样不需要输入密钥使用这些模型
 
-![](../../public/images/Pasted%20image%2020260819201507.png)
+![](../../../public/images/Pasted%20image%2020260819201507.png)

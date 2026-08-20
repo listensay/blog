@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { taxonomyMatches } from '../../utils/taxonomy'
+
 const route = useRoute()
-const tag = computed(() => decodeURIComponent(String(route.params.tag)))
+const routeSlug = computed(() => String(route.params.tag))
 
 const { data: allPosts, status, error } = await useAsyncData(
-  'tag-page-posts',
+  () => `tag-${routeSlug.value}`,
   () =>
     queryCollection('blog')
       .where('draft', '=', false)
@@ -14,8 +16,12 @@ const { data: allPosts, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
+const tag = computed(() => {
+  const match = allPosts.value?.find(post => post.tags?.some(item => taxonomyMatches(item, routeSlug.value, 'tag')))
+  return match?.tags?.find(item => taxonomyMatches(item, routeSlug.value, 'tag')) ?? decodeURIComponent(routeSlug.value)
+})
 const posts = computed(() =>
-  (allPosts.value ?? []).filter(p => p.tags?.includes(tag.value)),
+  (allPosts.value ?? []).filter(p => p.tags?.some(item => item === tag.value)),
 )
 
 useSeo({

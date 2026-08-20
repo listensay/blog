@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { taxonomyLink } from '../utils/taxonomy'
+
 defineProps<{
   category: string
   light?: boolean
@@ -9,7 +11,7 @@ defineProps<{
      色块留给标签，分类靠字重比旁边的日期重一点来区分。 -->
 <template>
   <NuxtLink
-    :to="`/categories/${encodeURIComponent(category)}`"
+    :to="taxonomyLink('categories', category)"
     class="font-medium underline-offset-4 transition-colors"
     :class="light ? 'text-white hover:text-white/80' : 'text-slate-600 hover:text-brand-600'"
   >
