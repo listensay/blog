@@ -2,6 +2,7 @@
 export interface PostStats {
   views: number
   likes: number
+  comments: number
   liked: boolean
 }
 

@@ -1,7 +1,29 @@
 <script setup lang="ts">
+import ArticleStats from '~/components/ArticleStats.vue'
+
 const route = useRoute()
 const slug = String(route.params.slug)
 const path = `/blog/${slug}`
+
+// 按文章路径稳定取色：同一篇文章刷新后颜色不变，不会造成 SSR/客户端水合闪烁。
+const headerColors = [
+  '#e11d48', // rose-600
+  '#a21caf', // fuchsia-700
+  '#7c3aed', // violet-600
+  '#4f46e5', // indigo-600
+  '#0369a1', // sky-700
+  '#0f766e', // teal-700
+  '#047857', // emerald-700
+  '#b45309', // amber-700
+]
+
+function colorIndex(value: string) {
+  let hash = 0
+  for (const char of value) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  return hash % headerColors.length
+}
+
+const headerColor = headerColors[colorIndex(path)]!
 
 const { data: post, status, error } = await useAsyncData(
   `post-${path}`,
@@ -100,30 +122,34 @@ useJsonLd(() => ({
     <ArticleSkeleton v-if="loading" />
 
     <template v-else-if="post">
-      <header class="border-b border-slate-200 pb-6 sm:pb-8">
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-500">
-          <time v-if="post.date" :datetime="isoDate(post.date)">
-            {{ formatDate(post.date) }}
-          </time>
-          <span v-if="post.date && (post.category || post.tags?.length)" class="text-slate-300">·</span>
-          <CategoryBadge v-if="post.category" :category="post.category" />
-          <div v-if="post.tags?.length" class="flex flex-wrap gap-1.5">
-            <TagBadge v-for="t in post.tags" :key="t" :tag="t" />
+      <div ref="proseEl" class="prose-cn">
+        <header
+          class="flex h-64 flex-col items-center justify-center rounded-2xl text-white"
+          :style="{ backgroundColor: headerColor }"
+        >
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+            <time v-if="post.date" :datetime="isoDate(post.date)" class="font-bold">
+              {{ formatDate(post.date) }}
+            </time>
+            <span v-if="post.date && (post.category || post.tags?.length)" class="font-bold">·</span>
+            <div class="text-white">
+              <CategoryBadge v-if="post.category" :category="post.category" light />
+            </div>
+            <span v-if="post.date && (post.category || post.tags?.length)" class="font-bold">·</span>
+            <div v-if="post.tags?.length" class="flex flex-wrap gap-1.5">
+              <TagBadge v-for="t in post.tags" :key="t" :tag="t" />
+            </div>
           </div>
-        </div>
-
-        <h1 class="mt-3 text-2xl font-bold leading-tight tracking-tight text-slate-900 sm:mt-4 sm:text-4xl">
-          <span
-            v-if="post.draft"
-            class="mr-2 align-middle rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700"
-          >草稿</span>{{ post.title }}
-        </h1>
-      </header>
-
-      <div ref="proseEl" class="prose-cn mt-6 sm:mt-10">
+          <h1 class="mt-3 mb-0 text-2xl font-bold leading-tight tracking-tight text-white sm:mt-4 sm:text-4xl">
+            <span
+              v-if="post.draft"
+              class="mr-2 align-middle rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700"
+            >草稿</span>{{ post.title }}
+          </h1>
+          <ArticleStats :slug="slug" />
+        </header>
         <ContentRenderer :value="post" />
       </div>
-
       <PostReactions :slug="slug" />
 
       <nav

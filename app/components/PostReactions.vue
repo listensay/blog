@@ -8,7 +8,7 @@ const props = defineProps<{ slug: string }>()
 // 两边同时发会互相覆盖——后回来的那个赢，浏览量可能就少算一次。
 const { data: stats, status } = await useFetch<PostStats>(() => `/api/posts/${props.slug}/stats`, {
   key: () => `stats-${props.slug}`,
-  default: () => ({ views: 0, likes: 0, liked: false }),
+  default: () => ({ views: 0, likes: 0, comments: 0, liked: false }),
   immediate: import.meta.server,
 })
 
@@ -46,6 +46,7 @@ async function toggleLike() {
     views: snapshot.views,
     liked: !snapshot.liked,
     likes: Math.max(0, snapshot.likes + (snapshot.liked ? -1 : 1)),
+    comments: snapshot.comments,
   }
 
   try {

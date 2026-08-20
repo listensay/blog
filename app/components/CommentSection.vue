@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CommentListResponse, CommentNode } from '~/types/blog'
+import type { CommentListResponse, CommentNode, PostStats } from '~/types/blog'
 
 const props = defineProps<{ slug: string }>()
 
@@ -19,6 +19,11 @@ const { data, refresh, status } = await useFetch<CommentListResponse>(
 const { loading } = useQueryState(status)
 
 const replyTo = ref<CommentNode | null>(null)
+const { data: sharedStats } = useNuxtData<PostStats>(`stats-${props.slug}`)
+
+watch(() => data.value.total, total => {
+  if (sharedStats.value) sharedStats.value.comments = total
+})
 
 function startReply(comment: CommentNode) {
   // 再点一次同一条就收起回复框
