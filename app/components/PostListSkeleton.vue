@@ -10,7 +10,7 @@ const tailWidths = ['w-4/5', 'w-2/3', 'w-3/4', 'w-1/2', 'w-5/6']
 </script>
 
 <template>
-  <div role="status" aria-busy="true" class="skeleton-group">
+  <div role="status" aria-busy="true" class="skeleton-group overflow-hidden rounded-2xl bg-white shadow">
     <span class="sr-only">正在加载文章列表…</span>
 
     <!-- 内外边距必须和 PostCard 逐一对齐（含断点），不然骨架屏换成真内容时会跳 -->
@@ -18,7 +18,7 @@ const tailWidths = ['w-4/5', 'w-2/3', 'w-3/4', 'w-1/2', 'w-5/6']
       v-for="i in count"
       :key="i"
       aria-hidden="true"
-      class="mb-3 rounded-xl border border-slate-200 bg-white px-4 py-5 sm:mb-4 sm:px-6 sm:py-7"
+      class="border-b border-zinc-100 px-4 py-5 last:border-none sm:px-6 sm:py-7"
     >
       <div class="flex items-center gap-3">
         <div class="skeleton h-4 w-24" />

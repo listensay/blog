@@ -4,7 +4,9 @@ description: 带你免费白嫖各种模型，注意！不是广告！！
 date: 2026-08-19
 slug: free-ai
 category: 福利
-tags: AI
+tags:
+  - AI
+  - 白嫖
 ---
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
 
