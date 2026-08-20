@@ -80,11 +80,44 @@
 
   body {
     @apply text-slate-800 antialiased;
-    background:
-      linear-gradient(35deg, rgb(218 204 255 / 0.88) 0%, rgb(239 226 255 / 0.48) 34%, transparent 68%),
-      linear-gradient(165deg, rgb(248 216 234) 0%, rgb(255 239 247) 46%, #fff 100%);
-    background-attachment: fixed;
+    position: relative;
+    min-height: 100vh;
+    isolation: isolate;
+    background: #fff7fa;
     font-family: var(--font-sans);
+  }
+
+  /* 纯 CSS 柔光背景：大范围色域先叠加，再整体模糊，避免出现清晰的渐变边界。 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -12vh -10vw;
+    z-index: -2;
+    background:
+      radial-gradient(ellipse 58% 42% at 8% 6%, rgb(249 192 215 / 0.88) 0%, transparent 72%),
+      radial-gradient(ellipse 52% 44% at 94% 12%, rgb(239 198 230 / 0.78) 0%, transparent 74%),
+      radial-gradient(ellipse 44% 38% at 12% 58%, rgb(255 220 209 / 0.6) 0%, transparent 72%),
+      radial-gradient(ellipse 56% 44% at 88% 62%, rgb(244 210 230 / 0.7) 0%, transparent 74%),
+      linear-gradient(180deg, #fce8f0 0%, #fff5f8 62%, #fff 100%);
+    filter: blur(48px) saturate(0.82);
+    transform: scale(1.06);
+    pointer-events: none;
+  }
+
+  /* 参考图下半部分逐渐发白，内容越往下越安静。 */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgb(255 255 255 / 0.08) 42%,
+      rgb(255 255 255 / 0.7) 78%,
+      #fff 100%
+    );
+    pointer-events: none;
   }
 
   /* 中文排版：适当放宽行高与字间距 */

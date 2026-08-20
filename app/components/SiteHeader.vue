@@ -5,6 +5,7 @@ import { IconArticle, IconCategory, IconHome, IconLink, IconTag, IconUser } from
 import type { NavItem } from '~/utils/site'
 
 const route = useRoute()
+const titleColors = ['#4285f4', '#ea4335', '#f9ab00', '#34a853', '#a855f7']
 
 const isActive = (to: string) => {
   if (to === '/') return route.path === '/'
@@ -71,9 +72,15 @@ onMounted(() => {
     >
       <NuxtLink
         to="/"
-        class="shrink-0 text-center text-xl font-semibold tracking-tight text-slate-900 transition-colors hover:text-brand-600 sm:text-left"
+        class="shrink-0 text-center text-xl font-semibold tracking-tight transition-opacity hover:opacity-80 sm:text-left"
+        :aria-label="siteConfig.title"
       >
-        {{ siteConfig.title }}
+        <span
+          v-for="(char, index) in [...siteConfig.title]"
+          :key="`${char}-${index}`"
+          aria-hidden="true"
+          :style="{ color: titleColors[index % titleColors.length] }"
+        >{{ char }}</span>
       </NuxtLink>
 
       <!-- -mx-4 px-4 让滑动区一直延伸到屏幕边缘：内容仍与页面留白对齐，

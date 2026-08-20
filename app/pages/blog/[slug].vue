@@ -10,7 +10,6 @@ const headerColors = [
   '#e11d48', // rose-600
   '#a21caf', // fuchsia-700
   '#7c3aed', // violet-600
-  '#4f46e5', // indigo-600
   '#0369a1', // sky-700
   '#0f766e', // teal-700
   '#047857', // emerald-700

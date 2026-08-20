@@ -33,6 +33,7 @@ onMounted(() => {
 
 // url 留空的社交项不渲染，方便在 site.ts 里占位
 const socialLinks = computed(() => siteConfig.socials.filter(s => s.url))
+const authorColors = ['#4285f4', '#ea4335', '#f9ab00', '#34a853', '#a855f7']
 
 useSeo({
   // 首页不传 title：titleTemplate 会只输出站点名，不至于变成「站点名 - 站点名」
@@ -73,8 +74,16 @@ useJsonLd({
         @animationend="finishAvatarAnimation"
       >
       <div class="min-w-0">
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-          {{ siteConfig.author }}
+        <h1
+          class="text-2xl font-bold sm:text-5xl"
+          :aria-label="siteConfig.author"
+        >
+          <span
+            v-for="(char, index) in [...siteConfig.author]"
+            :key="`${char}-${index}`"
+            aria-hidden="true"
+            :style="{ color: authorColors[index % authorColors.length] }"
+          >{{ char }}</span>
         </h1>
         <p class="mt-1.5 max-w-2xl leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
           {{ siteConfig.description }}
@@ -95,7 +104,7 @@ useJsonLd({
 
     <section class="py-4">
       <PostListSkeleton v-if="loading" :count="5" />
-      <div v-else-if="posts?.length">
+      <div v-else-if="posts?.length" class="overflow-hidden rounded-2xl bg-white shadow">
         <PostCard
           v-for="(post, i) in posts"
           :key="post.path"

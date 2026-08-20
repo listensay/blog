@@ -30,7 +30,7 @@ useSeo({
     </header>
 
     <PostListSkeleton v-if="loading" :count="6" />
-    <div v-else-if="posts?.length">
+    <div v-else-if="posts?.length" class="overflow-hidden rounded-2xl bg-white shadow">
       <PostCard
         v-for="(post, i) in posts"
         :key="post.path"
