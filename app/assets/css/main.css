@@ -37,6 +37,8 @@
    刻意压得克制——阅读类站点里，动效应该只是「顺」，不该被看见
    --------------------------------------------------------------- */
 :root {
+  /* 通用柔光阴影：卡片、头像等浮层统一复用 */
+  --color-shadow: rgb(224 224 224 / 60%);
   --anim-fast: 150ms;
   --anim-base: 240ms;
   /* 收尾快、起步稳，别用 ease-in-out，那个在短时长下显得黏 */
@@ -62,6 +64,10 @@
   }
 }
 
+@utility soft-shadow {
+  box-shadow: 0 0.3rem 2rem var(--color-shadow);
+}
+
 /* ---------------------------------------------------------------
    基础层
    --------------------------------------------------------------- */
@@ -69,10 +75,15 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    background: #fff;
   }
 
   body {
-    @apply bg-[#f6f6f6] text-slate-800 antialiased;
+    @apply text-slate-800 antialiased;
+    background:
+      linear-gradient(35deg, rgb(218 204 255 / 0.88) 0%, rgb(239 226 255 / 0.48) 34%, transparent 68%),
+      linear-gradient(165deg, rgb(248 216 234) 0%, rgb(255 239 247) 46%, #fff 100%);
+    background-attachment: fixed;
     font-family: var(--font-sans);
   }
 
