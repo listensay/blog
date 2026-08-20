@@ -66,7 +66,7 @@ useJsonLd({
       <img
         ref="avatar"
         src="/images/avatar.jpg"
-        class="home-avatar size-20 shrink-0 rounded-full object-cover sm:size-42"
+        class="home-avatar soft-shadow size-20 shrink-0 rounded-full object-cover sm:size-42"
         :class="{ 'home-avatar-jelly': animateAvatar }"
         alt="user avatar"
         @load="startAvatarAnimation"

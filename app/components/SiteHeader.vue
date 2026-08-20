@@ -62,7 +62,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
+  <header class="sticky top-0 z-40 border-b border-white/60 bg-white/55 shadow-sm shadow-slate-900/5 backdrop-blur-xl backdrop-saturate-150">
     <!-- 手机：标题居中一行、导航横滑一行；sm 起并成一行，标题回到左侧。
          py 2.5 + text-xl 让双行头部约 84px 高——仍在 prose 标题 scroll-mt-24
          （96px）之下，锚点跳转不会被头部盖住。再加高就得动那个值 -->
