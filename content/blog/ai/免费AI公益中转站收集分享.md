@@ -1,13 +1,14 @@
 ---
 title: 免费AI公益中转站收集分享
 description: 带你免费白嫖各种模型，注意！不是广告！！
-date: 2026-08-19
+date: 2026-08-19 00:00
 slug: free-ai
 path: /blog/ai/free-ai
 category: 福利
 tags:
   - AI
   - 白嫖
+cover: ../../../public/images/avatar.jpg
 ---
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
 
@@ -131,9 +132,10 @@ https://build.nvidia.com/models
 
 当前日期2026-8-19。近期香港无法使用，需要换到美国节点。
 
-![](../../../public/images/Pasted%20image%2020260819194913.png)
 
 https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&referrer=Listensay
+
+![](../../../public/images/Pasted%20image%2020260819194913.png)
 
 ![](../../../public/images/Pasted%20image%2020260819194600.png)
 

@@ -33,6 +33,14 @@ export const siteConfig = {
   author: 'Immki',
   /** 站点域名：RSS 等需要绝对链接的地方都从这里取 */
   url: 'https://blog.200205.net',
+  /**
+   * 文章 frontmatter 里 `date` 那个「墙上时间」所属的时区偏移。
+   *
+   * 文章日期写的是 `2026-08-19 09:30` 这种不带时区的本地时间，要变成一个明确的瞬间
+   * （RSS 的 pubDate、og:published_time、JSON-LD）就得补上这个偏移。
+   * 中国不实行夏令时，所以固定 +08:00 是安全的。
+   */
+  utcOffset: '+08:00',
   /** 社交卡片默认图（og:image / twitter:image）。文章可用 frontmatter 的 cover 覆盖 */
   ogImage: '/images/avatar.jpg',
   home: {

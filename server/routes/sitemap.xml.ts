@@ -6,6 +6,7 @@
  * robots.txt 里指向这里。
  */
 import { queryCollection } from '@nuxt/content/server'
+import { isoDate } from '../../app/utils/date'
 import { siteConfig } from '../../app/utils/site'
 import { taxonomySlug } from '../../app/utils/taxonomy'
 
@@ -31,10 +32,13 @@ function taxonomyUrl(prefix: string, name: string) {
   return `${siteConfig.url}/${prefix}/${taxonomySlug(name, kind)}`
 }
 
+/**
+ * lastmod 只要日期。文章日期是墙上时间字符串（`YYYY-MM-DD HH:mm`），
+ * 交给 isoDate 按字符串取前 10 位，不经过 Date —— 直接 `new Date()` 在
+ * Workers（UTC）和本地会得到不同的日期。
+ */
 function isoDay(input: string | Date | undefined) {
-  if (!input) return undefined
-  const d = new Date(input)
-  return Number.isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10)
+  return isoDate(input) || undefined
 }
 
 export default defineEventHandler(async (event) => {

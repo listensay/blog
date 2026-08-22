@@ -130,8 +130,8 @@ useJsonLd(() => ({
           :style="{ backgroundColor: headerColor }"
         >
           <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-            <time v-if="post.date" :datetime="isoDate(post.date)" class="font-bold">
-              {{ formatDate(post.date) }}
+            <time v-if="post.date" :datetime="isoDateTime(post.date)" class="font-bold">
+              {{ formatDateTime(post.date) }}
             </time>
             <span v-if="post.date && (post.category || post.tags?.length)" class="font-bold">·</span>
             <div class="text-white">

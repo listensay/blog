@@ -3,7 +3,8 @@ interface PostLike {
   path?: string
   title?: string
   description?: string
-  date?: string | Date
+  /** `YYYY-MM-DD HH:mm`，见 app/utils/date.ts */
+  date?: string
   category?: string
   tags?: string[]
 }
@@ -16,8 +17,8 @@ defineProps<{ post: PostLike }>()
     class="group relative px-4 py-5 sm:px-6 sm:py-7 border-b last:border-none border-zinc-100"
   >
     <div class="flex flex-wrap items-center gap-x-2.5  gap-y-1.5 text-xs text-slate-900 sm:gap-x-3 sm:gap-y-2 sm:text-sm">
-      <time v-if="post.date" :datetime="isoDate(post.date)">
-        {{ formatDate(post.date) }}
+      <time v-if="post.date" :datetime="isoDateTime(post.date)">
+        {{ formatDateTime(post.date) }}
       </time>
       <span v-if="post.date && (post.category || post.tags?.length)" class="text-slate-300">·</span>
       <CategoryBadge v-if="post.category" :category="post.category" class="relative z-10" />
