@@ -1,7 +1,7 @@
 ---
 title: 简单破解Jetbrains's全家桶
 description: 一行命令破解Jetbrains's全家桶
-date: 2026-08-14
+date: 2026-08-14 00:00
 slug: codehack-jetbrains
 path: /blog/other/codehack-jetbrains
 category: other
