@@ -10,7 +10,7 @@
  * 期间只往上报一个 dirty 信号。
  */
 import { computed, ref } from 'vue'
-import { EditorContent, useEditor } from '@tiptap/vue-3'
+import { EditorContent, getHTMLFromFragment, useEditor } from '@tiptap/vue-3'
 import { message } from 'ant-design-vue'
 import {
   BoldOutlined,
@@ -66,12 +66,71 @@ const editor = useEditor({
   },
 })
 
+/**
+ * 当前选区。给 AI 改写用：父组件要知道「选了什么」「能不能行内插回去」。
+ *
+ * `inline` 的意思是选区起止落在同一个文本块里（在一个段落中间选了半句话）。
+ * 这个信息必须在这里算 —— 出了这个组件就只剩 HTML 字符串，
+ * 「这段 HTML 原来是半个段落还是三个段落」就分不出来了，而插回去的方式完全不同。
+ *
+ * 不 export：`<script setup>` 不能有 ES 导出，而父组件通过
+ * `InstanceType<typeof RichTextEditor>` 拿到的方法签名本来就带着这个结构类型。
+ */
+interface EditorSelection {
+  empty: boolean
+  /** ProseMirror 文档位置，替换时原样传回来 */
+  from: number
+  to: number
+  inline: boolean
+  html: string
+  /** 纯文本，只用来数字数给界面显示 */
+  text: string
+}
+
 defineExpose({
   /** 取当前 HTML。父组件在切标签和保存时调 */
   getHtml: () => editor.value?.getHTML() ?? '',
   /** 外部（Markdown 源码标签）改完内容后灌回来。不触发 dirty */
   setHtml: (html: string) => editor.value?.commands.setContent(html, { emitUpdate: false }),
   focus: () => editor.value?.commands.focus(),
+
+  getSelection: (): EditorSelection => {
+    const instance = editor.value
+    if (!instance) return { empty: true, from: 0, to: 0, inline: false, html: '', text: '' }
+
+    const { from, to, empty, $from, $to } = instance.state.selection
+    return {
+      empty,
+      from,
+      to,
+      inline: $from.sameParent($to),
+      html: empty
+        ? ''
+        : getHTMLFromFragment(instance.state.doc.slice(from, to).content, instance.schema),
+      text: instance.state.doc.textBetween(from, to, '\n'),
+    }
+  },
+
+  /**
+   * 替换一段内容。
+   *
+   * 用 `insertContentAt` 而不是 `setContent`：前者是一次普通事务，会进 undo 历史，
+   * 所以 AI 改完不满意能直接 ⌘Z 回去 —— 这是「敢让 AI 动正文」的前提。
+   */
+  replaceRange: (from: number, to: number, html: string) => {
+    editor.value?.chain().focus().insertContentAt({ from, to }, html).run()
+  },
+
+  /** 换掉整篇正文。同样走事务，可撤销 */
+  replaceAll: (html: string) => {
+    const instance = editor.value
+    if (!instance) return
+    instance
+      .chain()
+      .focus()
+      .insertContentAt({ from: 0, to: instance.state.doc.content.size }, html)
+      .run()
+  },
 })
 
 function imageFilesOf(list: FileList | null | undefined): File[] {

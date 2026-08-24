@@ -40,3 +40,9 @@ __screenshots__/
 
 # 后台删除文章时挪到这里（不是真删，误删能捞回来）
 .trash
+
+# AI 的密钥。推荐写在 .env.local（上面的 *.local 已经覆盖了），
+# 这里再把裸 .env 也挡一道，免得手滑写错文件名就提交上去
+.env
+.env.*
+!.env.example

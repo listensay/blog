@@ -8,11 +8,13 @@
  * 接口没有任何鉴权，谁能访问这个端口就能改仓库里的文件。
  */
 import type { Connect, Plugin, ViteDevServer } from 'vite'
+import { loadEnv } from 'vite'
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
 
-import type { PostInput, WorkspaceInfo } from '../src/types.ts'
+import type { AiRequest, PostInput, WorkspaceInfo } from '../src/types.ts'
+import { type AiConfig, aiStatus, resolveAiConfig, runAi } from './ai.ts'
 import { PUBLIC_MOUNT, listImages, saveImage } from './images.ts'
 import { HttpError, notFound, parseUrl, readBody, readJson, requireQuery, sendJson } from './http.ts'
 import { createPost, listPosts, readPost, trashPost, updatePost } from './posts.ts'
@@ -24,15 +26,21 @@ const API_PREFIX = '/api'
 /** 只允许本机访问。远端 IP 一律拒绝，避免局域网里别人能改你仓库 */
 const LOCAL_HOSTS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 
+/** 所有 handler 拿到的上下文：仓库位置 + AI 配置。两样都在启动时算一次 */
+interface Context {
+  ws: Workspace
+  ai: AiConfig
+}
+
 type Handler = (
   req: Connect.IncomingMessage,
   res: import('node:http').ServerResponse,
-  ws: Workspace,
+  ctx: Context,
 ) => Promise<void>
 
 /** `GET /api/posts` 之类的路由表，key 是 `METHOD /path` */
 const routes: Record<string, Handler> = {
-  'GET /workspace': async (_req, res, ws) => {
+  'GET /workspace': async (_req, res, { ws }) => {
     const [{ posts }, images] = await Promise.all([listPosts(ws), listImages(ws)])
     const info: WorkspaceInfo = {
       blogRoot: ws.blogRoot,
@@ -42,42 +50,52 @@ const routes: Record<string, Handler> = {
     sendJson(res, 200, info)
   },
 
-  'GET /posts': async (_req, res, ws) => {
+  'GET /posts': async (_req, res, { ws }) => {
     sendJson(res, 200, await listPosts(ws))
   },
 
-  'GET /post': async (req, res, ws) => {
+  'GET /post': async (req, res, { ws }) => {
     const file = requireQuery(parseUrl(req), 'file')
     sendJson(res, 200, await readPost(ws, file))
   },
 
-  'POST /post': async (req, res, ws) => {
+  'POST /post': async (req, res, { ws }) => {
     const input = await readJson<PostInput>(req)
     sendJson(res, 201, await createPost(ws, input))
   },
 
-  'PUT /post': async (req, res, ws) => {
+  'PUT /post': async (req, res, { ws }) => {
     const file = requireQuery(parseUrl(req), 'file')
     const input = await readJson<PostInput>(req)
     sendJson(res, 200, await updatePost(ws, file, input))
   },
 
-  'DELETE /post': async (req, res, ws) => {
+  'DELETE /post': async (req, res, { ws }) => {
     const file = requireQuery(parseUrl(req), 'file')
     sendJson(res, 200, await trashPost(ws, file))
   },
 
-  'GET /images': async (_req, res, ws) => {
+  'GET /images': async (_req, res, { ws }) => {
     sendJson(res, 200, { images: await listImages(ws) })
   },
 
   // 图片走裸 body 上传（`?name=x.png` + 二进制正文），不用 multipart：
   // 前端手里本来就是 File/Blob，直接 fetch(body: blob) 最省事，也不用引解析库
-  'POST /images': async (req, res, ws) => {
+  'POST /images': async (req, res, { ws }) => {
     const name = requireQuery(parseUrl(req), 'name')
     const data = await readBody(req)
     const { item, reused } = await saveImage(ws, name, data)
     sendJson(res, reused ? 200 : 201, { image: item, reused })
+  },
+
+  // AI 配好了没。没配好前端把按钮禁掉并显示 hint，而不是让人点了才报错
+  'GET /ai': async (_req, res, { ai }) => {
+    sendJson(res, 200, aiStatus(ai))
+  },
+
+  'POST /ai': async (req, res, { ai }) => {
+    const input = await readJson<AiRequest>(req)
+    sendJson(res, 200, await runAi(ai, input))
   },
 }
 
@@ -147,7 +165,7 @@ function isLocal(req: Connect.IncomingMessage): boolean {
 }
 
 export function blogAdminApi(): Plugin {
-  let ws: Workspace
+  let ctx: Context
 
   /** dev 和 preview 共用同一套中间件 */
   const middleware =
@@ -164,13 +182,13 @@ export function blogAdminApi(): Plugin {
       }
 
       try {
-        if (await servePublic(req, res, ws)) return
+        if (await servePublic(req, res, ctx.ws)) return
 
         const key = `${req.method ?? 'GET'} ${url.pathname.slice(API_PREFIX.length) || '/'}`
         const handler = routes[key]
         if (!handler) throw notFound(`没有这个接口：${key}`)
 
-        await handler(req, res, ws)
+        await handler(req, res, ctx)
       } catch (err) {
         if (err instanceof HttpError) {
           sendJson(res, err.status, { error: err.message })
@@ -189,14 +207,35 @@ export function blogAdminApi(): Plugin {
 
     configResolved(config) {
       // config.root 就是 admin 目录；blog 根默认取它的上一级
-      ws = resolveWorkspace(config.root)
+      const ws = resolveWorkspace(config.root)
+
+      /*
+       * AI 的密钥从 `.env.local` 之类的文件读，所以要用 Vite 的 loadEnv ——
+       * Vite 默认只把 `VITE_` 开头的变量喂给**浏览器**，而这层跑在 Node 里，
+       * `process.env` 根本看不到 .env 文件的内容。
+       *
+       * 前缀限定成 `ADMIN_`：只有明确给这个后台用的变量会被读进来，
+       * 不会顺手把 blog 仓库或者别处的密钥也捞进这个进程。
+       * 真实环境变量（`ADMIN_AI_API_KEY=xx npm run dev`）优先级更高，放在后面覆盖。
+       */
+      const fromFiles = loadEnv(config.mode, config.envDir, 'ADMIN_')
+      const ai = resolveAiConfig({ ...fromFiles, ...process.env })
+
+      ctx = { ws, ai }
     },
 
     configureServer(server: ViteDevServer) {
       server.middlewares.use(
         middleware((msg, err) => server.config.logger.error(msg, { error: err as Error })),
       )
-      server.config.logger.info(`  \x1b[32m➜\x1b[0m  \x1b[2mblog 仓库:\x1b[0m ${ws.blogRoot}`)
+      const dim = (text: string) => `\x1b[2m${text}\x1b[0m`
+      server.config.logger.info(`  \x1b[32m➜\x1b[0m  ${dim('blog 仓库:')} ${ctx.ws.blogRoot}`)
+      server.config.logger.info(
+        `  \x1b[32m➜\x1b[0m  ${dim('AI 润色:')} ` +
+          (ctx.ai.apiKey
+            ? `${ctx.ai.model} ${dim(`@ ${ctx.ai.baseUrl}`)}`
+            : dim('未配置（ADMIN_AI_API_KEY）')),
+      )
     },
 
     // `npm run build && npm run preview` 也能用，接口行为和 dev 完全一致

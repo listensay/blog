@@ -23,8 +23,8 @@ import { POSTS_PREFIX, type Workspace, ensureDir, resolvePostFile, toPosix } fro
 /** 子目录名：英文小写为主，允许数字和 - _ .，可以多层 */
 const DIR_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/
 
-/** slug 只允许小写字母、数字和连字符 —— 它要直接进 URL */
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+/** slug 只允许小写字母、数字和连字符 —— 它要直接进 URL。server/ai.ts 也用它校验 AI 给的 slug */
+export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 /**
  * 文件名里不能出现的字符：Windows 保留字符，加上所有控制字符（`\p{Cc}`）。

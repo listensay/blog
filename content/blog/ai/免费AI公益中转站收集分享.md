@@ -8,7 +8,6 @@ category: 福利
 tags:
   - AI
   - 白嫖
-cover: ../../../public/images/avatar.jpg
 ---
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
 

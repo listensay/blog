@@ -115,6 +115,27 @@ function createRenderer(dir: string): MarkdownItInstance {
     return true
   })
 
+  /**
+   * 代码块内容末尾那个换行去掉，否则**编辑器里每个代码块下面都会多出一个空行**。
+   *
+   * 来源：Markdown 的围栏代码块按规范一定以换行结尾，所以 markdown-it 给出的
+   * token 内容是 `"cd 路径\n"`。在浏览器里 `<pre>` 会把这个换行**如实渲染成一个空行**，
+   * 而 tiptap 把它读成 codeBlock 节点的文本内容，于是编辑区里那个空行还能把光标放进去，
+   * 看着就像代码块凭空多了一行。
+   *
+   * 只去掉**一个**换行：代码本来就以空行结尾的（`"a\n\n"`）去掉一个还剩一个，
+   * 那个空行是作者写的，得留着。
+   *
+   * 存回文件时 turndown 会自己补上收尾换行，所以往返仍然一字不差（有测试覆盖）。
+   */
+  md.core.ruler.push('admin-trim-code-newline', (state) => {
+    for (const token of state.tokens) {
+      if (token.type !== 'fence' && token.type !== 'code_block') continue
+      if (token.content.endsWith('\n')) token.content = token.content.slice(0, -1)
+    }
+    return true
+  })
+
   return md
 }
 
@@ -323,6 +344,20 @@ export function detectRichTextRisks(markdown: string): RichTextRisk[] {
 const MD_IMAGE = /(!\[[^\]]*\]\(\s*)([^)\s]+)/g
 /** HTML 图片：`<img src="...">` */
 const HTML_IMAGE_SRC = /(<img\b[^>]*?\ssrc=)("([^"]*)"|'([^']*)')/gi
+
+/**
+ * 正文里所有图片的地址，按出现顺序。markdown 语法和裸 `<img>` 都算。
+ *
+ * 给 AI 改写后的完整性校验用（见 utils/ai.ts）：图片路径是这个仓库最脆弱的东西 ——
+ * 改错了本地预览照样有图，线上一片空白，所以要逐个比对。
+ */
+export function collectImageSrcs(markdown: string): string[] {
+  const out: string[] = []
+  // matchAll 会克隆正则，不共享 lastIndex，所以复用这两个带 g 的常量是安全的
+  for (const match of markdown.matchAll(MD_IMAGE)) out.push(match[2] ?? '')
+  for (const match of markdown.matchAll(HTML_IMAGE_SRC)) out.push((match[2] ?? '').slice(1, -1))
+  return out
+}
 
 /**
  * 文章换目录时，把正文里的图片相对路径重定向到新深度。

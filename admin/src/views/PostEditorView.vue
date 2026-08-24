@@ -14,12 +14,23 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
-import { ArrowLeftOutlined, DeleteOutlined, PictureOutlined, SaveOutlined } from '@ant-design/icons-vue'
+import {
+  ArrowLeftOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  HighlightOutlined,
+  MedicineBoxOutlined,
+  PictureOutlined,
+  SaveOutlined,
+} from '@ant-design/icons-vue'
 
 import { api } from '@/api'
+import AiActionModal from '@/components/AiActionModal.vue'
+import AiMetaModal from '@/components/AiMetaModal.vue'
 import ImagePickerModal from '@/components/ImagePickerModal.vue'
 import RichTextEditor from '@/components/RichTextEditor.vue'
-import type { PostDetail, PostInput } from '@/types'
+import type { AiAction, AiMetaResult, AiScope, AiStatus, AiTextResult, PostDetail, PostInput } from '@/types'
+import { AI_ACTIONS, actionLabel, replaceBodyKeepEdges, unwrapSingleParagraph } from '@/utils/ai'
 import {
   detectRichTextRisks,
   htmlToMd,
@@ -100,10 +111,19 @@ const metaDirty = computed(() => formSnapshot() !== baseline.value)
 
 const editorRef = useTemplateRef<InstanceType<typeof RichTextEditor>>('editor')
 
+/** 「Markdown 源码」标签里 textarea 的外层。取选区要拿到原生元素 */
+const sourceWrapRef = useTemplateRef<HTMLElement>('sourceWrap')
+
 const categories = ref<string[]>([])
 const knownTags = ref<string[]>([])
 const dirs = ref<string[]>([])
 const coverPickerOpen = ref(false)
+
+/**
+ * 别的文章的 URL，用来提前发现 slug 撞车（只留下判断需要的两个字段）。
+ * 撞车本来只有保存时才会被服务端拦下来（409），那时候值已经填进表单了。
+ */
+const otherPosts = ref<Array<{ realPath: string; file: string }>>([])
 
 /** 文件名默认跟着标题走，用户手改过之后就不再自动跟随 */
 const nameTouched = ref(false)
@@ -129,6 +149,21 @@ const slugError = computed(() => {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) return '只能用小写字母、数字和连字符'
   return ''
 })
+
+/**
+ * 这个 slug 在当前子目录下有没有和别的文章撞上。撞了返回那篇的文件名。
+ *
+ * 文章列表是打开这篇时拉的一份快照，可能过期（别的窗口刚改过），所以这里只做**提醒**，
+ * 不拦保存 —— 真正说话的是保存时服务端那道检查。宁可多提醒一次，也别因为一份旧数据
+ * 把人挡在保存之外。
+ */
+function slugClash(slug: string): string {
+  if (!slug) return ''
+  const target = `/${['blog', ...form.dir.split('/').filter(Boolean), slug].join('/')}`
+  return otherPosts.value.find((p) => p.realPath === target && p.file !== original.file)?.file ?? ''
+}
+
+const slugClashWith = computed(() => (slugError.value ? '' : slugClash(form.slug)))
 
 const risks = computed(() => detectRichTextRisks(bodyMarkdown.value))
 
@@ -169,11 +204,28 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('beforeunload', onBeforeUnload)
 
+  // AI 状态单独拉，而且不 await：没配 AI 只是少一个按钮，不该拖慢打开文章，
+  // 也绝不该让它的失败变成「读不到文章」的报错
+  api
+    .aiStatus()
+    .then((status) => {
+      aiStatus.value = status
+    })
+    .catch((err: unknown) => {
+      aiStatus.value = {
+        enabled: false,
+        model: '',
+        baseUrl: '',
+        hint: `取不到 AI 配置：${err instanceof Error ? err.message : String(err)}`,
+      }
+    })
+
   try {
     const meta = await api.listPosts()
     categories.value = meta.categories
     knownTags.value = meta.tags
     dirs.value = meta.dirs
+    otherPosts.value = meta.posts.map((post) => ({ realPath: post.realPath, file: post.file }))
 
     if (isNew.value) {
       form.dir = meta.dirs[0] ?? ''
@@ -367,6 +419,256 @@ function pickCover(name: string) {
   // 封面存的也是相对路径，写法和正文图片一致
   form.cover = imageMarkdownPath(form.dir, name)
 }
+
+/* ----------------------------------------------------------------------- AI */
+
+/**
+ * AI 改写。整条链路只有一个原则：**结果先给人看，确认了才动正文。**
+ *
+ * 「改哪一段」在**发请求之前**就固定下来（`AiTarget`），不是等结果回来再去问编辑器
+ * 当前选区是什么 —— 请求要跑十几秒，这期间人完全可能点走光标、切标签、改别的地方。
+ * 把位置先记住，回来才知道该往哪儿放。
+ */
+const aiStatus = ref<AiStatus>({ enabled: false, model: '', baseUrl: '', hint: '正在读 AI 配置…' })
+
+/** 结果写回哪里 */
+type AiTarget =
+  | { kind: 'rich-range'; from: number; to: number; inline: boolean }
+  | { kind: 'rich-all' }
+  | { kind: 'source-range'; start: number; end: number }
+  | { kind: 'source-all' }
+
+const ai = reactive({
+  /** 正文改写的弹窗 */
+  open: false,
+  /** 摘要与标签的弹窗 */
+  metaOpen: false,
+  loading: false,
+  error: '',
+  action: 'polish' as AiAction,
+  scope: 'all' as AiScope,
+  /** 送去改写的原文，弹窗里拿它做对比 */
+  before: '',
+  text: null as AiTextResult | null,
+  meta: null as AiMetaResult | null,
+  target: null as AiTarget | null,
+  /** 菜单打开那一刻的作用范围快照 */
+  picked: null as { text: string; target: AiTarget } | null,
+})
+
+const rewriteActions = computed(() => AI_ACTIONS.filter((item) => !item.wholeOnly))
+// 「修复格式」有自己的按钮，不进下拉菜单，所以这里把它排掉
+const metaActions = computed(() =>
+  AI_ACTIONS.filter((item) => item.wholeOnly && item.action !== 'fix'),
+)
+const fixAction = computed(() => AI_ACTIONS.find((item) => item.action === 'fix'))
+
+/** 这次是不是「只改格式」那类动作 —— 弹窗要据此多做两条校验 */
+const aiFormatOnly = computed(() => ai.action === 'fix')
+
+const scopeOfTarget = (target: AiTarget): AiScope =>
+  target.kind === 'rich-range' || target.kind === 'source-range' ? 'selection' : 'all'
+
+/** 当前正文的 Markdown。不做换目录的图片重定向 —— 那是保存时才该发生的事 */
+function editingMarkdown(): string {
+  if (activeTab.value === 'source') return bodyMarkdown.value
+  if (!bodyDirty.value) return original.body
+  return htmlToMd(editorRef.value?.getHtml() ?? '', form.dir)
+}
+
+function sourceTextarea(): HTMLTextAreaElement | null {
+  return sourceWrapRef.value?.querySelector('textarea') ?? null
+}
+
+/**
+ * 菜单打开时记下作用范围：**选了东西就改那一段，没选就改全文。**
+ *
+ * 为什么在「打开菜单」这一刻记、而不是点菜单项时才读：点菜单项的过程中焦点已经
+ * 挪到菜单上了。ProseMirror 的选区失焦后仍然留在 state 里、textarea 的
+ * selectionStart 也还在，但打开菜单那一下才是「用户刚才确实选着这段」最可靠的时点。
+ */
+function snapshotScope() {
+  if (activeTab.value === 'source') {
+    const textarea = sourceTextarea()
+    const start = textarea?.selectionStart ?? 0
+    const end = textarea?.selectionEnd ?? 0
+
+    // 源码里按字符位置切，原样保留选区里的空白，回填时才对得上
+    ai.picked =
+      end > start
+        ? {
+            text: bodyMarkdown.value.slice(start, end),
+            target: { kind: 'source-range', start, end },
+          }
+        : { text: bodyMarkdown.value.trim(), target: { kind: 'source-all' } }
+    return
+  }
+
+  const selection = editorRef.value?.getSelection()
+  ai.picked =
+    selection && !selection.empty
+      ? {
+          // 选区可能是段落中间的半句话，`inline` 决定回填时要不要脱掉外层 <p>
+          text: htmlToMd(selection.html, form.dir).trim(),
+          target: {
+            kind: 'rich-range',
+            from: selection.from,
+            to: selection.to,
+            inline: selection.inline,
+          },
+        }
+      : { text: editingMarkdown().trim(), target: { kind: 'rich-all' } }
+}
+
+/** 菜单标题上那行「这次要改多少字」，点之前就知道范围 */
+const aiScopeTitle = computed(() => {
+  const picked = ai.picked
+  if (!picked) return '作用范围'
+  const chars = picked.text.length
+  return scopeOfTarget(picked.target) === 'selection'
+    ? `改写选中的 ${chars} 字`
+    : `改写全文 ${chars} 字（没选中就是全文）`
+})
+
+/** 弹窗标题里的范围说明 */
+const aiScopeLabel = computed(() =>
+  ai.scope === 'selection' ? `选中的 ${ai.before.length} 字` : `全文 ${ai.before.length} 字`,
+)
+
+async function runAi(action: AiAction) {
+  if (!ai.picked) snapshotScope()
+  const picked = ai.picked
+  if (!picked) return
+
+  /*
+   * 有两个动作**只能对整篇做**，不管当时选中了什么（`wholeOnly`，见 utils/ai.ts）：
+   *  - `meta` 描述的是整篇文章，改一段没有意义；
+   *  - `fix` 要调标题层级，而「整篇最浅的标题是几级」是全局信息，
+   *    只看选中的一段必然算错（服务端也会强制把它的 scope 改成 all）。
+   */
+  const isMeta = action === 'meta'
+  const wholeOnly = AI_ACTIONS.find((item) => item.action === action)?.wholeOnly === true
+
+  const text = wholeOnly ? editingMarkdown().trim() : picked.text
+
+  /*
+   * 正文空着但已经写了标题时，`meta` 仍然放行：「把中文标题意译成英文 slug」
+   * 是个正当用法，正文还没开始写就该能用（服务端那侧也是同一条判断）。
+   */
+  if (!text.trim() && !(isMeta && form.title.trim())) {
+    message.warning(
+      isMeta ? '正文和标题都是空的，AI 没有可依据的东西' : wholeOnly ? '正文是空的' : '选中的内容是空的',
+    )
+    return
+  }
+
+  ai.action = action
+  ai.scope = wholeOnly ? 'all' : scopeOfTarget(picked.target)
+  ai.before = text
+  // meta 不写回正文；其余动作里 wholeOnly 的那个要落在「整篇」上，而不是当时的选区
+  ai.target = isMeta
+    ? null
+    : wholeOnly
+      ? { kind: activeTab.value === 'source' ? 'source-all' : 'rich-all' }
+      : picked.target
+  ai.error = ''
+  ai.text = null
+  ai.meta = null
+  ai.loading = true
+  if (isMeta) ai.metaOpen = true
+  else ai.open = true
+
+  try {
+    const result = await api.ai({
+      action,
+      scope: ai.scope,
+      text,
+      // 标题和分类只是给模型的背景，让它知道领域，术语才不会翻错
+      title: form.title,
+      category: form.category,
+    })
+    if (result.kind === 'meta') ai.meta = result
+    else ai.text = result
+  } catch (err) {
+    ai.error = err instanceof Error ? err.message : String(err)
+  } finally {
+    ai.loading = false
+  }
+}
+
+function onAiMenu(info: { key: string | number }) {
+  void runAi(String(info.key) as AiAction)
+}
+
+/** 把确认过的结果写回编辑器。四种落点各有各的写法，都可撤销 */
+function applyAiText(text: string) {
+  const target = ai.target
+  if (!target) return
+
+  if (target.kind === 'source-range') {
+    const body = bodyMarkdown.value
+    bodyMarkdown.value = body.slice(0, target.start) + text + body.slice(target.end)
+    bodyDirty.value = true
+  } else if (target.kind === 'rich-range') {
+    const html = mdToHtml(text, form.dir)
+    editorRef.value?.replaceRange(
+      target.from,
+      target.to,
+      target.inline ? unwrapSingleParagraph(html) : html,
+    )
+  } else {
+    replaceWholeBody(text)
+  }
+
+  ai.open = false
+  message.success(
+    `已用${actionLabel(ai.action)}结果替换${ai.scope === 'selection' ? '选中部分' : '全文'}，不满意可以 ⌘Z 撤销`,
+  )
+}
+
+/**
+ * 用一段新的 Markdown 换掉整篇正文，按当前标签决定怎么写回。
+ * AI 的「全文」改写和 Markdown 修复共用这一段。两条路都走普通编辑事务，能 ⌘Z 撤销。
+ */
+function replaceWholeBody(text: string) {
+  if (activeTab.value === 'source') {
+    // 保留正文开头的空行：那属于「文件长什么样」，不该被顺手抹掉
+    bodyMarkdown.value = replaceBodyKeepEdges(bodyMarkdown.value, text)
+    bodyDirty.value = true
+  } else {
+    editorRef.value?.replaceAll(mdToHtml(text, form.dir))
+  }
+}
+
+/**
+ * 把弹窗里勾选的字段填进表单。只填勾了的，没勾的一个字都不动。
+ *
+ * 注意标题会连带影响文件名：新文章且文件名没手改过时，上面那个 watch 会让
+ * `form.name` 跟着标题走 —— 和自己敲标题的行为一致，这里不用特殊处理。
+ */
+function applyAiMeta(payload: {
+  title?: string
+  slug?: string
+  description?: string
+  tags?: string[]
+}) {
+  if (payload.title !== undefined) form.title = payload.title
+  if (payload.slug !== undefined) form.slug = payload.slug
+  if (payload.description !== undefined) form.description = payload.description
+  if (payload.tags) form.tags = payload.tags
+
+  ai.metaOpen = false
+
+  // 说清楚到底填了哪几个，别让人再回去一个个核对
+  const filled = [
+    payload.title !== undefined ? '标题' : '',
+    payload.slug !== undefined ? 'slug' : '',
+    payload.description !== undefined ? '描述' : '',
+    payload.tags ? '标签' : '',
+  ].filter(Boolean)
+
+  message.success(`已填入${filled.join('、')}，记得保存`)
+}
 </script>
 
 <template>
@@ -425,6 +727,73 @@ function pickCover(name: string) {
         </a-alert>
 
         <a-tabs v-model:activeKey="activeTab" @change="onTabChange">
+          <!--
+            AI 入口放在标签栏右端：两个标签下都要能用，而且它作用的对象就是下面这块正文。
+            打开菜单时快照选区（snapshotScope），所以「选中润色」和「全文润色」
+            是同一个入口 —— 选了就改那一段，没选就改全文，菜单标题上会写清楚。
+          -->
+          <template #rightExtra>
+            <div class="tab-extra">
+              <!--
+                「修复格式」单独一个按钮而不是塞进下拉：它是粘完文章第一个要点的东西，
+                而且**永远作用于整篇**（标题层级要看整篇才算得对），没有选区之分。
+              -->
+              <a-tooltip
+                :title="
+                  aiStatus.enabled
+                    ? '修标题层级、多余转义、代码围栏的语言、垃圾空行。只改 Markdown 标记，一个字都不改'
+                    : aiStatus.hint
+                "
+              >
+                <a-button
+                  size="small"
+                  :disabled="!aiStatus.enabled"
+                  :loading="ai.loading && ai.action === 'fix'"
+                  @click="runAi('fix')"
+                >
+                  <template #icon><MedicineBoxOutlined /></template>
+                  {{ fixAction?.label ?? '修复格式' }}
+                </a-button>
+              </a-tooltip>
+
+              <a-tooltip :title="aiStatus.enabled ? '' : aiStatus.hint">
+                <a-dropdown
+                  :disabled="!aiStatus.enabled"
+                  :trigger="['click']"
+                  @open-change="(open: boolean) => open && snapshotScope()"
+                >
+                  <a-button size="small" :loading="ai.loading && ai.action !== 'fix'">
+                    <template #icon><HighlightOutlined /></template>
+                    AI
+                    <DownOutlined />
+                  </a-button>
+
+                  <template #overlay>
+                    <a-menu @click="onAiMenu">
+                      <a-menu-item-group :title="aiScopeTitle">
+                        <a-menu-item v-for="item in rewriteActions" :key="item.action">
+                          <div class="ai-item">
+                            <span>{{ item.label }}</span>
+                            <span class="ai-hint">{{ item.hint }}</span>
+                          </div>
+                        </a-menu-item>
+                      </a-menu-item-group>
+
+                      <a-menu-divider />
+
+                      <a-menu-item v-for="item in metaActions" :key="item.action">
+                        <div class="ai-item">
+                          <span>{{ item.label }}</span>
+                          <span class="ai-hint">{{ item.hint }}</span>
+                        </div>
+                      </a-menu-item>
+                    </a-menu>
+                  </template>
+                </a-dropdown>
+              </a-tooltip>
+            </div>
+          </template>
+
           <a-tab-pane key="rich" tab="富文本">
             <!--
               v-if 等数据到位再挂载。文章是异步读回来的，如果一开始就挂上，
@@ -435,13 +804,16 @@ function pickCover(name: string) {
           </a-tab-pane>
 
           <a-tab-pane key="source" tab="Markdown 源码">
-            <a-textarea
-              v-model:value="bodyMarkdown"
-              class="source-input mono"
-              :auto-size="{ minRows: 20 }"
-              spellcheck="false"
-              @input="onSourceInput"
-            />
+            <!-- 外层 div 是为了取到里面那个原生 textarea（AI 要读选区） -->
+            <div ref="sourceWrap">
+              <a-textarea
+                v-model:value="bodyMarkdown"
+                class="source-input mono"
+                :auto-size="{ minRows: 20 }"
+                spellcheck="false"
+                @input="onSourceInput"
+              />
+            </div>
             <p class="source-hint">
               这里写的内容会原样存进文件。图片路径按仓库约定写相对路径，比如
               <code>{{ imageMarkdownPath(form.dir, 'x.png') }}</code>
@@ -460,6 +832,10 @@ function pickCover(name: string) {
             :help="slugError || undefined"
           >
             <a-input v-model:value="form.slug" placeholder="free-ai" class="mono-input" />
+            <!-- 撞车只提醒不拦保存：列表是打开文章时的快照，可能过期（见 slugClash） -->
+            <div v-if="slugClashWith" class="field-hint clash">
+              和 <span class="mono">{{ slugClashWith }}</span> 撞了，两篇文章的 URL 会一样
+            </div>
           </a-form-item>
 
           <a-form-item label="文章 URL">
@@ -562,6 +938,33 @@ function pickCover(name: string) {
     </div>
 
     <ImagePickerModal v-model:open="coverPickerOpen" @select="pickCover($event.name)" />
+
+    <AiActionModal
+      v-model:open="ai.open"
+      :action-label="actionLabel(ai.action)"
+      :scope-label="aiScopeLabel"
+      :format-only="aiFormatOnly"
+      :loading="ai.loading"
+      :error="ai.error"
+      :before="ai.before"
+      :result="ai.text"
+      @apply="applyAiText"
+      @retry="runAi(ai.action)"
+    />
+
+    <AiMetaModal
+      v-model:open="ai.metaOpen"
+      :loading="ai.loading"
+      :error="ai.error"
+      :result="ai.meta"
+      :current-title="form.title"
+      :current-slug="form.slug"
+      :current-description="form.description"
+      :current-tags="form.tags"
+      :slug-clash="slugClash"
+      @apply="applyAiMeta"
+      @retry="runAi('meta')"
+    />
   </a-spin>
 </template>
 
@@ -672,5 +1075,29 @@ function pickCover(name: string) {
 /* 标签页内容和编辑器之间不要再留一层空白 */
 :deep(.ant-tabs-content-holder) {
   min-width: 0;
+}
+
+/* AI 菜单项：动作名一行，作用说明小一号跟在下面 */
+.ai-item {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+}
+
+/* 标签栏右端那两个按钮 */
+.tab-extra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-hint {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+/* slug 撞车：警告色但不是错误色 —— 它不拦保存 */
+.clash {
+  color: #d46b08;
 }
 </style>

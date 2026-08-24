@@ -41,6 +41,28 @@ const { data: post, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
+/**
+ * header 的底：有封面就铺封面，没有就用按路径哈希取的纯色。
+ *
+ * 刻意用 CSS 背景图而不是 `<img>`：header 在 `.prose-cn` 容器里面，而正文灯箱是
+ * `proseEl.querySelectorAll('img')` 收集图片的（见 useProseLightbox），放一个 `<img>`
+ * 进去会让封面被当成正文配图收进画廊、还排在第一张。封面在这里是装饰而不是内容，
+ * 用背景图正好，SEO 那边也不吃亏 —— og:image 和 JSON-LD 已经单独用了 cover。
+ *
+ * 上面压一层暗色渐变：封面可能是白底截图，不压的话标题那几个白字就没法看了。
+ */
+const headerStyle = computed(() => {
+  const cover = post.value?.cover
+  if (!cover) return { backgroundColor: headerColor.value }
+
+  return {
+    backgroundColor: headerColor.value,
+    backgroundImage: `linear-gradient(rgb(0 0 0 / 45%), rgb(0 0 0 / 65%)), url("${cover}")`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }
+})
+
 // 404 判定必须等数据真正落地。客户端是 lazy 的，setup 跑到这里时 post 还是
 // undefined，直上 `if (!post.value)` 会把每一次前端跳转都判成文章不存在。
 function assertFound() {
@@ -126,8 +148,8 @@ useJsonLd(() => ({
     <template v-else-if="post">
       <div ref="proseEl" class="prose-cn">
         <header
-          class="flex h-64 flex-col items-center justify-center rounded-2xl text-white"
-          :style="{ backgroundColor: headerColor }"
+          class="flex h-64 flex-col items-center justify-center overflow-hidden rounded-2xl px-4 text-center text-white"
+          :style="headerStyle"
         >
           <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
             <time v-if="post.date" :datetime="isoDateTime(post.date)" class="font-bold">

@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons-vue'
 
 import { api } from '@/api'
+import PostThumb from '@/components/PostThumb.vue'
 import type { PostSummary } from '@/types'
 
 const router = useRouter()
@@ -93,6 +94,8 @@ function formatDate(value: number): string {
 }
 
 const columns = [
+  // 88 = 72 的图 + 单元格左右内边距，固定住，缩略图列不要跟着内容伸缩
+  { title: '封面', key: 'cover', width: 88 },
   { title: '标题', key: 'title' },
   { title: '分类', key: 'category', width: 110 },
   { title: '标签', key: 'tags', width: 180 },
@@ -170,7 +173,11 @@ const columns = [
     </template>
 
     <template #bodyCell="{ column, record }">
-      <template v-if="column.key === 'title'">
+      <template v-if="column.key === 'cover'">
+        <PostThumb :cover="(record as PostSummary).cover" :dir="(record as PostSummary).dir" />
+      </template>
+
+      <template v-else-if="column.key === 'title'">
         <a class="title-link" @click="openEditor(record as PostSummary)">
           {{ (record as PostSummary).title || '（没有标题）' }}
         </a>

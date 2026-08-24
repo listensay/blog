@@ -400,6 +400,82 @@ try {
     })
   }
 
+  // ------------------------------------------------------------------ AI
+  console.log('\nAI')
+
+  /*
+   * 这里刻意**不**真的调模型：要花钱、要网络、结果还不确定，放进自检就等于
+   * 每次跑 check 都赌一次。能确定的是接口的形状和入参校验，那才是这层的责任。
+   *
+   * 「配没配」必须问服务端自己（`GET /api/ai` 的 enabled），不能看 process.env ——
+   * 密钥是 Vite 的 loadEnv 从 `.env.local` 读进来的，压根不在 process.env 里。
+   * 早先版本就是看 process.env 判断的，结果作者配好 .env.local 之后，
+   * 「没配密钥」那条用例反而**真的把请求发给模型了**。
+   */
+  const aiConfigured = ((await call('GET', '/api/ai')).data.enabled as boolean) === true
+
+  await check('GET /api/ai 报告配置状态', async () => {
+    const { status, data } = await call('GET', '/api/ai')
+    assert.equal(status, 200)
+    assert.equal(typeof data.enabled, 'boolean')
+    assert.equal(typeof data.model, 'string')
+    assert.ok(String(data.model).length > 0, 'model 是空的')
+    // 密钥绝对不能出现在响应里
+    assert.ok(!('apiKey' in data), '响应里带了 apiKey')
+    assert.ok(!JSON.stringify(data).includes('sk-'), '响应里像是带了密钥')
+  })
+
+  /*
+   * 下面这几条都是「在动网络之前就该被拒掉」的入参错误 —— runAi 里的顺序是
+   * 密钥 → 动作名 → 内容长度 → 才 fetch，所以配了密钥也不会真的调模型。
+   * 没配密钥时会更早地停在 503，两种都算对。
+   */
+  const rejected = (status: number) => [400, 503].includes(status)
+
+  await check('不认识的动作 → 400', async () => {
+    const { status } = await call('POST', '/api/ai', { action: '删掉全文', scope: 'all', text: 'x' })
+    assert.ok(rejected(status), `状态码是 ${status}`)
+  })
+
+  await check('内容为空 → 400', async () => {
+    const { status } = await call('POST', '/api/ai', { action: 'polish', scope: 'all', text: '  ' })
+    assert.ok(rejected(status), `状态码是 ${status}`)
+  })
+
+  await check('meta：正文和标题都空 → 400', async () => {
+    const { status, data } = await call('POST', '/api/ai', { action: 'meta', scope: 'all', text: '' })
+    assert.ok(rejected(status), `状态码是 ${status}`)
+    if (aiConfigured) assert.match(String(data.error), /正文和标题都是空的/)
+  })
+
+  await check('超过单次字数上限 → 400', async () => {
+    const { status, data } = await call('POST', '/api/ai', {
+      action: 'polish',
+      scope: 'all',
+      text: '字'.repeat(60_001),
+    })
+    if (aiConfigured) {
+      assert.equal(status, 400)
+      assert.match(String(data.error), /上限/)
+    } else {
+      assert.equal(status, 503)
+    }
+  })
+
+  if (aiConfigured) {
+    console.log('  · 这台机器配了 AI（.env.local），跳过「没配密钥」那条；仍然不会真的调模型')
+  } else {
+    await check('没配密钥时 → 503，并说清该设哪个变量', async () => {
+      const { status, data } = await call('POST', '/api/ai', {
+        action: 'polish',
+        scope: 'all',
+        text: '一段正文。',
+      })
+      assert.equal(status, 503)
+      assert.match(String(data.error), /ADMIN_AI_API_KEY/)
+    })
+  }
+
   // ------------------------------------------------------------- 前端能否编译
   console.log('\n前端模块（走 dev server 的真实转换管线）')
 

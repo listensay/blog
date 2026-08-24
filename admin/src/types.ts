@@ -95,3 +95,79 @@ export interface WorkspaceInfo {
 export interface ApiError {
   error: string
 }
+
+/* ------------------------------------------------------------------------ AI */
+
+/**
+ * AI 能做的事。前四个是「进去一段 Markdown、出来一段 Markdown」，形状一样，
+ * 走同一条返回分支；`meta` 产出的是 frontmatter 字段，形状不同，单独一支。
+ *
+ * `fix` 和另外三个改写动作有个本质区别：它**只许改格式，不许改一个字**，
+ * 所以校验时会额外比对「读者读到的文字有没有变」（见 utils/ai.ts 的 proseMustMatch）。
+ */
+export type AiAction = 'fix' | 'polish' | 'condense' | 'expand' | 'meta'
+
+/** 改写的作用范围。选中就只改那一段，否则改整篇 */
+export type AiScope = 'selection' | 'all'
+
+/** `GET /api/ai`：AI 有没有配好。没配好前端就把按钮禁掉，并把 hint 显示出来 */
+export interface AiStatus {
+  enabled: boolean
+  /** 用的哪个模型，界面上显示出来，免得以为在用别的 */
+  model: string
+  /** 只回显 base URL，密钥永远不出服务端 */
+  baseUrl: string
+  /** 没配好时告诉用户该设哪个环境变量 */
+  hint: string
+}
+
+export interface AiUsage {
+  prompt: number
+  completion: number
+}
+
+export interface AiRequest {
+  action: AiAction
+  scope: AiScope
+  /** 要处理的 Markdown。`meta` 时是全文 */
+  text: string
+  /**
+   * 下面两个是给模型的背景信息，让它知道这篇文章在讲什么领域。
+   * `meta` 动作里 `title` 还有第二个作用：模型要拿现有标题当参考，
+   * 觉得已经够好就原样返回它。
+   */
+  title?: string
+  category?: string
+}
+
+/** 三个改写动作的结果 */
+export interface AiTextResult {
+  kind: 'text'
+  text: string
+  model: string
+  usage: AiUsage | null
+  /**
+   * 模型是因为输出长度上限停下来的（`finish_reason: 'length'`），
+   * 也就是结果被截断了。这种结果**不能直接用**，界面上要拦一下。
+   */
+  truncated: boolean
+}
+
+/**
+ * `meta` 的结果：四个 frontmatter 字段。
+ *
+ * 四个字段**各自独立**能用能不用（界面上一个字段一个勾），所以任何一个拿不到都不算失败，
+ * 空着就是「这个字段 AI 没给出可用的值」。特别是 `slug` —— 模型给的值过不了格式校验时
+ * 服务端会直接清空它，而不是让一个非法 slug 混进表单（见 server/ai.ts 的 normalizeSlug）。
+ */
+export interface AiMetaResult {
+  kind: 'meta'
+  title: string
+  slug: string
+  description: string
+  tags: string[]
+  model: string
+  usage: AiUsage | null
+}
+
+export type AiResult = AiTextResult | AiMetaResult

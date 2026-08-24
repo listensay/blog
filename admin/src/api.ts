@@ -5,6 +5,9 @@
  * 页面上直接 message.error(err.message) 就是一句人话。
  */
 import type {
+  AiRequest,
+  AiResult,
+  AiStatus,
   ImageItem,
   PostDetail,
   PostInput,
@@ -72,4 +75,13 @@ export const api = {
       method: 'POST',
       body: blob,
     }),
+
+  /** AI 配好了没（模型名、base URL；密钥不会回传） */
+  aiStatus: () => request<AiStatus>('/api/ai'),
+
+  /**
+   * 跑一个 AI 动作。密钥在服务端，这里只递内容。
+   * 返回值是可辨识联合，靠 `kind` 分支（改写结果 / frontmatter 字段）。
+   */
+  ai: (input: AiRequest) => request<AiResult>('/api/ai', json(input)),
 }
