@@ -1,12 +1,5 @@
-/**
- * tiptap 的扩展配置。单独拎成一个文件（不放在 .vue 里）是为了能在 node 里直接跑
- * 往返测试 —— 编辑器会不会把正文改坏，这是整个后台最需要被验证的一件事。
- *
- * StarterKit 3.x 自带的东西比想象的多：blockquote / bold / bulletList / code /
- * codeBlock / hardBreak / heading / horizontalRule / italic / link / listItem /
- * listKeymap / orderedList / paragraph / strike / trailingNode / underline / undoRedo。
- * 所以这里只需要补 Image 和 Table。
- */
+// tiptap 的扩展配置。单独拎出来（不放 .vue 里）是为了能在 node 里跑往返测试。
+// StarterKit 3.x 自带的东西很多（连 link、underline 都有），所以这里只需要补 Image 和 Table。
 import { Image } from '@tiptap/extension-image'
 import { TableKit } from '@tiptap/extension-table'
 import { Placeholder } from '@tiptap/extensions'

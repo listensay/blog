@@ -1,17 +1,5 @@
-/**
- * AI 结果的前端处理：**先验，再看，才敢用**。
- *
- * 这个文件里没有一行是在调 AI（那在 server/ai.ts）。它做的全是拿到结果之后的事：
- *
- *  1. `checkMarkdownIntegrity` —— 逐项比对改写前后的图片地址、代码块、标题层级、链接。
- *     提示词里已经写死了「这些不许动」，但模型该犯的错还是会犯，而这个仓库里
- *     改错一个图片路径的后果是**线上 404 而本地一切正常**（blog 构建期只有一行 warn）。
- *     所以提示词只是第一道防线，这里是第二道，最后一道是人眼看对比。
- *
- *  2. `diffLines` —— 行级 LCS 差异。不引 diff 库：真正想看清的是「结构有没有被动」，
- *     标题、代码块、图片这些都独占一行，行级差异刚好把它们显示成「没变」，
- *     一眼就能看出模型有没有守规矩。中文句子内部的字词级差异反而是噪音。
- */
+// AI 结果的前端处理（不调 AI，那在 server/ai.ts）：完整性校验 + 行级差异。
+// 提示词管不住模型，而这里改错一个图片路径的后果是线上 404 而本地一切正常，所以要逐项比对。
 import type { AiAction } from '@/types'
 import { codeBlockList, isLanguageLabelLine, proseOnly } from '@/utils/fences'
 import { collectImageSrcs } from '@/utils/markdown'
@@ -63,23 +51,14 @@ export interface IntegrityIssue {
   detail: string
 }
 
-/**
- * 剥掉 Markdown 标记，只留「读者真正读到的文字」，而且**去掉所有空白**。
- *
- * 给「格式修复」用：那个动作只许改标记、不许改文字，所以修完这个值必须一模一样。
- * 去掉空白是刻意的 —— 补中英文之间的空格、重排缩进、换行位置都属于格式改动，
- * 不该被当成「文字变了」；而增删一个词一定会让这个值变。
- *
- * 代码块整块排除（那里面的内容由另一条校验逐块比对，比这个严格得多）。
- */
+// 剥掉 Markdown 标记只留「读者读到的文字」，并去掉所有空白 —— 给「格式修复」比对用，
+// 补空格、重排缩进都算格式改动，而增删一个词一定会让这个值变。代码块整块排除。
 export function proseText(markdown: string): string {
   return (
     proseOnly(markdown)
       .split('\n')
-      /*
-       * 整行只有一个语言名（`Bash`）的行去掉。「修复格式」的活之一就是把这种标签
-       * 合进围栏、删掉那一行 —— 不排除的话，它干对了反而会被判成「文字被删了」。
-       */
+      // 整行只有一个语言名（`Bash`）的行去掉：「修复格式」会把这种标签合进围栏，
+      // 不排除的话它干对了反而会被判成「文字被删了」
       .filter((line) => !isLanguageLabelLine(line))
       .join('\n')
       // 图片整个去掉（alt 允许改），链接只留可见文字
@@ -139,16 +118,8 @@ const sample = (items: string[], max = 3): string => {
   return items.length > max ? `${head.join('、')} 等 ${items.length} 处` : head.join('、')
 }
 
-/**
- * 改写前后比一遍，把「模型动了不该动的东西」列出来。
- *
- * error 级的都是**会让线上出问题或者悄悄改坏文章**的：图片 404、代码被改、目录层级乱、
- * 文字被偷偷润色。warn 级的是「可能是你要的，但确认一下」。
- *
- * `options.proseMustMatch` 给「格式修复」用：那个动作只许改 Markdown 标记，
- * 所以读者读到的文字必须一字不差。
- * `options.headingLevelsMayChange` 也是给它用的 —— 调层级正是它的活。
- */
+// 改写前后比一遍，列出「模型动了不该动的东西」。error = 会让线上出问题或悄悄改坏文章，warn = 确认一下。
+// `proseMustMatch` / `headingLevelsMayChange` 都给「格式修复」用：它只许改标记，但调标题层级正是它的活。
 export function checkMarkdownIntegrity(
   before: string,
   after: string,
@@ -169,13 +140,8 @@ export function checkMarkdownIntegrity(
     })
   }
 
-  /*
-   * ---- 代码块：里面的代码一个字符都不该变。
-   *
-   * 严格程度看动作：改写类动作连围栏上的语言名都不该动（比整块原文），
-   * 而「修复格式」的活里就**包括**给没写语言的围栏补上语言名，
-   * 所以那种情况只比围栏之间的内容。不分开的话，它干对了反而报错。
-   */
+  // ---- 代码块：里面的代码一个字符都不该变。改写类动作连围栏语言名都不该动（比整块原文），
+  // 而「修复格式」的活里包括给围栏补语言名，所以只比围栏之间的内容
   const beforeBlocks = codeBlockList(before)
   const afterBlocks = codeBlockList(after)
   const codeOf = (block: { body: string; raw: string }) =>
@@ -261,10 +227,7 @@ export interface DiffRow {
   text: string
 }
 
-/**
- * 超过这个行数就不算差异了。LCS 是 O(n·m)，两千行就是四百万格 ——
- * 算得出来，但要等，而且这么长的差异人也看不过来，不如直接看两份原文。
- */
+/** 超过这个行数就不算差异：LCS 是 O(n·m)，而且这么长的差异人也看不过来 */
 const DIFF_LINE_LIMIT = 1500
 
 /** 行级 LCS 差异。太长时返回 null，调用方改成并排显示原文 */
@@ -350,14 +313,8 @@ export const changedRowCount = (rows: DiffRow[]): number =>
 
 /* ---------------------------------------------------------------- 插回编辑器 */
 
-/**
- * `mdToHtml` 一定会把内容包成块级元素（一段文字 → `<p>…</p>`）。
- * 但**行内选区**（在一个段落中间选了半句话）要插回去的是行内内容 ——
- * 带着 `<p>` 插进去会把那个段落劈成三段，正文结构就被改了。
- *
- * 所以：整份 HTML 恰好只有一个 `<p>` 时，把它拆掉只留里面的内容；
- * 其余情况（结果里有列表、标题、多段）原样返回，让它按块级插入。
- */
+// 整份 HTML 恰好只有一个 `<p>` 时拆掉它，其余情况原样返回。
+// 行内选区带着 `<p>` 插回去会把那个段落劈成三段，正文结构就被改了。
 export function unwrapSingleParagraph(html: string): string {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
   const children = [...doc.body.children]

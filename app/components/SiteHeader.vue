@@ -1,8 +1,29 @@
 <script setup lang="ts">
 // 图标组件必须留在 Vue 层（site.ts 会被服务端 feed 引入，不能带组件）；
 // 颜色放在 site.ts 里可自由配置，这里用行内样式应用任意 hex
-import { IconArticle, IconCategory, IconHome, IconLink, IconTag, IconUser } from '@tabler/icons-vue'
-import type { NavItem } from '~/utils/site'
+import {
+  IconArchive,
+  IconArticle,
+  IconBook,
+  IconCategory,
+  IconCode,
+  IconCoffee,
+  IconFileText,
+  IconHeart,
+  IconHome,
+  IconLink,
+  IconMail,
+  IconMessage,
+  IconPhoto,
+  IconRss,
+  IconSparkles,
+  IconStar,
+  IconTag,
+  IconTerminal2,
+  IconUser,
+  IconWorld,
+} from '@tabler/icons-vue'
+import type { NavIcon } from '~/utils/site'
 
 const route = useRoute()
 const titleColors = ['#4285f4', '#ea4335', '#f9ab00', '#34a853', '#a855f7']
@@ -12,13 +33,28 @@ const isActive = (to: string) => {
   return route.path === to || route.path.startsWith(to + '/')
 }
 
-const navIcons: Record<NavItem['icon'], typeof IconHome> = {
+// 图标名 → 组件，必须覆盖 NAV_ICONS 的每一个值，漏一个直接类型报错
+const navIcons: Record<NavIcon, typeof IconHome> = {
   home: IconHome,
   articles: IconArticle,
   categories: IconCategory,
   tags: IconTag,
   about: IconUser,
   links: IconLink,
+  page: IconFileText,
+  book: IconBook,
+  star: IconStar,
+  heart: IconHeart,
+  mail: IconMail,
+  message: IconMessage,
+  photo: IconPhoto,
+  code: IconCode,
+  rss: IconRss,
+  world: IconWorld,
+  sparkles: IconSparkles,
+  coffee: IconCoffee,
+  terminal: IconTerminal2,
+  archive: IconArchive,
 }
 
 /** #rrggbb → rgba(..., alpha)，用于激活态的淡色底色 */
@@ -32,8 +68,8 @@ function hexToRgba(hex: string, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
-// 手机上导航是一条横向滑动的轨道，六项放不下。当前页对应的那一项可能被滑到了
-// 视口外——看不见「我在哪」的导航等于没有导航，所以每次换路由把它挪到中间。
+// 手机上导航是一条横向滑动的轨道，项数一多当前页那一项可能被滑到视口外，
+// 看不见「我在哪」的导航等于没有导航，所以每次换路由把它挪到中间
 const track = ref<HTMLElement>()
 
 function centerActiveItem(smooth: boolean) {
@@ -64,9 +100,8 @@ onMounted(() => {
 
 <template>
   <header class="sticky top-0 z-40 border-b border-white/60 bg-white/55 shadow-sm shadow-slate-900/5 backdrop-blur-xl backdrop-saturate-150">
-    <!-- 手机：标题居中一行、导航横滑一行；sm 起并成一行，标题回到左侧。
-         py 2.5 + text-xl 让双行头部约 84px 高——仍在 prose 标题 scroll-mt-24
-         （96px）之下，锚点跳转不会被头部盖住。再加高就得动那个值 -->
+    <!-- 手机：标题居中一行、导航横滑一行；sm 起并成一行。双行头部约 84px 高，
+         仍在 prose 标题 scroll-mt-24（96px）之下，再加高锚点跳转就会被头部盖住 -->
     <div
       class="mx-auto flex max-w-5xl flex-col gap-1 px-4 py-2.5 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-0"
     >

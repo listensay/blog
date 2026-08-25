@@ -1,11 +1,6 @@
 <script setup lang="ts">
-/**
- * 行级差异视图。AI 改写和 Markdown 修复两个弹窗共用。
- *
- * 为什么用行级而不是字词级：真正想确认的是「**结构**有没有被动」。标题、代码块、
- * 图片这些都独占一行，行级差异刚好把它们显示成「没变」，一眼就能看出来。
- * 中文句子内部的字词级差异反而是噪音。
- */
+// 行级差异视图，AI 改写和 Markdown 修复共用
+// 用行级是为了看结构有没有被动：标题、代码块、图片各占一行，没变就一眼看得出
 import { computed, ref } from 'vue'
 
 import { type DiffRow, changedRowCount, collapseDiff, diffLines } from '@/utils/ai'

@@ -1,19 +1,30 @@
 <script setup lang="ts">
-/**
- * 外壳：顶栏 + 路由出口。
- *
- * 顶栏一直显示正在编辑哪个 blog 仓库 —— 这个后台直接改磁盘上的文件，
- * 「我在改哪个目录」是随时都该看得见的信息。
- */
-import { onMounted, ref } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+/** 外壳：顶栏（三个分区 + 当前仓库路径）+ 路由出口 */
+// 路径一直显示着，因为这个后台直接改磁盘上的文件
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 
 import { api } from '@/api'
 import type { WorkspaceInfo } from '@/types'
 
+const route = useRoute()
+
 const info = ref<WorkspaceInfo | null>(null)
 const loadError = ref('')
+
+/** 三个分区。`match` 按前缀判断，编辑页也要让对应的分区亮着 */
+const sections = [
+  {
+    name: 'posts',
+    label: '文章',
+    match: (path: string) => path === '/' || path.startsWith('/new') || path.startsWith('/edit'),
+  },
+  { name: 'pages', label: '页面', match: (path: string) => path.startsWith('/pages') },
+  { name: 'menu', label: '菜单', match: (path: string) => path.startsWith('/menu') },
+] as const
+
+const activeSection = computed(() => sections.find((item) => item.match(route.path))?.name ?? '')
 
 onMounted(async () => {
   try {
@@ -30,13 +41,30 @@ onMounted(async () => {
       <a-layout-header class="topbar">
         <!-- 内包裹和下面的 .content 用同一组宽度，顶栏两端才和正文对齐（见 --shell-max / --shell-pad） -->
         <div class="topbar-inner">
-          <RouterLink to="/" class="brand">blog 文章管理</RouterLink>
+          <div class="topbar-left">
+            <RouterLink to="/" class="brand">blog 管理</RouterLink>
+
+            <nav class="sections">
+              <RouterLink
+                v-for="item in sections"
+                :key="item.name"
+                :to="{ name: item.name }"
+                class="section"
+                :class="{ 'section-active': activeSection === item.name }"
+              >
+                {{ item.label }}
+              </RouterLink>
+            </nav>
+          </div>
 
           <div class="topbar-meta">
             <template v-if="info">
               <span class="mono blog-root" :title="info.blogRoot">{{ info.blogRoot }}</span>
               <a-divider type="vertical" />
-              <span class="counts">{{ info.postCount }} 篇文章 · {{ info.imageCount }} 张图片</span>
+              <span class="counts">
+                {{ info.postCount }} 篇文章 · {{ info.pageCount }} 个页面 ·
+                {{ info.imageCount }} 张图片
+              </span>
             </template>
             <a-tag v-else-if="loadError" color="error">连不上本地接口</a-tag>
           </div>
@@ -71,11 +99,7 @@ onMounted(async () => {
   min-height: 100%;
   background: #f5f5f5;
 
-  /*
-   * 顶栏和正文共用这一组宽度。分成两个变量、而不是各写一遍 24px + 1440px，
-   * 是因为「顶栏两端要和正文对齐」这件事只有同时改两处才成立 ——
-   * 写成变量之后改一个地方就不会漏。
-   */
+  /* 顶栏和正文共用这一组宽度：写成变量，改一处就不会漏掉另一处、让两端对不上 */
   --shell-max: 1440px;
   --shell-pad: 24px;
 }
@@ -102,14 +126,49 @@ onMounted(async () => {
   padding: 0 var(--shell-pad);
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
 .brand {
   font-size: 15px;
   font-weight: 600;
   color: #1f1f1f;
+  white-space: nowrap;
 }
 
 .brand:hover {
   color: #1677ff;
+}
+
+.sections {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 分区切换做成淡色胶囊而不是 antd 的按钮组：它是导航，不是一个操作 */
+.section {
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: #595959;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.section:hover {
+  background: #f5f5f5;
+  color: #1f1f1f;
+}
+
+.section-active,
+.section-active:hover {
+  background: #e6f4ff;
+  color: #1677ff;
+  font-weight: 500;
 }
 
 .topbar-meta {
@@ -122,7 +181,7 @@ onMounted(async () => {
 
 /* 路径可能很长；直接尾部省略，鼠标悬停有完整路径 */
 .blog-root {
-  max-width: 40vw;
+  max-width: 30vw;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;

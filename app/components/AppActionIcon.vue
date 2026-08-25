@@ -1,10 +1,6 @@
 <script setup lang="ts">
-// 仿 Mantine ActionIcon 的 Vue 实现：light 变体 + 圆形（radius="xl"）。
-// Mantine 本身是 React 库，Vue 项目里用这个组件替代，用法一致：
-// <AppActionIcon label="邮箱" href="mailto:..." color="#ea4335"><Icon /></AppActionIcon>
-//
-// color 对应 Mantine ActionIcon 的 color 属性：任意 hex 主题色，图标常驻此色，
-// hover 时底色/描边用 color-mix 生成同色淡变体。颜色由调用方（site.ts 配置）传入。
+// 仿 Mantine ActionIcon 的 Vue 实现：light 变体 + 圆形，用法 <AppActionIcon label href color>。
+// color 是任意 hex 主题色，图标常驻此色，hover 时底色/描边用 color-mix 生成同色淡变体
 const props = withDefaults(defineProps<{
   /** 无障碍标签（必填，对应 Mantine ActionIcon 的 aria-label） */
   label: string

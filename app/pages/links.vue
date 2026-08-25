@@ -1,8 +1,25 @@
 <script setup lang="ts">
-// NuxtLink 得从 #components 显式引入。它是编译期自动导入的，并没有注册成全局组件，
-// 模板里写 resolveComponent('NuxtLink') 解析不到，会原样吐出一个 <NuxtLink> 标签
-// ——浏览器当成未知元素，内链就点不动了。
+/** 友情链接页，内容来自 content/pages/links.md；没走 [...page].vue 通吃路由是为了下面这组卡片 */
+// NuxtLink 要从 #components 显式引入：它没注册成全局组件，resolveComponent 解析不到，
+// 会原样吐出 <NuxtLink> 标签，内链就点不动了
 import { NuxtLink } from '#components'
+
+const { data: page, status, error } = await useAsyncData(
+  'links-page',
+  () => queryCollection('pages').path('/links').first(),
+  { lazy: true },
+)
+
+const { loading } = useQueryState(status, error)
+
+// friends 在 schema 里有 `.default([])`，但页面文件缺失时 page 整个是 null
+const friends = computed(() => page.value?.friends ?? [])
+
+// 正文里有没有东西。不能直接判 page.body：那是 minimark 结构，空正文也是个对象，永远为真
+const hasBody = computed(() => {
+  const value = page.value?.body?.value
+  return Array.isArray(value) && value.length > 0
+})
 
 // 外链要新窗口打开并加 noopener，内链走前端路由
 const isExternal = (url: string) => /^https?:\/\//.test(url)
@@ -11,19 +28,38 @@ const isExternal = (url: string) => /^https?:\/\//.test(url)
 const initial = (name: string) => [...name][0] ?? '?'
 
 useSeo({
-  title: '友情链接',
-  description: `${siteConfig.title}交换的友情链接`,
+  title: () => page.value?.title ?? '友情链接',
+  description: () => page.value?.description ?? `${siteConfig.title}交换的友情链接`,
 })
 </script>
 
 <template>
   <div class="py-8 sm:py-16">
     <header class="border-b border-slate-200 pb-6 sm:pb-8">
-      <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">友情链接</h1>
+      <template v-if="loading">
+        <div class="skeleton h-9 w-40" aria-hidden="true" />
+        <div class="skeleton mt-4 h-6 w-3/5" aria-hidden="true" />
+      </template>
+      <template v-else>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          {{ page?.title ?? '友情链接' }}
+        </h1>
+        <p v-if="page?.description" class="mt-3 text-lg text-slate-600">
+          {{ page.description }}
+        </p>
+      </template>
     </header>
 
-    <ul v-if="friendLinks.length" class="mt-8 grid gap-4 sm:grid-cols-2">
-      <li v-for="(link, i) in friendLinks" :key="link.url" v-reveal="i">
+    <!-- 说明文字在卡片前面 -->
+    <div v-if="loading" class="prose-cn mt-6 sm:mt-10">
+      <ProseSkeleton :paragraphs="2" />
+    </div>
+    <div v-else-if="hasBody && page" class="prose-cn mt-6 sm:mt-10">
+      <ContentRenderer :value="page" />
+    </div>
+
+    <ul v-if="friends.length" class="mt-8 grid gap-4 sm:grid-cols-2">
+      <li v-for="(link, i) in friends" :key="link.url" v-reveal="i">
         <component
           :is="isExternal(link.url) ? 'a' : NuxtLink"
           v-bind="isExternal(link.url)
@@ -59,6 +95,8 @@ useSeo({
         </component>
       </li>
     </ul>
-    <p v-else class="py-10 text-slate-500 sm:py-12">还没有友情链接。</p>
+    <p v-else-if="!loading" class="py-10 text-slate-500 sm:py-12">
+      还没有友情链接。
+    </p>
   </div>
 </template>

@@ -1,11 +1,7 @@
 const WINDOW_MS = 24 * 3600_000
 
-/**
- * 记一次浏览。同一访客同一篇文章 24 小时内只计一次，
- * 靠 visitor_views 的 (slug, visitor) 复合主键去重。
- *
- * 由前端在挂载后调用，而不是在 SSR 里计数——否则爬虫和预取请求都会被算进去。
- */
+// 记一次浏览：同一访客同一篇 24 小时内只计一次，靠 visitor_views 的复合主键去重。
+// 必须由前端挂载后调用，放进 SSR 会把爬虫和预取请求也算进去
 export default defineEventHandler(async (event) => {
   const slug = requireSlug(event)
   await assertPostExists(event, slug)

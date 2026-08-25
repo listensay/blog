@@ -1,11 +1,6 @@
 <script setup lang="ts">
-/**
- * 文章列表：搜索、按分类/目录/草稿筛选、进编辑页、删除。
- *
- * 列表直接读磁盘，所以「刷新」是个显式按钮 —— 你在 Typora 里改完文章回来点一下就行，
- * 不做文件监听：Vite 的 watcher 只盯 admin 自己这个目录，跨到 ../content 去监听
- * 容易连带触发整页刷新，得不偿失。
- */
+/** 文章列表：搜索、按分类/目录/草稿筛选、进编辑页、删除 */
+// 直接读磁盘，所以「刷新」是个显式按钮；不做文件监听，跨到 ../content 监听容易触发整页刷新
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'

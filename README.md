@@ -171,3 +171,63 @@ tags:
 
 首页默认不显示 `Docs` 分类。需要调整时修改 `app/utils/site.ts` 中的
 `home.hiddenCategories`；这里填写分类的英文 slug，例如 `docs`、`python`。
+
+## 固定页
+
+文章之外的页面（关于、友情链接……）放在 `content/pages/`，**文件名就是网址**：
+
+```text
+content/pages/about.md   →  /about
+content/pages/links.md   →  /links
+```
+
+渲染由 `app/pages/[...page].vue` 这个通吃路由负责，所以**加一个 md 文件就有一个页面**，
+不用写 .vue。文件名会原样进 URL，因此只用小写字母、数字和连字符（中文文件名会变成
+`/%E5%85%B3%E4%BA%8E` 那种网址）。
+
+想给某个页面做特殊排版，就在 `app/pages/` 下写一个同名 .vue —— 静态路由的优先级比通吃
+路由高，会盖过它。`/links` 就是这么干的（它要渲染友链卡片）。反过来说，**别建和站点已有
+页面同名的固定页**（`blog`、`categories`、`tags`、`admin`、`index`），那个 md 文件永远
+不会被访问到，而且不会有任何报错。后台会拦住这种文件名。
+
+固定页的 frontmatter 里**不要写 `slug`**：页面的网址就是文件名，写了也不会生效
+（`slug-path` transformer 只管 blog 集合）。
+
+友情链接的条目写在 `content/pages/links.md` 的 frontmatter 里：
+
+```yaml
+---
+title: 友情链接
+friends:
+  - name: 某个博客
+    url: https://example.com
+    description: 一句话
+    avatar: /images/x.png
+---
+```
+
+`avatar` 要写**站点上真实存在的地址**（`/images/x.png`）或 http 链接。frontmatter 里只有
+`cover` 会被 `image-src` transformer 改写成站点 URL，`avatar` 不会 —— 写相对路径的话本地
+编辑器里看得见图、线上是 404。
+
+## 顶部菜单
+
+菜单数据在 `content/data/nav.json`，`app/utils/site.ts` 把它 import 进来当 `siteConfig.nav`：
+
+```json
+[{ "label": "About", "to": "/about", "icon": "about", "color": "#06b6d4" }]
+```
+
+`icon` 的取值列在 `app/utils/site.ts` 的 `NAV_ICONS` 里，每一个都要在 `SiteHeader.vue` 的
+`navIcons` 映射表里有对应的 Tabler 图标（那张表的类型是 `Record<NavIcon, …>`，漏一个直接
+类型报错）。
+
+菜单是静态 import 进来的（每个页面都要渲染，运行时查一次不值得），所以**这个 JSON 是
+站点的硬依赖，别删** —— 解析不到的话连 `npm run dev` 都起不来。里面的坏数据不会把站点
+带崩：图标名或颜色不认识会换成兜底值，文字或路径空着的那一条会被整个丢掉
+（见 `site.ts` 的 `toNavItem`）。
+
+## 本机管理后台
+
+`admin/` 是一个独立的 Vue + Vite 应用，用来管文章、固定页、菜单和图片，**只在本机跑、
+不部署**。详见 [admin/README.md](admin/README.md)。

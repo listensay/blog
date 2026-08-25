@@ -1,10 +1,4 @@
-/**
- * 站点地图：/sitemap.xml
- *
- * 和 feed.xml 同一套写法（直接查 @nuxt/content、同样的 draft 过滤），
- * 但覆盖面更全：首页、固定页、文章、以及由文章聚合出来的分类页和标签页。
- * robots.txt 里指向这里。
- */
+// 站点地图 /sitemap.xml：首页、固定页、文章，以及由文章聚合出来的分类页和标签页
 import { queryCollection } from '@nuxt/content/server'
 import { isoDate } from '../../app/utils/date'
 import { siteConfig } from '../../app/utils/site'
@@ -32,11 +26,8 @@ function taxonomyUrl(prefix: string, name: string) {
   return `${siteConfig.url}/${prefix}/${taxonomySlug(name, kind)}`
 }
 
-/**
- * lastmod 只要日期。文章日期是墙上时间字符串（`YYYY-MM-DD HH:mm`），
- * 交给 isoDate 按字符串取前 10 位，不经过 Date —— 直接 `new Date()` 在
- * Workers（UTC）和本地会得到不同的日期。
- */
+// lastmod 只要日期：按字符串取前 10 位，不经过 Date ——
+// 直接 `new Date()` 在 Workers（UTC）和本地会得到不同的日期
 function isoDay(input: string | Date | undefined) {
   return isoDate(input) || undefined
 }
@@ -48,6 +39,9 @@ export default defineEventHandler(async (event) => {
     .select('title', 'path', 'date', 'category', 'tags')
     .all()
 
+  // 固定页从内容库里枚举，不写死 —— 漏一个不会报错，只是那页永远不进 sitemap
+  const pages = await queryCollection(event, 'pages').select('path').all()
+
   // 最新一篇的日期当作列表页的 lastmod —— 列表页内容就是随它变的
   const newest = isoDay(posts[0]?.date)
 
@@ -57,9 +51,14 @@ export default defineEventHandler(async (event) => {
     { loc: `${siteConfig.url}/blog`, lastmod: newest, priority: '0.9' },
     { loc: `${siteConfig.url}/categories`, lastmod: newest, priority: '0.6' },
     { loc: `${siteConfig.url}/tags`, lastmod: newest, priority: '0.6' },
-    { loc: `${siteConfig.url}/about`, priority: '0.5' },
-    { loc: `${siteConfig.url}/links`, priority: '0.3' },
   ]
+
+  for (const page of pages) {
+    // 跳过 `/`：首页上面已经单独列了一条
+    if (page.path && page.path !== '/') {
+      entries.push({ loc: `${siteConfig.url}${page.path}`, priority: '0.5' })
+    }
+  }
 
   for (const post of posts) {
     entries.push({ loc: `${siteConfig.url}${post.path}`, lastmod: isoDay(post.date), priority: '0.8' })

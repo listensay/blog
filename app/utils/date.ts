@@ -1,21 +1,5 @@
-/*
- * 日期格式化。
- *
- * 这里有两类完全不同的输入，混着处理必出错，所以显式分开：
- *
- * 1. **文章的 `date`** —— frontmatter 里写的是「墙上时间」字符串
- *    `YYYY-MM-DD HH:mm`（作者本地时区，见 admin/README.md）。
- *    这类输入**一步都不经过 `Date`**，直接按字符串拆成年月日时分再拼回去。
- *
- *    为什么不能经过 Date：`new Date('2026-08-19')` 按 UTC 解析，
- *    `new Date('2026-08-19 09:30')` 按**本地**解析，同一个函数会给出不同的日期；
- *    而且站点 SSR 跑在 Cloudflare Workers 上（时区是 UTC）、浏览器在 +08，
- *    「构造本地 Date 再按某个时区格式化」在两边算出来的结果不一样 ——
- *    既会 hydration 不一致，显示的时刻也是错的。
- *
- * 2. **评论的 `createdAt`** —— D1 里存的是完整 ISO 时间戳（真实瞬间，带 Z）。
- *    这类继续走 `new Date()`，行为和以前一致。
- */
+// 日期格式化。文章的 date 是「墙上时间」字符串，一步都不经过 Date——SSR 在 UTC、浏览器在 +08，
+// 经过 Date 既会 hydration 不一致、时刻也是错的；评论的 createdAt 是完整 ISO，继续走 new Date()
 import { siteConfig } from './site'
 
 type DateInput = string | number | Date | undefined | null
@@ -64,10 +48,7 @@ function toDate(input: DateInput): Date | null {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/**
- * “2026年8月19日”。
- * 固定用 zh-CN + UTC，服务端和客户端结果一致，不会 hydration 报错。
- */
+/** “2026年8月19日”。固定用 zh-CN + UTC，服务端和客户端结果一致，不会 hydration 报错 */
 export function formatDate(input: DateInput): string {
   const wall = parseWallClock(input)
   if (wall) return `${wall.year}年${wall.month}月${wall.day}日`
@@ -82,15 +63,8 @@ export function formatDate(input: DateInput): string {
   }).format(d)
 }
 
-/**
- * “2026年8月19日 09:30”。文章的发布时间用这个。
- *
- * **`00:00` 不显示时刻**，退化成 formatDate。因为 `00:00` 在这个仓库里就是
- * 「只知道日期、没记时刻」的占位值 —— 老文章从纯日期迁移过来时统一补的就是它
- * （见 admin/README.md）。真按 0 点发的文章会因此少显示一个时刻，这个代价换来的是
- * 几十篇老文章的页面上不会整齐地挂一排没有意义的 00:00。
- * 想让 00:00 也显示出来，把下面那行 `isMidnight` 判断删掉即可。
- */
+// “2026年8月19日 09:30”。00:00 是「只知道日期、没记时刻」的占位值，退化成 formatDate，
+// 不然几十篇老文章会整齐挂一排没意义的 00:00；想显示就删掉下面 isMidnight 那行判断
 export function formatDateTime(input: DateInput): string {
   const wall = parseWallClock(input)
   if (!wall || !wall.hasTime) return formatDate(input)
@@ -110,12 +84,8 @@ export function isoDate(input: DateInput): string {
   return d ? d.toISOString().slice(0, 10) : ''
 }
 
-/**
- * 完整时间戳，给 <time datetime>、og:published_time、JSON-LD 用。
- *
- * 文章的墙上时间要补上站点时区偏移才是一个明确的瞬间（siteConfig.utcOffset），
- * 不能直接当成 UTC —— 那会让 SEO 里的发布时间差 8 小时。
- */
+// 完整时间戳，给 <time datetime>、og:published_time、JSON-LD 用。
+// 墙上时间要补上 siteConfig.utcOffset，当成 UTC 会让 SEO 里的发布时间差 8 小时
 export function isoDateTime(input: DateInput): string {
   const wall = parseWallClock(input)
   if (wall) {
@@ -127,10 +97,7 @@ export function isoDateTime(input: DateInput): string {
   return d ? d.toISOString() : ''
 }
 
-/**
- * “刚刚 / 12 分钟前 / 3 小时前 / 5 天前”，超过一个月就显示日期。
- * 结果依赖“现在”，只能在客户端调用；服务端渲染请用 formatDate。
- */
+/** “刚刚 / 12 分钟前 / 5 天前”，超过一个月显示日期。依赖“现在”，只能客户端调用，SSR 用 formatDate */
 export function relativeTime(input: DateInput, now: number = Date.now()): string {
   // 文章的墙上时间先补上站点时区，才能和“现在”做减法
   const d = toDate(parseWallClock(input) ? isoDateTime(input) : input)
@@ -150,10 +117,7 @@ export function relativeTime(input: DateInput, now: number = Date.now()): string
   return formatDate(d)
 }
 
-/**
- * 读者本地时区的完整时间，用于 title 悬浮提示。
- * 同样只在客户端调用——服务端时区和读者的不一样。
- */
+/** 读者本地时区的完整时间，用于 title 悬浮提示。只在客户端调用，服务端时区和读者的不一样 */
 export function localDateTime(input: DateInput): string {
   const d = toDate(parseWallClock(input) ? isoDateTime(input) : input)
   if (!d) return ''

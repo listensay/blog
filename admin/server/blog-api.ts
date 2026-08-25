@@ -1,22 +1,16 @@
-/**
- * 把「读写 blog 仓库」这件事做成一个 Vite 插件。
- *
- * 这样 `npm run dev` 一条命令就够了：Vite 既是前端 dev server，也是唯一那个能碰
- * 文件系统的进程，不用另起 Express、不用配 proxy、也完全不动 blog 项目的代码。
- *
- * 只在 dev（和 preview）里挂载 —— `apply: 'serve'`。这个后台按设计**不上线**：
- * 接口没有任何鉴权，谁能访问这个端口就能改仓库里的文件。
- */
+/** 读写 blog 仓库的本地接口，做成 Vite 插件挂在中间件链上；`apply: 'serve'` 不进构建产物 */
 import type { Connect, Plugin, ViteDevServer } from 'vite'
 import { loadEnv } from 'vite'
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
 
-import type { AiRequest, PostInput, WorkspaceInfo } from '../src/types.ts'
+import type { AiRequest, PageInput, PostInput, WorkspaceInfo } from '../src/types.ts'
 import { type AiConfig, aiStatus, resolveAiConfig, runAi } from './ai.ts'
 import { PUBLIC_MOUNT, listImages, saveImage } from './images.ts'
 import { HttpError, notFound, parseUrl, readBody, readJson, requireQuery, sendJson } from './http.ts'
+import { readNav, writeNav } from './nav.ts'
+import { createPage, listPages, readPage, trashPage, updatePage } from './pages.ts'
 import { createPost, listPosts, readPost, trashPost, updatePost } from './posts.ts'
 import { type Workspace, isInside, resolveWorkspace } from './paths.ts'
 
@@ -41,10 +35,15 @@ type Handler = (
 /** `GET /api/posts` 之类的路由表，key 是 `METHOD /path` */
 const routes: Record<string, Handler> = {
   'GET /workspace': async (_req, res, { ws }) => {
-    const [{ posts }, images] = await Promise.all([listPosts(ws), listImages(ws)])
+    const [{ posts }, { pages }, images] = await Promise.all([
+      listPosts(ws),
+      listPages(ws),
+      listImages(ws),
+    ])
     const info: WorkspaceInfo = {
       blogRoot: ws.blogRoot,
       postCount: posts.length,
+      pageCount: pages.length,
       imageCount: images.length,
     }
     sendJson(res, 200, info)
@@ -73,6 +72,42 @@ const routes: Record<string, Handler> = {
   'DELETE /post': async (req, res, { ws }) => {
     const file = requireQuery(parseUrl(req), 'file')
     sendJson(res, 200, await trashPost(ws, file))
+  },
+
+  // 固定页（content/pages/**.md）。和文章分开两套接口：字段和校验完全不同
+  'GET /pages': async (_req, res, { ws }) => {
+    sendJson(res, 200, await listPages(ws))
+  },
+
+  'GET /page': async (req, res, { ws }) => {
+    const file = requireQuery(parseUrl(req), 'file')
+    sendJson(res, 200, await readPage(ws, file))
+  },
+
+  'POST /page': async (req, res, { ws }) => {
+    const input = await readJson<PageInput>(req)
+    sendJson(res, 201, await createPage(ws, input))
+  },
+
+  'PUT /page': async (req, res, { ws }) => {
+    const file = requireQuery(parseUrl(req), 'file')
+    const input = await readJson<PageInput>(req)
+    sendJson(res, 200, await updatePage(ws, file, input))
+  },
+
+  'DELETE /page': async (req, res, { ws }) => {
+    const file = requireQuery(parseUrl(req), 'file')
+    sendJson(res, 200, await trashPage(ws, file))
+  },
+
+  // 顶部菜单（content/data/nav.json），整份数组一起存
+  'GET /nav': async (_req, res, { ws }) => {
+    sendJson(res, 200, await readNav(ws))
+  },
+
+  'PUT /nav': async (req, res, { ws }) => {
+    const input = await readJson<{ items: unknown }>(req)
+    sendJson(res, 200, await writeNav(ws, input.items))
   },
 
   'GET /images': async (_req, res, { ws }) => {
@@ -209,15 +244,7 @@ export function blogAdminApi(): Plugin {
       // config.root 就是 admin 目录；blog 根默认取它的上一级
       const ws = resolveWorkspace(config.root)
 
-      /*
-       * AI 的密钥从 `.env.local` 之类的文件读，所以要用 Vite 的 loadEnv ——
-       * Vite 默认只把 `VITE_` 开头的变量喂给**浏览器**，而这层跑在 Node 里，
-       * `process.env` 根本看不到 .env 文件的内容。
-       *
-       * 前缀限定成 `ADMIN_`：只有明确给这个后台用的变量会被读进来，
-       * 不会顺手把 blog 仓库或者别处的密钥也捞进这个进程。
-       * 真实环境变量（`ADMIN_AI_API_KEY=xx npm run dev`）优先级更高，放在后面覆盖。
-       */
+      // 用 loadEnv 读 `.env.local`：这层跑在 Node 里，process.env 看不到 .env 文件的内容
       const fromFiles = loadEnv(config.mode, config.envDir, 'ADMIN_')
       const ai = resolveAiConfig({ ...fromFiles, ...process.env })
 

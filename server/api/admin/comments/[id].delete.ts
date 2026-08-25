@@ -1,7 +1,4 @@
-/**
- * 删评论。默认软删（hidden = 1），读接口立刻看不到，但还能恢复；
- * 带 ?purge=1 才真删除。
- */
+// 删评论：默认软删（hidden = 1），读接口立刻看不到但还能恢复；带 ?purge=1 才真删除
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
 

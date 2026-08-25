@@ -41,16 +41,8 @@ const { data: post, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
-/**
- * header 的底：有封面就铺封面，没有就用按路径哈希取的纯色。
- *
- * 刻意用 CSS 背景图而不是 `<img>`：header 在 `.prose-cn` 容器里面，而正文灯箱是
- * `proseEl.querySelectorAll('img')` 收集图片的（见 useProseLightbox），放一个 `<img>`
- * 进去会让封面被当成正文配图收进画廊、还排在第一张。封面在这里是装饰而不是内容，
- * 用背景图正好，SEO 那边也不吃亏 —— og:image 和 JSON-LD 已经单独用了 cover。
- *
- * 上面压一层暗色渐变：封面可能是白底截图，不压的话标题那几个白字就没法看了。
- */
+// header 的底：有封面就铺封面，没有就用按路径哈希取的纯色。刻意用 CSS 背景图而不是 <img>，
+// 否则封面会被正文灯箱当成配图收进画廊；压一层暗色渐变，白底截图上标题的白字才看得清
 const headerStyle = computed(() => {
   const cover = post.value?.cover
   if (!cover) return { backgroundColor: headerColor.value }

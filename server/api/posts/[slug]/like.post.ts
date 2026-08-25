@@ -1,7 +1,4 @@
-/**
- * 点赞 / 取消点赞。toggle 语义：一个访客一篇文章只算一次，再点一次就撤回。
- * post_likes 的 (slug, visitor) 复合主键保证不会重复计数。
- */
+// 点赞 / 取消点赞（toggle）：一个访客一篇只算一次，post_likes 的复合主键保证不重复计数
 export default defineEventHandler(async (event) => {
   const slug = requireSlug(event)
   await assertPostExists(event, slug)

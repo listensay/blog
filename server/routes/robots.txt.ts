@@ -1,9 +1,4 @@
-/**
- * /robots.txt
- *
- * 写成服务端路由而不是 public/robots.txt，是为了让域名只有 site.ts 一个来源 ——
- * 换域名时不用记得还有个静态文件里硬编码着旧地址。
- */
+// /robots.txt 写成服务端路由而不是静态文件，域名只有 site.ts 一个来源，换域名不会漏改
 import { siteConfig } from '../../app/utils/site'
 
 export default defineEventHandler((event) => {

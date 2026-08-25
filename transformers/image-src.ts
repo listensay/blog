@@ -1,19 +1,7 @@
 import { defineTransformer } from '@nuxt/content'
 
-/**
- * 把正文里的**相对**图片路径改写成站点 URL。
- *
- * 背景：图片放在 `public/images/`，前端要的是站点绝对路径 `/images/x.png`，
- * 但这个写法在本地编辑器里预览不出来 —— Typora 把前导 `/` 当文件系统根，
- * Obsidian 也不认带前导斜杠的库内路径。两边都原生认的只有相对路径。
- *
- * 所以约定：**正文写相对路径** `![](../../public/images/x.png)`，
- * 写稿时 Typora / Obsidian / VS Code / GitHub 都能直接看到图；
- * 构建时由本 transformer 解析成 `/images/x.png` 存进内容库。
- *
- * 已经能用的写法（`/images/x.png`、`https://…`、`data:…`）一律不动，
- * 所以老文章不用跟着改。
- */
+// 正文写相对图片路径（`![](../../public/images/x.png)`），本地编辑器才预览得出来；
+// 构建时改写成站点 URL `/images/x.png`。已经能用的写法（`/`、http(s)、data:）一律不动
 
 /** content 目录名（相对项目根）。file.id 首段是集合名，其余是相对 content/ 的路径。 */
 const CONTENT_DIR = 'content'
@@ -30,21 +18,13 @@ const EXTRA_ATTRS = ['poster'] as const
 /** minimark 节点：元素是 `[tag, props, ...children]` 数组，文本是字符串 */
 type MinimarkNode = string | [string, Record<string, unknown>, ...MinimarkNode[]]
 
-/**
- * 已经是可直接使用的 URL：协议（http:、data:、mailto:）、协议相对 `//`、
- * 站点绝对路径 `/`、纯锚点 `#`。这些不需要解析。
- */
+/** 已经能直接用的 URL：带协议、协议相对 `//`、站点绝对路径 `/`、纯锚点 `#` —— 不必解析 */
 function isUsableUrl(src: string): boolean {
   return /^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#)/i.test(src)
 }
 
-/**
- * 纯字符串版 posix 路径规范化。不引 node:path —— transformer 由内容构建流程调用，
- * 不保证一定在 Node 环境里跑。返回 null 表示 `..` 越过了项目根。
- *
- * 不需要先解码 percent-encoding：markdown parser 会把中文和空格编码成
- * `%E4%B8%AD` / `%20`，而 `.`、`..`、`/` 这些参与解析的字符都是 ASCII 原样保留的。
- */
+// 纯字符串版 posix 路径规范化，不引 node:path（transformer 不保证跑在 Node 里）。
+// 返回 null 表示 `..` 越过了项目根。不用先解码 percent-encoding：`.` `..` `/` 都是 ASCII
 function normalizePath(path: string): string | null {
   const out: string[] = []
   for (const seg of path.split('/')) {
@@ -59,13 +39,7 @@ function normalizePath(path: string): string | null {
   return out.join('/')
 }
 
-/**
- * 把相对路径解析成站点 URL。
- *
- * 只有解析结果**确实落在 public/ 里**才改写。其余情况保持原样并告警 ——
- * 这一条别放宽：早先偷懒版本会把 `../nope/missing.png` 直接拼成
- * `/nope/missing.png` 且不报警，正是「本地预览有图、线上一片空白」那类坑。
- */
+/** 相对路径 → 站点 URL。只有确实落在 public/ 里才改写，否则原样保留并告警 */
 function toSiteUrl(src: string, fileDir: string, warn: (msg: string) => void): string {
   if (!src || isUsableUrl(src)) return src
 

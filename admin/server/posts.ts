@@ -1,24 +1,21 @@
-/**
- * 文章的增删改查。落到磁盘上就是 `blog/content/blog/**.md` 这些文件。
- *
- * 几条刻意的选择：
- *  - 删除是**挪到 admin/.trash/**，不是 unlink。本地工具误点一下代价太大。
- *  - 改名 / 换目录走「写新文件 + 删旧文件」，中间任何一步失败都不会两头都没了。
- *  - slug 撞车会被拦住。blog 的 slug-path transformer 用 slug 决定 URL，
- *    同目录两篇同 slug 会直接互相覆盖，而且构建期一声不响（见 blog/transformers/slug-path.ts）。
- */
-import { readFile, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises'
+// 文章的增删改查，落盘就是 `blog/content/blog/**.md`。删除是挪进 admin/.trash/，不是 unlink
+// 改名走「先写新文件再删旧的」；slug 撞车会被拦住，否则同目录两篇同 slug 会静默互相覆盖
+import { readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import type { PostDetail, PostInput, PostListResponse, PostSummary } from '../src/types.ts'
 import {
+  POST_KEY_ORDER,
   buildFrontmatter,
+  countBodyImages,
   normalizeFrontmatter,
   serializeFile,
   splitFrontmatter,
+  withLeadingBlankLine,
 } from './frontmatter.ts'
 import { badRequest, conflict, notFound } from './http.ts'
 import { POSTS_PREFIX, type Workspace, ensureDir, resolvePostFile, toPosix } from './paths.ts'
+import { moveToTrash } from './trash.ts'
 
 /** 子目录名：英文小写为主，允许数字和 - _ .，可以多层 */
 const DIR_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/
@@ -26,18 +23,9 @@ const DIR_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/
 /** slug 只允许小写字母、数字和连字符 —— 它要直接进 URL。server/ai.ts 也用它校验 AI 给的 slug */
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-/**
- * 文件名里不能出现的字符：Windows 保留字符，加上所有控制字符（`\p{Cc}`）。
- * 空格是允许的 —— 现有文章里就有（`用 挑战100天学习嵌入式开发.md`）。
- *
- * 控制字符用 `\p{Cc}` 而不是 `\u0000-\u001f`：后者会被 oxlint 的 no-control-regex 拦下来，
- * 而加 disable 注释又会被 eslint 当成「无用的 disable」删掉（两个 linter 对这条规则不一致）。
- */
+// 文件名里不能出现的字符：Windows 保留字符加控制字符；空格允许，现有文章里就有
+// 控制字符用 `\p{Cc}` 而不是字符区间：后者过不了 oxlint，加 disable 又会被 eslint 删掉
 const BAD_FILENAME_CHARS = /[\\/:*?"<>|]|\p{Cc}/u
-
-/** 正文里的图片：markdown 图片语法 + 裸 <img> */
-const MD_IMAGE_RE = /!\[[^\]]*\]\([^)]+\)/g
-const HTML_IMAGE_RE = /<img\b/gi
 
 /** 遍历文章目录，收集所有 .md（跳过隐藏目录，比如 .obsidian、.trash） */
 async function walkMarkdown(dir: string, base = ''): Promise<string[]> {
@@ -58,18 +46,11 @@ async function walkMarkdown(dir: string, base = ''): Promise<string[]> {
   return files.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
 }
 
-/**
- * blog/transformers/slug-path.ts 会算出来的真实 URL。
- * 它拿 `file.id`（`blog/blog/ai/x.md`）去掉集合名和文件名，再接上 slug。
- */
+/** blog/transformers/slug-path.ts 会算出来的真实 URL：目录路径接上 slug */
 function computeRealPath(dir: string, slug: string): string {
   if (!slug) return ''
   const segments = [POSTS_PREFIX, ...(dir ? dir.split('/') : []), slug]
   return `/${segments.join('/')}`
-}
-
-function countImages(body: string): number {
-  return (body.match(MD_IMAGE_RE)?.length ?? 0) + (body.match(HTML_IMAGE_RE)?.length ?? 0)
 }
 
 async function toSummary(ws: Workspace, relative: string): Promise<PostSummary> {
@@ -92,7 +73,7 @@ async function toSummary(ws: Workspace, relative: string): Promise<PostSummary> 
     realPath: computeRealPath(dir, fm.slug),
     mtime: stats.mtimeMs,
     bytes: stats.size,
-    images: countImages(body),
+    images: countBodyImages(body),
   }
 }
 
@@ -145,12 +126,8 @@ export async function readPost(ws: Workspace, file: string): Promise<PostDetail>
 /** 后台落盘的日期时间格式：`YYYY-MM-DD HH:mm` */
 const DATE_TIME_FORMAT = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/
 
-/**
- * 日历上真的有这个时刻吗。
- *
- * 不能只靠 `new Date(...)` 判 NaN：V8 对 `2026-02-31` 会**顺延**成 3 月 3 日并返回一个
- * 合法 Date，于是 2 月 31 日这种日期能一路写进 frontmatter。所以构造完把每一项都比回去。
- */
+// 日历上真的有这个时刻吗。不能只靠 `new Date(...)` 判 NaN：
+// V8 会把 `2026-02-31` 顺延成 3 月 3 日照样返回合法 Date，所以构造完把每一项都比回去
 function isRealDateTime(value: string): boolean {
   const matched = DATE_TIME_FORMAT.exec(value)
   if (!matched) return false
@@ -180,12 +157,8 @@ function validate(input: PostInput): PostInput {
   const dir = (input.dir?.trim() ?? '').replace(/^\/+|\/+$/g, '')
   const title = input.title?.trim() ?? ''
   const slug = input.slug?.trim() ?? ''
-  /*
-   * 保存时对日期**严格**：只接受 `YYYY-MM-DD HH:mm`，以及只有日期的写法（补成 00:00）。
-   * 读文件那一侧是宽容的（`T` 分隔、带时区、带秒都认），因为面对的是手写的 frontmatter；
-   * 但写入这一侧不能宽容 —— `new Date('2026/8/21')` 这种 V8 认、规范不认的写法
-   * 一旦放过去，就会被悄悄改写成另一个格式存进文件。
-   */
+  // 保存时对日期严格：只收 `YYYY-MM-DD HH:mm`，光日期的补成 00:00（读文件那侧才宽容）
+  // 放过 `2026/8/21` 这种 V8 认、规范不认的写法，等于把用户的值悄悄改写成另一个格式
   const rawDate = input.date?.trim() ?? ''
   const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? `${rawDate} 00:00` : rawDate
 
@@ -254,7 +227,16 @@ export async function createPost(ws: Workspace, raw: PostInput): Promise<PostDet
   await assertSlugFree(ws, input.dir, input.slug)
 
   ensureDir(path.dirname(absolute))
-  await writeFile(absolute, serializeFile(buildFrontmatter(input, input.raw), input.body), 'utf8')
+  await writeFile(
+    absolute,
+    // 新建才补那个空行；下面 updatePost 里是原样写回（见 withLeadingBlankLine）
+    serializeFile(
+      buildFrontmatter(input, input.raw),
+      withLeadingBlankLine(input.body),
+      POST_KEY_ORDER,
+    ),
+    'utf8',
+  )
 
   return readPost(ws, file)
 }
@@ -272,7 +254,11 @@ export async function updatePost(ws: Workspace, file: string, raw: PostInput): P
   await assertSlugFree(ws, input.dir, input.slug, file)
 
   ensureDir(path.dirname(to))
-  await writeFile(to, serializeFile(buildFrontmatter(input, input.raw), input.body), 'utf8')
+  await writeFile(
+    to,
+    serializeFile(buildFrontmatter(input, input.raw), input.body, POST_KEY_ORDER),
+    'utf8',
+  )
   // 新文件写成功了才删旧的，中途挂掉最多留一份多余文件，不会两头都丢
   if (moving) await unlink(from)
 
@@ -284,28 +270,7 @@ export async function trashPost(ws: Workspace, file: string): Promise<{ trashed:
   const absolute = resolvePostFile(ws, file)
   if (!(await exists(absolute))) throw notFound(`文章不存在：${file}`)
 
-  ensureDir(ws.trashDir)
-
-  const stamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, '-')
-    .replace(/T/, '_')
-    .slice(0, 19)
   // 目录结构压平成文件名的一部分，免得 .trash 里再套一层目录
   const flat = file.slice(POSTS_PREFIX.length + 1).replace(/\//g, '__')
-
-  let target = path.join(ws.trashDir, `${stamp}__${flat}`)
-  let n = 1
-  while (await exists(target)) {
-    target = path.join(ws.trashDir, `${stamp}__${flat}.${n++}`)
-  }
-
-  await rename(absolute, target).catch(async (err: NodeJS.ErrnoException) => {
-    // 跨设备（.trash 和仓库不在一个卷上）时 rename 会 EXDEV，退化成复制+删除
-    if (err.code !== 'EXDEV') throw err
-    await writeFile(target, await readFile(absolute))
-    await unlink(absolute)
-  })
-
-  return { trashed: toPosix(path.relative(ws.trashDir, target)) }
+  return { trashed: await moveToTrash(ws, absolute, flat) }
 }

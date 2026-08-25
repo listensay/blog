@@ -1,11 +1,5 @@
-/**
- * 本地接口的端到端检查：真的起一个 Vite dev server，用 fetch 走一遍增删改。
- *
- * 跑法：`npm run check`。
- *
- * 关键点：**不碰真仓库**。脚本会把 `content/` 和 `public/` 复制到临时目录，
- * 通过 `ADMIN_BLOG_ROOT` 让接口指向那份副本，所以随便怎么增删改都影响不到你的文章。
- */
+// 本地接口的端到端检查：真起一个 Vite dev server，用 fetch 走一遍增删改。跑法 `npm run check`。
+// 不碰真仓库 —— content/ 和 public/ 先复制到临时目录，再用 ADMIN_BLOG_ROOT 把接口指过去。
 import assert from 'node:assert/strict'
 import { cp, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -86,6 +80,7 @@ try {
     assert.equal(status, 200)
     assert.equal(data.blogRoot, sandbox)
     assert.ok((data.postCount as number) >= 1, `文章数是 ${data.postCount}`)
+    assert.ok((data.pageCount as number) >= 1, `页面数是 ${data.pageCount}`)
   })
 
   await check('GET /api/posts 列出文章，附带分类/标签/目录候选', async () => {
@@ -328,14 +323,8 @@ try {
   })
 
   await check('/blog-public/ 不给 public 外面的东西', async () => {
-    /*
-     * 注意别用 `/blog-public/../content/x`：`..` 会被 URL 解析规范化掉（fetch 和
-     * WHATWG URL 都会消掉 `..` 段，连 `%2e%2e` 也会先解码再消），请求最后打到的是
-     * `/content/x`，根本进不了这个处理器 —— 那样测的其实是 Vite 的兜底路由。
-     *
-     * 真正能带着 `..` 抵达服务端的写法是把斜杠编码成 `%2f`：URL 解析不会解码它，
-     * 于是 `..%2fx` 作为**一整个**路径段留下来，直到我们自己 decodeURIComponent。
-     */
+    // 别用 `/blog-public/../content/x`：`..` 会被 URL 解析规范化掉，请求根本进不了这个处理器。
+    // 把斜杠编码成 `%2f`，`..%2fx` 才能作为一整个路径段抵达服务端。
     for (const attack of [
       '..%2fcontent%2fcontent.config.ts',
       '%2e%2e%2f%2e%2e%2fetc%2fpasswd',
@@ -400,18 +389,303 @@ try {
     })
   }
 
+  // ------------------------------------------------------------ 固定页
+  console.log('\n固定页（content/pages）')
+
+  await check('GET /api/pages 列出页面，并给出保留名', async () => {
+    const { status, data } = await call('GET', '/api/pages')
+    assert.equal(status, 200)
+    const pages = data.pages as Array<Json>
+    assert.ok(pages.length >= 1, `页面数是 ${pages.length}`)
+    assert.ok(pages.some((p) => p.file === 'pages/about.md'), '没列出 pages/about.md')
+    // 保留名由服务端给，前端不自己抄一份
+    assert.ok((data.reserved as string[]).includes('blog'), 'reserved 里没有 blog')
+  })
+
+  await check('GET /api/page 读出正文和 friends', async () => {
+    const { status, data } = await call('GET', '/api/page?file=pages/links.md')
+    assert.equal(status, 200)
+    assert.equal(data.path, '/links')
+    assert.equal(data.name, 'links')
+    assert.equal(typeof data.body, 'string')
+    const friends = data.friends as Array<Json>
+    assert.ok(friends.length >= 1, 'friends 是空的')
+    assert.equal(typeof friends[0]!.name, 'string')
+    assert.equal(typeof friends[0]!.url, 'string')
+    // 没写的 description 也要给成空串，前端表单直接绑
+    assert.equal(typeof friends[0]!.description, 'string')
+  })
+
+  {
+    // 页面也吃「打开不改、原样保存」这条规矩，friends 那一段尤其容易被序列化改写
+    const { data: allPages } = await call('GET', '/api/pages')
+    for (const summary of allPages.pages as Array<Json>) {
+      const file = String(summary.file)
+      await check(`${file} 保存后逐字节相同`, async () => {
+        const absolute = path.join(sandbox, 'content', file)
+        const before = await readFile(absolute, 'utf8')
+
+        const { data: detail } = await call('GET', `/api/page?file=${encodeURIComponent(file)}`)
+        const { status } = await call('PUT', `/api/page?file=${encodeURIComponent(file)}`, detail)
+        assert.equal(status, 200)
+
+        const after = await readFile(absolute, 'utf8')
+        assert.equal(after, before, '文件内容变了')
+      })
+    }
+  }
+
+  const pageDraft = {
+    name: 'api-check-page',
+    title: '接口自测页面',
+    description: '这是 npm run check 造出来的',
+    friends: [],
+    body: '\n一段说明。\n\n![](../../public/images/x.png)\n',
+  }
+
+  let createdPage = ''
+
+  await check('POST /api/page 新建', async () => {
+    const { status, data } = await call('POST', '/api/page', pageDraft)
+    assert.equal(status, 201)
+    assert.equal(data.file, 'pages/api-check-page.md')
+    assert.equal(data.path, '/api-check-page')
+    assert.equal(data.images, 1)
+    createdPage = String(data.file)
+
+    const raw = await readFile(path.join(sandbox, 'content', createdPage), 'utf8')
+    assert.ok(raw.startsWith('---\ntitle: 接口自测页面\n'), `文件开头是 ${JSON.stringify(raw.slice(0, 40))}`)
+    assert.ok(!raw.includes('friends:'), '空 friends 不该写进文件')
+    assert.ok(raw.endsWith('![](../../public/images/x.png)\n'), '正文没原样写进去')
+  })
+
+  await check('同名再建一次 → 409', async () => {
+    const { status, data } = await call('POST', '/api/page', pageDraft)
+    assert.equal(status, 409)
+    assert.match(String(data.error), /已存在/)
+  })
+
+  await check('PUT /api/page 改名换到子目录，正文原样写入，旧文件被清掉', async () => {
+    const { data: detail } = await call('GET', `/api/page?file=${encodeURIComponent(createdPage)}`)
+    const { status, data } = await call('PUT', `/api/page?file=${encodeURIComponent(createdPage)}`, {
+      ...detail,
+      name: 'sub/api-check-page',
+      title: '改过的页面标题',
+    })
+    assert.equal(status, 200)
+    assert.equal(data.file, 'pages/sub/api-check-page.md')
+    assert.equal(data.path, '/sub/api-check-page')
+
+    // 正文原样写入，服务端一个字符都不动（图片路径的重定向在前端做）
+    const raw = await readFile(path.join(sandbox, 'content', String(data.file)), 'utf8')
+    assert.ok(
+      raw.endsWith(String(detail.body)),
+      `正文被服务端改了：${JSON.stringify(raw.slice(-60))}`,
+    )
+
+    const files = ((await call('GET', '/api/pages')).data.pages as Array<Json>).map((p) =>
+      String(p.file),
+    )
+    assert.ok(!files.includes(createdPage), '旧文件还在')
+    createdPage = String(data.file)
+  })
+
+  await check('直接建在子目录里的页面，正文按更深的层数写', async () => {
+    const deep = {
+      ...pageDraft,
+      name: 'sub/deeper-page',
+      // content/pages/sub/ 回到项目根要跳三层
+      body: '\n![](../../../public/images/x.png)\n',
+    }
+    const { status, data } = await call('POST', '/api/page', deep)
+    assert.equal(status, 201)
+    assert.equal(data.path, '/sub/deeper-page')
+    const raw = await readFile(path.join(sandbox, 'content', String(data.file)), 'utf8')
+    assert.ok(raw.endsWith('![](../../../public/images/x.png)\n'), '正文没原样写进去')
+  })
+
+  await check('新建时正文和 --- 之间会补一个空行（跟手写的文件一样）', async () => {
+    const { status, data } = await call('POST', '/api/page', {
+      ...pageDraft,
+      name: 'blank-line-check',
+      body: '紧贴着分隔符的一行。\n',
+    })
+    assert.equal(status, 201)
+    const raw = await readFile(path.join(sandbox, 'content', String(data.file)), 'utf8')
+    assert.ok(raw.includes('---\n\n紧贴着分隔符的一行。\n'), `落盘内容：${JSON.stringify(raw)}`)
+  })
+
+  await check('已有文件不会被补空行（打开不改就是一字不动）', async () => {
+    // 补空行只在新建时生效：手写的正文可能本来就紧贴着 `---`
+    const file = 'pages/tight-body.md'
+    const absolute = path.join(sandbox, 'content', file)
+    const tight = '---\ntitle: 紧贴正文\n---\n没有空行的正文。\n'
+    await writeFile(absolute, tight, 'utf8')
+
+    const { data: detail } = await call('GET', `/api/page?file=${encodeURIComponent(file)}`)
+    const { status } = await call('PUT', `/api/page?file=${encodeURIComponent(file)}`, detail)
+    assert.equal(status, 200)
+    assert.equal(await readFile(absolute, 'utf8'), tight, '文件被改写了')
+  })
+
+  await check('DELETE /api/page 移到 admin/.trash/', async () => {
+    const { status, data } = await call('DELETE', `/api/page?file=${encodeURIComponent(createdPage)}`)
+    assert.equal(status, 200)
+
+    const trashed = String(data.trashed)
+    createdTrash.push(trashed)
+    const trashFiles = await readdir(path.join(adminRoot, '.trash'))
+    assert.ok(trashFiles.includes(trashed), `.trash 里没有 ${trashed}`)
+    // 前缀能一眼分出这是页面而不是文章
+    assert.match(trashed, /pages__sub__api-check-page\.md$/)
+  })
+
+  await check('再删一次 → 404', async () => {
+    const { status } = await call('DELETE', `/api/page?file=${encodeURIComponent(createdPage)}`)
+    assert.equal(status, 404)
+  })
+
+  console.log('\n页面的入参校验')
+
+  const badPages: Array<[string, Record<string, unknown>, number]> = [
+    ['标题为空', { title: '  ' }, 400],
+    ['文件名为空', { name: '' }, 400],
+    ['文件名带中文（会变成一串 %E5 网址）', { name: '关于我' }, 400],
+    ['文件名带大写', { name: 'AboutMe' }, 400],
+    ['文件名带空格', { name: 'about me' }, 400],
+    ['文件名撞上站点自己的页面', { name: 'blog' }, 400],
+    ['文件名撞上站点自己的页面（子路径）', { name: 'tags/x' }, 400],
+    ['文件名想跳出去', { name: '../../etc/passwd' }, 400],
+    ['友链没写名字', { friends: [{ name: '', url: 'https://a.com' }] }, 400],
+    ['友链没写网址', { friends: [{ name: '某站', url: '' }] }, 400],
+    ['友链网址不带协议（会被当成相对地址）', { friends: [{ name: '某站', url: 'a.com' }] }, 400],
+    [
+      '友链头像写相对路径（线上会 404）',
+      { friends: [{ name: '某站', url: 'https://a.com', avatar: '../../public/images/x.png' }] },
+      400,
+    ],
+    [
+      '整条都空着的友链直接忽略，不算错',
+      { name: 'blank-friend-ok', friends: [{ name: '', url: '', description: '' }] },
+      201,
+    ],
+  ]
+
+  for (const [label, patch, expected] of badPages) {
+    await check(`${label} → ${expected}`, async () => {
+      const { status } = await call('POST', '/api/page', {
+        ...pageDraft,
+        name: 'validate-temp-page',
+        ...patch,
+      })
+      assert.equal(status, expected)
+    })
+  }
+
+  await check('页面接口不给读文章目录 → 400', async () => {
+    for (const file of ['blog/ai/免费AI公益中转站收集分享.md', '../../.env', '/etc/passwd']) {
+      const { status } = await call('GET', `/api/page?file=${encodeURIComponent(file)}`)
+      assert.equal(status, 400, `${file} 的状态码是 ${status}`)
+    }
+  })
+
+  // ------------------------------------------------------------ 菜单
+  console.log('\n菜单（content/data/nav.json）')
+
+  const navFile = path.join(sandbox, 'content', 'data', 'nav.json')
+
+  await check('GET /api/nav 返回菜单和图标候选', async () => {
+    const { status, data } = await call('GET', '/api/nav')
+    assert.equal(status, 200)
+    const items = data.items as Array<Json>
+    assert.ok(items.length >= 1, '一项都没有')
+    assert.equal(data.file, 'content/data/nav.json')
+    const icons = data.icons as Array<Json>
+    assert.ok(icons.length >= 6, `图标候选只有 ${icons.length} 个`)
+    assert.ok(icons.every((i) => typeof i.value === 'string' && typeof i.label === 'string'))
+  })
+
+  await check('PUT /api/nav 存进文件，一项一行（换顺序时 diff 才看得懂）', async () => {
+    const items = [
+      { label: '首页', to: '/', icon: 'home', color: '#3b82f6' },
+      { label: '关于', to: '/about', icon: 'about', color: '#06b6d4' },
+    ]
+    const { status, data } = await call('PUT', '/api/nav', { items })
+    assert.equal(status, 200)
+    assert.deepEqual(data.items, items)
+
+    const raw = await readFile(navFile, 'utf8')
+    const expected =
+      '[\n' +
+      '  { "label": "首页", "to": "/", "icon": "home", "color": "#3b82f6" },\n' +
+      '  { "label": "关于", "to": "/about", "icon": "about", "color": "#06b6d4" }\n' +
+      ']\n'
+    assert.equal(raw, expected, `落盘内容是 ${JSON.stringify(raw)}`)
+    // 存出来的东西自己要能读回去
+    assert.deepEqual(JSON.parse(raw), items)
+  })
+
+  await check('菜单清空后存出来是 []，不是空数组的展开写法', async () => {
+    const { status } = await call('PUT', '/api/nav', { items: [] })
+    assert.equal(status, 200)
+    assert.equal(await readFile(navFile, 'utf8'), '[]\n')
+  })
+
+  const badNav: Array<[string, unknown]> = [
+    ['不是数组', { label: '首页' }],
+    ['文字为空', [{ label: ' ', to: '/', icon: 'home', color: '#3b82f6' }]],
+    ['路径不以 / 开头（顶栏只放站内页面）', [{ label: '外链', to: 'https://a.com', icon: 'home', color: '#3b82f6' }]],
+    ['图标不认识', [{ label: '首页', to: '/', icon: '飞机', color: '#3b82f6' }]],
+    ['颜色不是 #rrggbb', [{ label: '首页', to: '/', icon: 'home', color: 'red' }]],
+    [
+      '两项指向同一个地址',
+      [
+        { label: '首页', to: '/', icon: 'home', color: '#3b82f6' },
+        { label: '主页', to: '/', icon: 'page', color: '#10b981' },
+      ],
+    ],
+  ]
+
+  for (const [label, items] of badNav) {
+    await check(`${label} → 400`, async () => {
+      const { status } = await call('PUT', '/api/nav', { items })
+      assert.equal(status, 400)
+    })
+  }
+
+  await check('校验不过时一个字都不落盘', async () => {
+    const before = await readFile(navFile, 'utf8')
+    await call('PUT', '/api/nav', { items: [{ label: '坏的', to: 'x', icon: 'home', color: '#000000' }] })
+    assert.equal(await readFile(navFile, 'utf8'), before)
+  })
+
+  await check('nav.json 被手改坏时不报 500，界面还能打开', async () => {
+    const before = await readFile(navFile, 'utf8')
+    await writeFile(navFile, '{ 这不是 json', 'utf8')
+    const { status, data } = await call('GET', '/api/nav')
+    assert.equal(status, 200)
+    assert.deepEqual(data.items, [])
+    assert.ok(String(data.error).length > 0, '没把出错原因带回来')
+    await writeFile(navFile, before, 'utf8')
+  })
+
+  await check('图标候选和站点侧的 NAV_ICONS 一字不差', async () => {
+    // 两个应用各存一份图标列表，走散了后台就能选出站点不认识的图标。
+    // 读的是真仓库的源码（沙箱只复制了 content/ 和 public/）。
+    const source = await readFile(path.join(realBlogRoot, 'app', 'utils', 'site.ts'), 'utf8')
+    const block = /export const NAV_ICONS = \[([\s\S]*?)\] as const/.exec(source)
+    assert.ok(block, '在 app/utils/site.ts 里找不到 NAV_ICONS')
+    const siteIcons = [...block[1]!.matchAll(/'([a-z0-9-]+)'/g)].map((m) => m[1])
+
+    const { data } = await call('GET', '/api/nav')
+    const adminIcons = (data.icons as Array<Json>).map((i) => String(i.value))
+    assert.deepEqual(adminIcons, siteIcons)
+  })
+
   // ------------------------------------------------------------------ AI
   console.log('\nAI')
-
-  /*
-   * 这里刻意**不**真的调模型：要花钱、要网络、结果还不确定，放进自检就等于
-   * 每次跑 check 都赌一次。能确定的是接口的形状和入参校验，那才是这层的责任。
-   *
-   * 「配没配」必须问服务端自己（`GET /api/ai` 的 enabled），不能看 process.env ——
-   * 密钥是 Vite 的 loadEnv 从 `.env.local` 读进来的，压根不在 process.env 里。
-   * 早先版本就是看 process.env 判断的，结果作者配好 .env.local 之后，
-   * 「没配密钥」那条用例反而**真的把请求发给模型了**。
-   */
+  // 刻意不真的调模型，只测接口形状和入参校验。
+  // 「配没配」必须问 `GET /api/ai` 的 enabled：密钥是 Vite 的 loadEnv 读的，不在 process.env 里。
   const aiConfigured = ((await call('GET', '/api/ai')).data.enabled as boolean) === true
 
   await check('GET /api/ai 报告配置状态', async () => {
@@ -425,11 +699,8 @@ try {
     assert.ok(!JSON.stringify(data).includes('sk-'), '响应里像是带了密钥')
   })
 
-  /*
-   * 下面这几条都是「在动网络之前就该被拒掉」的入参错误 —— runAi 里的顺序是
-   * 密钥 → 动作名 → 内容长度 → 才 fetch，所以配了密钥也不会真的调模型。
-   * 没配密钥时会更早地停在 503，两种都算对。
-   */
+  // 下面几条都是「在动网络之前就该被拒掉」的入参错误，配了密钥也不会真的调模型。
+  // 没配密钥时会更早地停在 503，两种都算对。
   const rejected = (status: number) => [400, 503].includes(status)
 
   await check('不认识的动作 → 400', async () => {
@@ -483,16 +754,13 @@ try {
     const response = await fetch(`${base}/`)
     assert.equal(response.status, 200)
     const html = await response.text()
-    assert.match(html, /blog 文章管理/)
+    assert.match(html, /blog 管理/)
     assert.match(html, /\/src\/main\.ts/)
   })
 
   {
-    /*
-     * 逐个请求 src 下的模块。Vite 在响应时才编译，所以模板语法错误、`<script setup>`
-     * 的问题、解析不到的 import 都会变成 500 —— 这是 vue-tsc 之外的一道网：
-     * 类型检查看不出「import 的文件路径写错了」这种事在打包器里是否解析得到。
-     */
+    // 逐个请求 src 下的模块。Vite 在响应时才编译，模板语法错误、解析不到的 import 都会变成 500 ——
+    // 这是 vue-tsc 之外的一道网，类型检查看不出 import 路径在打包器里解析不到。
     const files: string[] = []
     const walk = async (dir: string, base2 = '/src') => {
       for (const entry of await readdir(path.join(adminRoot, dir), { withFileTypes: true })) {

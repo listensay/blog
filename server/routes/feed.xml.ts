@@ -1,8 +1,4 @@
-/**
- * RSS 2.0 订阅源：/feed.xml
- * 直接查 @nuxt/content 的 blog 集合，与列表页同一套 draft 过滤和按时间倒序。
- * 首页社交栏的 RSS 图标指向这里。
- */
+// RSS 2.0 订阅源 /feed.xml：查 blog 集合，与列表页同一套 draft 过滤和时间倒序
 import { queryCollection } from '@nuxt/content/server'
 import { isoDateTime } from '../../app/utils/date'
 import { siteConfig } from '../../app/utils/site'

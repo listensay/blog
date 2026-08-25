@@ -1,14 +1,15 @@
-/**
- * 和本地 API 说话的那一层。接口都在 server/blog-api.ts。
- *
- * 后端出错时统一返回 `{ error: '中文说明' }`，这里把它抛成 Error，
- * 页面上直接 message.error(err.message) 就是一句人话。
- */
+// 和本地 API 说话的那一层（接口在 server/blog-api.ts）。
+// 后端出错统一返回 `{ error: '中文说明' }`，这里抛成 Error，页面上直接显示就是一句人话。
 import type {
   AiRequest,
   AiResult,
   AiStatus,
   ImageItem,
+  NavItem,
+  NavResponse,
+  PageDetail,
+  PageInput,
+  PageListResponse,
   PostDetail,
   PostInput,
   PostListResponse,
@@ -67,6 +68,36 @@ export const api = {
       method: 'DELETE',
     }),
 
+  /* ------------------------------------------------------------------ 固定页 */
+
+  listPages: () => request<PageListResponse>('/api/pages'),
+
+  getPage: (file: string) => request<PageDetail>(`/api/page?file=${encodeURIComponent(file)}`),
+
+  createPage: (input: PageInput) => request<PageDetail>('/api/page', json(input)),
+
+  updatePage: (file: string, input: PageInput) =>
+    request<PageDetail>(`/api/page?file=${encodeURIComponent(file)}`, {
+      ...json(input),
+      method: 'PUT',
+    }),
+
+  deletePage: (file: string) =>
+    request<{ trashed: string }>(`/api/page?file=${encodeURIComponent(file)}`, {
+      method: 'DELETE',
+    }),
+
+  /* -------------------------------------------------------------------- 菜单 */
+
+  /** 顶部菜单，连同能选的图标一起拿回来 */
+  getNav: () => request<NavResponse>('/api/nav'),
+
+  /** 整份菜单一起存 */
+  saveNav: (items: NavItem[]) =>
+    request<NavResponse>('/api/nav', { ...json({ items }), method: 'PUT' }),
+
+  /* -------------------------------------------------------------------- 图片 */
+
   listImages: () => request<{ images: ImageItem[] }>('/api/images'),
 
   /** 图片走裸二进制上传，文件名放查询参数 */
@@ -79,9 +110,6 @@ export const api = {
   /** AI 配好了没（模型名、base URL；密钥不会回传） */
   aiStatus: () => request<AiStatus>('/api/ai'),
 
-  /**
-   * 跑一个 AI 动作。密钥在服务端，这里只递内容。
-   * 返回值是可辨识联合，靠 `kind` 分支（改写结果 / frontmatter 字段）。
-   */
+  /** 跑一个 AI 动作（密钥在服务端）。返回值是可辨识联合，靠 `kind` 分支 */
   ai: (input: AiRequest) => request<AiResult>('/api/ai', json(input)),
 }

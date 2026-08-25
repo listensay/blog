@@ -6,10 +6,7 @@ export interface CommentIdentity {
 
 const STORAGE_KEY = 'blog:comment-identity'
 
-/**
- * 昵称/邮箱/网址在本页所有评论框之间共享，并记在浏览器里，
- * 下次来不用重新填。只存本地，不会随评论一起公开。
- */
+/** 昵称/邮箱/网址在所有评论框之间共享并记在浏览器里，只存本地，不会随评论一起公开 */
 export function useCommentIdentity() {
   const identity = useState<CommentIdentity>('comment-identity', () => ({
     author: '',

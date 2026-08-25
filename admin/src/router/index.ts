@@ -19,6 +19,31 @@ const router = createRouter({
       name: 'post-edit',
       component: () => import('@/views/PostEditorView.vue'),
     },
+
+    // 固定页（content/pages/**.md）
+    {
+      path: '/pages',
+      name: 'pages',
+      component: () => import('@/views/PageListView.vue'),
+    },
+    {
+      path: '/pages/new',
+      name: 'page-new',
+      component: () => import('@/views/PageEditorView.vue'),
+    },
+    {
+      // 同上，`?file=pages/about.md`
+      path: '/pages/edit',
+      name: 'page-edit',
+      component: () => import('@/views/PageEditorView.vue'),
+    },
+
+    // 顶部菜单（content/data/nav.json）
+    {
+      path: '/menu',
+      name: 'menu',
+      component: () => import('@/views/NavView.vue'),
+    },
   ],
 })
 

@@ -3,9 +3,8 @@ import type { PostStats } from '~/types/blog'
 
 const props = defineProps<{ slug: string }>()
 
-// 首屏就带上数字，避免读者看到 0 再跳变。
-// 客户端刻意不重复取：挂载后那次 POST /view 本来就会把最新数字带回来，
-// 两边同时发会互相覆盖——后回来的那个赢，浏览量可能就少算一次。
+// 首屏就带上数字，避免读者看到 0 再跳变。客户端刻意不重复取：挂载后那次 POST /view
+// 本来就会把最新数字带回来，两边同时发会互相覆盖，浏览量可能少算一次
 const { data: stats, status } = await useFetch<PostStats>(() => `/api/posts/${props.slug}/stats`, {
   key: () => `stats-${props.slug}`,
   default: () => ({ views: 0, likes: 0, comments: 0, liked: false }),

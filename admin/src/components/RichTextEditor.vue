@@ -1,14 +1,6 @@
 <script setup lang="ts">
-/**
- * tiptap 富文本编辑器 + 工具条。
- *
- * 和外面的约定：这个组件只认 HTML，图片一律用 `/blog-public/...` 预览地址（和文章
- * 所在目录无关）。Markdown 的转换、相对路径的换算都在父组件做（见 utils/markdown.ts）。
- *
- * 内容同步刻意做成「拉」而不是「推」：每敲一个字都 getHTML() 再转 Markdown 太浪费，
- * 所以只在真正需要的时候（切标签、保存）由父组件调 `getHtml()` 取一次，
- * 期间只往上报一个 dirty 信号。
- */
+// tiptap 富文本编辑器 + 工具条。只认 HTML，图片一律用 `/blog-public/…` 预览地址
+// 内容由父组件在切标签/保存时调 getHtml() 主动拉，期间只往上报 dirty
 import { computed, ref } from 'vue'
 import { EditorContent, getHTMLFromFragment, useEditor } from '@tiptap/vue-3'
 import { message } from 'ant-design-vue'
@@ -66,16 +58,8 @@ const editor = useEditor({
   },
 })
 
-/**
- * 当前选区。给 AI 改写用：父组件要知道「选了什么」「能不能行内插回去」。
- *
- * `inline` 的意思是选区起止落在同一个文本块里（在一个段落中间选了半句话）。
- * 这个信息必须在这里算 —— 出了这个组件就只剩 HTML 字符串，
- * 「这段 HTML 原来是半个段落还是三个段落」就分不出来了，而插回去的方式完全不同。
- *
- * 不 export：`<script setup>` 不能有 ES 导出，而父组件通过
- * `InstanceType<typeof RichTextEditor>` 拿到的方法签名本来就带着这个结构类型。
- */
+// 当前选区，给 AI 改写用。inline = 选区起止落在同一个文本块里
+// 只能在组件内算：出去只剩 HTML，分不出半个段落还是三个段落。别加 export，<script setup> 不许有 ES 导出
 interface EditorSelection {
   empty: boolean
   /** ProseMirror 文档位置，替换时原样传回来 */
@@ -111,12 +95,7 @@ defineExpose({
     }
   },
 
-  /**
-   * 替换一段内容。
-   *
-   * 用 `insertContentAt` 而不是 `setContent`：前者是一次普通事务，会进 undo 历史，
-   * 所以 AI 改完不满意能直接 ⌘Z 回去 —— 这是「敢让 AI 动正文」的前提。
-   */
+  /** 替换一段内容。用 insertContentAt 而不是 setContent，事务会进 undo 历史，⌘Z 能撤回 */
   replaceRange: (from: number, to: number, html: string) => {
     editor.value?.chain().focus().insertContentAt({ from, to }, html).run()
   },
@@ -137,10 +116,7 @@ function imageFilesOf(list: FileList | null | undefined): File[] {
   return [...(list ?? [])].filter((file) => file.type.startsWith('image/'))
 }
 
-/**
- * 截图粘贴过来的 File 名字往往是空的或者一律叫 image.png，直接用会全撞在一起。
- * 按仓库里已有的习惯（Obsidian 的 `Pasted image 20260819182328.png`）生成时间戳名字。
- */
+/** 截图粘贴过来的文件名常是空的或都叫 image.png，会全撞在一起，所以补个时间戳名字 */
 function nameFor(file: File): string {
   const generic = !file.name || /^(image|screenshot|clipboard)\.\w+$/i.test(file.name)
   if (!generic) return file.name

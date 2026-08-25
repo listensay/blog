@@ -1,16 +1,7 @@
 import { defineTransformer } from '@nuxt/content'
 
-/**
- * 归一化 frontmatter 里的分类与标签。
- *
- * 起因：`tags: AI` 这种写法 YAML 会解析成**字符串** `"AI"` 而不是数组。
- * schema 声明的是 `z.array(z.string())` 但并不会拦住它，于是模板里
- * `v-for="t in post.tags"` 对字符串逐字符迭代，页面上出现两个标签「A」「I」
- * （`tags?.length` 恰好是 2，连显示判断都通过了，所以看起来不像 bug）。
- *
- * 这里把 tags 一律修成干净的字符串数组，让写 `tags: AI`、`tags: AI, 白嫖`、
- * `tags:`（空）都得到符合预期的结果。
- */
+// 归一化 frontmatter 的分类与标签：`tags: AI` 被 YAML 解析成字符串（schema 拦不住），
+// 模板 v-for 会逐字符迭代出「A」「I」两个标签。这里一律修成干净的字符串数组
 
 /** 标签分隔符：半角/全角逗号和顿号。**不切空格** —— 标签本身可能带空格 */
 const TAG_SEPARATORS = /[,，、]/
@@ -45,9 +36,8 @@ export default defineTransformer({
       patch.tags = toStringList(f.tags)
     }
 
-    // category 按设计一篇只有一个（它是普通字符串列，分类页靠 SQL 直接 .where 过滤）。
-    // 写成 `category: 福利，AI` 会生成一个名字叫「福利，AI」的分类 —— 取首段并告警，
-    // 别让一个手滑的逗号在分类页里长出个怪名字。
+    // 一篇只能有一个 category：写成 `category: 福利，AI` 会长出一个叫「福利，AI」的分类，
+    // 所以取首段并告警
     if (typeof f.category === 'string' && TAG_SEPARATORS.test(f.category)) {
       const [first, ...rest] = toStringList(f.category)
       console.warn(

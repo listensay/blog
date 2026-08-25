@@ -1,26 +1,10 @@
 <script setup lang="ts">
-/**
- * 列表页的封面缩略图。
- *
- * 图取自 frontmatter 的 `cover`，写法和正文图片一样是**相对路径**，所以要先过一遍
- * `toPreviewSrc` 换算成 admin 自己挂的预览地址（见 utils/markdown.ts）。
- *
- * 三种状态刻意区分开，因为它们的含义完全不同：
- *
- *  - **没写 cover**：灰色占位。仓库里不少老文章就是这样，不是错误，不用报警。
- *  - **路径解析不到 public/**：`toPreviewSrc` 会原样返回，红色占位 + 说明。这种图
- *    **线上一定 404** —— blog 构建时只打一行 `[image-src]` warn，很容易漏，
- *    所以在列表里就显眼地说出来。
- *  - **地址对但文件不在**：走 img 的 error 事件，同样是线上 404。
- *
- * 刻意用原生 `<img>` 而不是 `a-image`：后者把 `class` 转发到内部的 img 上、
- * 却不带 scoped 样式的 data-v 属性，样式会静默失效。缩略图想看大图就点开新标签页，
- * 本机工具够用了。
- */
+// 列表页的封面缩略图。cover 先过 toPreviewSrc；解析不到或文件不在都是线上 404，而构建期只有一行 warn
+// 用原生 <img> 不用 a-image：后者转发 class 却不带 scoped 的 data-v，样式会静默失效
 import { computed, ref, watch } from 'vue'
 import { FileImageOutlined, WarningOutlined } from '@ant-design/icons-vue'
 
-import { PUBLIC_MOUNT, toPreviewSrc } from '@/utils/markdown'
+import { PUBLIC_MOUNT, postContentDir, toPreviewSrc } from '@/utils/markdown'
 
 const props = defineProps<{
   /** frontmatter 里的 cover 原文 */
@@ -32,12 +16,11 @@ const props = defineProps<{
 /** 地址算对了，但文件不在 */
 const broken = ref(false)
 
-const src = computed(() => (props.cover ? toPreviewSrc(props.cover, props.dir) : ''))
+const src = computed(() =>
+  props.cover ? toPreviewSrc(props.cover, postContentDir(props.dir)) : '',
+)
 
-/**
- * `toPreviewSrc` 解析不到 `public/` 里就原样返回原始相对路径，
- * 所以「换算成功」的标志就是它变成了 `/blog-public/...`。
- */
+/** 解析不到 public/ 时 toPreviewSrc 原样返回，所以换算成功的标志是变成了 `/blog-public/…` */
 const unresolved = computed(() => !!src.value && !src.value.startsWith(`${PUBLIC_MOUNT}/`))
 
 // 表格翻页时组件会被复用，换了文章要把失败状态清掉，否则一直显示上一张的错误

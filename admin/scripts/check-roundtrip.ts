@@ -1,19 +1,5 @@
-/**
- * 正文往返检查：Markdown → HTML → tiptap 文档 → HTML → Markdown。
- *
- * 这是这个后台最该被盯住的一件事 —— 富文本编辑器会不会悄悄改坏文章。
- * 跑法：`npm run check`（需要 jsdom，node 里没有 DOM）。
- *
- * 会做两件事：
- *  1. 拿 blog 仓库里**真实的文章**过一遍，报告字节差异和图片路径是否原样保留；
- *  2. 跑一组定向用例，覆盖各种 markdown 语法。
- *
- * 已知会变（不算失败，正文语义不变）：
- *  - `>引用` → `> 引用`（补一个空格）
- *  - `|a|b|` → `| a | b |`（表格单元格补空格）
- *  - 松散列表变紧凑列表（`<p>` 包裹信息在 tiptap 里就丢了，无法还原）
- * 真正会丢东西的只有原始 HTML（`<details>`、`<u>` 之类），后台界面上会提示改用源码标签。
- */
+// 正文往返检查：Markdown → HTML → tiptap → HTML → Markdown，盯的是编辑器会不会改坏文章。跑法 `npm run check`。
+// 已知会变但不算失败：`>引用` 补空格、表格单元格补空格、松散列表变紧凑；真正会丢东西的只有原始 HTML，界面上会提示改用源码标签。
 import assert from 'node:assert/strict'
 import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
@@ -50,10 +36,10 @@ const { detectRichTextRisks, htmlToMd, mdToHtml, toPreviewSrc, toStoredSrc, reta
 
 const editor = new Editor({ extensions: createEditorExtensions(), content: '' })
 
-/** 走一遍完整链路：和用户在富文本标签里打开、什么都不改、保存一次等价 */
-function roundtrip(markdown: string, dir: string): string {
-  editor.commands.setContent(mdToHtml(markdown, dir), { emitUpdate: false })
-  return htmlToMd(editor.getHTML(), dir)
+/** 走一遍完整链路，等价于在富文本标签里打开、什么都不改、保存一次。`contentDir` 是相对 `content/` 的目录 */
+function roundtrip(markdown: string, contentDir: string): string {
+  editor.commands.setContent(mdToHtml(markdown, contentDir), { emitUpdate: false })
+  return htmlToMd(editor.getHTML(), contentDir)
 }
 
 const imagesIn = (markdown: string) =>
@@ -70,17 +56,20 @@ const pass = (msg: string) => console.log(`  ✓ ${msg}`)
 console.log('\n图片路径：文件里的相对写法 ⇄ 浏览器预览地址')
 {
   const cases: Array<[string, string]> = [
-    ['', '../../public/images/x.png'],
-    ['ai', '../../../public/images/x.png'],
-    ['a/b', '../../../../public/images/x.png'],
-    ['ai', '../../../public/images/Pasted%20image%2020260819182328.png'],
-    ['ai', '../../../public/images/x.png?v=2'],
+    ['blog', '../../public/images/x.png'],
+    ['blog/ai', '../../../public/images/x.png'],
+    ['blog/a/b', '../../../../public/images/x.png'],
+    ['blog/ai', '../../../public/images/Pasted%20image%2020260819182328.png'],
+    ['blog/ai', '../../../public/images/x.png?v=2'],
+    // 固定页在 content/pages/ 下，深度和顶层文章一样
+    ['pages', '../../public/images/x.png'],
+    ['pages/sub', '../../../public/images/x.png'],
   ]
 
   for (const [dir, src] of cases) {
     const back = toStoredSrc(toPreviewSrc(src, dir), dir)
-    if (back === src) pass(`${dir || '顶层'}: ${src}`)
-    else fail(`${dir || '顶层'}: ${src} → ${toPreviewSrc(src, dir)} → ${back}`)
+    if (back === src) pass(`${dir}: ${src}`)
+    else fail(`${dir}: ${src} → ${toPreviewSrc(src, dir)} → ${back}`)
   }
 
   // 这些写法本来就能用，不该被动
@@ -91,16 +80,16 @@ console.log('\n图片路径：文件里的相对写法 ⇄ 浏览器预览地址
     '#anchor',
     '../nope/missing.png', // 解析不到 public/ 里，原样保留（线上也是 404）
   ]) {
-    if (toPreviewSrc(src, 'ai') === src) pass(`原样保留 ${src}`)
-    else fail(`${src} 被改成了 ${toPreviewSrc(src, 'ai')}`)
+    if (toPreviewSrc(src, 'blog/ai') === src) pass(`原样保留 ${src}`)
+    else fail(`${src} 被改成了 ${toPreviewSrc(src, 'blog/ai')}`)
   }
 
   // 换目录要跟着改 ../ 层数
-  const moved = retargetImagePaths('![](../../../public/images/x.png)\n', 'ai', '')
+  const moved = retargetImagePaths('![](../../../public/images/x.png)\n', 'blog/ai', 'blog')
   if (moved.trim() === '![](../../public/images/x.png)') pass('换目录后图片层数被修正')
   else fail(`换目录后的路径不对：${moved.trim()}`)
 
-  const untouched = retargetImagePaths('![](https://example.com/a.png)\n', 'ai', '')
+  const untouched = retargetImagePaths('![](https://example.com/a.png)\n', 'blog/ai', 'blog')
   if (untouched.includes('https://example.com/a.png')) pass('换目录不影响外链图片')
   else fail('外链图片被改了')
 }
@@ -128,7 +117,7 @@ console.log('\n各种 markdown 语法的往返')
   ]
 
   for (const [label, markdown] of cases) {
-    const back = roundtrip(markdown, 'ai')
+    const back = roundtrip(markdown, 'blog/ai')
     if (back.trim() === markdown.trim()) pass(label)
     else fail(`${label}\n      原: ${JSON.stringify(markdown)}\n      新: ${JSON.stringify(back)}`)
   }
@@ -163,14 +152,8 @@ console.log('\n富文本撑不住的语法要能被识别（界面上据此提�
 // ------------------------------------------------- 打开文章不该被当成「改过了」
 console.log('\n加载内容不会触发改动事件（编辑页靠这个判断「未保存」）')
 {
-  /*
-   * 编辑页把「正文动没动」寄托在编辑器的 update 事件上：没动过就原样写回原文，
-   * 一个字节都不重排。所以「仅仅是把文章灌进编辑器」绝不能触发 update ——
-   * 否则每篇文章打开就被标成未保存，返回列表还会弹「改动会丢掉」。
-   *
-   * 这里专门盯 StarterKit 里那些会自己改文档的插件（比如 trailingNode 会在
-   * 文档末尾补空段落，它走的是 appendTransaction）。
-   */
+  // 编辑页靠 update 事件判断「正文动没动」，所以把文章灌进编辑器绝不能触发它，
+  // 否则每篇文章打开就被标成未保存。重点盯 StarterKit 里会自己改文档的插件（如 trailingNode）。
   const samples: Array<[string, string]> = [
     ['普通段落', '一段文字。\n'],
     ['结尾是图片', '文字\n\n![](../../../public/images/x.png)\n'],
@@ -185,7 +168,7 @@ console.log('\n加载内容不会触发改动事件（编辑页靠这个判断�
     let updates = 0
     const probe = new Editor({
       extensions: createEditorExtensions(),
-      content: mdToHtml(markdown, 'ai'),
+      content: mdToHtml(markdown, 'blog/ai'),
       onUpdate: () => {
         updates += 1
       },
@@ -213,14 +196,20 @@ console.log('\n加载内容不会触发改动事件（编辑页靠这个判断�
   probe.destroy()
 }
 
-// ------------------------------------------------------------- 真实文章体检
+// --------------------------------------------------- 真实文章和真实页面的体检
 const blogRoot = process.env.ADMIN_BLOG_ROOT
   ? path.resolve(process.env.ADMIN_BLOG_ROOT)
   : path.resolve(import.meta.dirname, '../..')
-const postsDir = path.join(blogRoot, 'content', 'blog')
 
-console.log(`\n真实文章（${postsDir}）`)
-{
+/** 文章和固定页用的是同一套富文本往返，只有目录不一样，两个集合都过一遍 */
+const collections = [
+  { label: '文章', dir: path.join(blogRoot, 'content', 'blog'), base: 'blog' },
+  { label: '页面', dir: path.join(blogRoot, 'content', 'pages'), base: 'pages' },
+] as const
+
+for (const collection of collections) {
+  console.log(`\n真实${collection.label}（${collection.dir}）`)
+
   const files: string[] = []
   const walk = async (dir: string, base = '') => {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -230,16 +219,18 @@ console.log(`\n真实文章（${postsDir}）`)
       else if (entry.name.endsWith('.md')) files.push(rel)
     }
   }
-  await walk(postsDir).catch((err: Error) => {
-    console.log(`  找不到文章目录：${err.message}`)
+  await walk(collection.dir).catch((err: Error) => {
+    console.log(`  找不到目录：${err.message}`)
   })
 
   for (const rel of files) {
-    const raw = await readFile(path.join(postsDir, rel), 'utf8')
+    const raw = await readFile(path.join(collection.dir, rel), 'utf8')
     const body = raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '')
-    const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : ''
+    const subdir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : ''
+    // 文章要补上 `blog` 那一层；页面的目录就是 `pages[/子目录]`
+    const contentDir = [collection.base, ...(subdir ? subdir.split('/') : [])].join('/')
 
-    const back = roundtrip(body, dir)
+    const back = roundtrip(body, contentDir)
     const before = imagesIn(body)
     const after = imagesIn(back)
 

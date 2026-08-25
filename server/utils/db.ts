@@ -1,12 +1,5 @@
-/**
- * 建表语句。
- *
- * 每条必须写成单行——D1 的 exec() 按换行符切分语句，多行 SQL 会被切碎报错。
- * better-sqlite3 没这个限制，但为了两端同一份代码，统一按 D1 的规矩写。
- *
- * 表名刻意避开 _content_ 前缀：@nuxt/content 每次校验 checksum 不匹配时会
- * DROP 掉它自己的 _content_* 表重建，这几张表不在它的管辖范围内，不会被清掉。
- */
+// 建表语句。每条必须写成单行 —— D1 的 exec() 按换行切分，多行 SQL 会被切碎报错。
+// 表名刻意避开 _content_ 前缀：@nuxt/content 会 DROP 重建自己的 _content_* 表
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS post_stats (slug TEXT PRIMARY KEY, views INTEGER NOT NULL DEFAULT 0, likes INTEGER NOT NULL DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS visitor_views (slug TEXT NOT NULL, visitor TEXT NOT NULL, seen_at INTEGER NOT NULL, PRIMARY KEY (slug, visitor))`,

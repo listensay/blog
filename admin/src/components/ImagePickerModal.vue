@@ -1,10 +1,6 @@
 <script setup lang="ts">
-/**
- * 图片选择器：从 blog/public/images/ 里挑一张，或者现场上传。
- *
- * 正文插图和封面都用它。选中后 emit 的是完整的 ImageItem，
- * 调用方自己决定要 previewUrl（正文）还是 name（封面要算相对路径）。
- */
+// 图片选择器：从 blog/public/images/ 里挑一张，或者现场上传
+// emit 的是完整 ImageItem，调用方自己决定要 previewUrl（正文）还是 name（封面）
 import { computed, ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { InboxOutlined } from '@ant-design/icons-vue'

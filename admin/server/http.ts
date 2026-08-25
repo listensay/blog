@@ -1,15 +1,8 @@
-/**
- * 一点点 HTTP 胶水。这层刻意不引框架：整个后台只有几个接口，
- * 而 Vite dev server 的 `server.middlewares` 就是原生 connect。
- */
+/** 一点点 HTTP 胶水。刻意不引框架：只有几个接口，Vite 的 server.middlewares 就是原生 connect */
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
-/**
- * 带状态码的错误。handler 里 throw 它，最外层统一转成 JSON 响应。
- *
- * 刻意不用 TS 的构造器参数属性（`constructor(readonly status: number)`）：那是
- * 类型系统专有语法，`node xxx.ts` 的类型擦除跑不了，会挡住直接用 node 跑测试脚本。
- */
+// 带状态码的错误。handler 里 throw 它，最外层统一转成 JSON 响应
+// 不用构造器参数属性（`readonly status: number`）：node 的类型擦除跑不了，测试脚本就没法直接跑
 export class HttpError extends Error {
   readonly status: number
 
@@ -64,10 +57,7 @@ export async function readJson<T>(req: IncomingMessage): Promise<T> {
   }
 }
 
-/**
- * 取查询参数。`req.url` 在 connect 里是被中间件挂载路径截过的相对路径，
- * 所以拿一个占位 origin 出来解析。
- */
+/** 取查询参数。connect 里的 `req.url` 是被挂载路径截过的相对路径，所以配个占位 origin */
 export function parseUrl(req: IncomingMessage): URL {
   return new URL(req.url ?? '/', 'http://localhost')
 }

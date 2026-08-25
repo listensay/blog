@@ -39,10 +39,7 @@ function clientIp(event: H3Event) {
     || '0.0.0.0'
 }
 
-/**
- * 访客指纹：IP + UA 加盐哈希后截断。
- * 只存哈希不存明文 IP——去重和限流够用，同时不留可反查的个人数据。
- */
+/** 访客指纹：IP + UA 加盐哈希后截断。只存哈希不存明文 IP，不留可反查的个人数据 */
 export async function visitorId(event: H3Event) {
   const salt = useRuntimeConfig(event).visitorSalt || 'blog-dev-salt'
   const ua = getRequestHeader(event, 'user-agent') || ''

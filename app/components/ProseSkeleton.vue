@@ -1,8 +1,5 @@
 <script setup lang="ts">
-/**
- * 正文段落的骨架屏。行宽按「段落最后一行更短」的规律排，
- * 比等宽色块更像一篇文章。
- */
+/** 正文段落的骨架屏。行宽按「段落最后一行更短」的规律排，比等宽色块更像一篇文章 */
 const { paragraphs = 3 } = defineProps<{ paragraphs?: number }>()
 
 const lineWidths = ['w-full', 'w-full', 'w-11/12', 'w-3/4']

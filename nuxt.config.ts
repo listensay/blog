@@ -86,8 +86,7 @@ export default defineNuxtConfig({
 
   content: {
     build: {
-      // slug-path：让 frontmatter 的 slug 决定文章 URL（中文文件名必需）
-      // image-src：正文里的相对图片路径改写成站点 URL（编辑器能预览必需）
+      // slug-path：slug 决定文章 URL（中文文件名必需）；image-src：相对图片路径改成站点 URL
       // taxonomy：tags 写成裸字符串时归一化成数组，category 带逗号时告警
       transformers: [
         '~~/transformers/slug-path.ts',

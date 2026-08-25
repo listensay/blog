@@ -1,25 +1,5 @@
-/**
- * AI 改写：调一个 OpenAI 兼容的 `/chat/completions`。
- *
- * ## 为什么放在服务端
- *
- * 密钥。浏览器里发请求就等于把密钥写进前端代码，所以这一层只做一件事：
- * 前端说「用这个动作处理这段文字」，服务端带上密钥去调，把结果原样递回去。
- * 密钥从环境变量读，永远不进响应体、不进 git。
- *
- * ## 为什么选 OpenAI 兼容协议
- *
- * DeepSeek、智谱、通义、Kimi、各种中转站都实现了这个协议，换供应商只用改
- * `ADMIN_AI_BASE_URL` 和 `ADMIN_AI_MODEL` 两个环境变量，代码一行不动。
- *
- * ## 提示词里最要紧的事
- *
- * **别把 Markdown 改坏。** 模型很爱做这几件事：把结果包进 ``` 围栏、顺手「修正」
- * 图片路径、把 `##` 改成 `###`、在开头加一句「好的，以下是润色后的内容」。
- * 这些在这个仓库里的后果分别是：正文变成一个代码块、线上图片 404、目录层级乱掉、
- * 正文多一句废话。所以下面那组「铁律」写得非常死，而且前端拿到结果后还会再校验一遍
- * 图片路径和代码块（见 src/utils/ai.ts）—— 提示词只是第一道防线，不是唯一一道。
- */
+// AI 改写：调 OpenAI 兼容的 `/chat/completions`，密钥只留在服务端，换供应商只改环境变量
+// 提示词里的「铁律」防模型改坏 Markdown（包围栏、动图片路径、改标题层级），src/utils/ai.ts 还会再校验一遍
 import type { AiMetaResult, AiRequest, AiResult, AiStatus, AiUsage } from '../src/types.ts'
 import { HttpError, badRequest } from './http.ts'
 import { SLUG_RE } from './posts.ts'
@@ -37,27 +17,13 @@ export interface AiConfig {
 const DEFAULT_MODEL = 'gpt-4o-mini'
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1'
 
-/**
- * 单次请求的超时。默认给到 5 分钟。
- *
- * 为什么这么长：现在流行的「推理模型」会先想很久再输出，实测
- * deepseek-v4-flash-free 修一篇 2100 字文章的格式用了 **126 秒、15774 个 completion token**
- * （绝大部分花在思考上），一段 370 字的粘贴也要 104 秒。原来定的 3 分钟对长文章不够用，
- * 而超时报错对用户来说和「功能坏了」没区别。
- */
+/** 单次请求超时 5 分钟：推理模型改一篇长文实测要 126 秒，超时报错对用户就等于功能坏了 */
 const DEFAULT_TIMEOUT_MS = 300_000
 
 /** 单次请求的正文上限。再长就该拆开改了，一次性发过去只会超时或者烧钱 */
 const TEXT_LIMIT = 60_000
 
-/**
- * 从环境变量读配置。
- *
- * `maxTokens` 默认 0 = **不传这个参数**。这是刻意的：OpenAI 兼容的各家对
- * 「不传 max_tokens」的默认值不一样（多数是模型上限，少数只给 4096），而传一个
- * 超过模型上限的值有些供应商会直接 400。所以默认交给供应商，真被截断了前端会
- * 明确提示「设 ADMIN_AI_MAX_TOKENS 调大」—— 报错比猜一个数字好。
- */
+/** 从环境变量读配置。maxTokens 默认 0 = 不传这个参数：传超过模型上限有些供应商直接 400 */
 export function resolveAiConfig(env: Record<string, string | undefined>): AiConfig {
   const number = (value: string | undefined, fallback: number) => {
     const parsed = Number(value?.trim())
@@ -87,13 +53,8 @@ export function aiStatus(config: AiConfig): AiStatus {
 
 /* -------------------------------------------------------------------- 提示词 */
 
-/**
- * 所有动作共用的铁律。每一条都对应一个实测踩过的坑，删任何一条都会有文章被改坏。
- *
- * 第 4 条（标题）**因动作而异**：改写类动作一根头发都不许动标题层级，
- * 而 `fix` 的头等任务就是调层级。早先这里写死成「不许改标题层级」，
- * 和 fix 的提示词直接打架 —— 同一份提示里自相矛盾，模型只会挑一条听。
- */
+// 所有动作共用的铁律，每一条都对应一个实测踩过的坑，删掉就会有文章被改坏
+// 第 4 条（标题）因动作而异：改写类一根头发都不许动层级，而 fix 的头等任务就是调层级
 function rulesFor(action: AiRequest['action']): string {
   const heading =
     action === 'fix'
@@ -120,15 +81,8 @@ interface ActionSpec {
 }
 
 const ACTIONS: Record<Exclude<AiRequest['action'], 'meta'>, ActionSpec> = {
-  /**
-   * 格式修复。和下面三个改写动作**性质不同**：它一个字都不许改。
-   *
-   * 专治从 AI 对话、网页、Word 里粘进来的正文 —— 文字是对的，格式一团糟。
-   * temperature 给 0：这活的正确答案只有一个，不需要模型有创造力。
-   *
-   * 提示词里的六条「要修的」是按实际粘贴垃圾的常见程度排的，而「不许动」那几条
-   * 每一条都对应一个会把文章改坏的具体后果，别删。
-   */
+  // 格式修复：和下面三个改写动作性质不同，它一个字都不许改文字，只动 Markdown 标记
+  // temperature 给 0，这活的正确答案只有一个
   fix: {
     label: '修复格式',
     temperature: 0,
@@ -328,11 +282,8 @@ async function chat(
 
 /* -------------------------------------------------------------- 结果清理与解析 */
 
-/**
- * 模型很爱把整段结果包进 ``` 围栏里。只有「整个响应就是一个围栏」时才剥掉它 ——
- * 正文里本来就有代码块的情况绝不能碰，所以判断条件写得很紧：
- * 开头是围栏、结尾是围栏，而且中间**没有别的围栏**。
- */
+// 模型爱把整段结果包进 ``` 围栏，只有「整个响应就是一个围栏」时才剥掉
+// 正文里本来就有代码块的绝不能碰，所以还要求中间没有别的围栏
 function stripWrappingFence(text: string): string {
   const trimmed = text.trim()
   const match = /^```[^\n]*\n([\s\S]*)\n```$/.exec(trimmed)
@@ -351,32 +302,14 @@ function cleanText(text: string): string {
   return stripWrappingFence(text).replace(LEAD_IN, '').trim()
 }
 
-/**
- * 只从**两端**剥掉的装饰字符：引号、反引号、括号、标点、连字符、斜杠、空白。
- * 模型爱把 slug 写成 `` `free-ai` ``、`"free-ai"`、`/blog/free-ai`、`free-ai.`。
- */
+/** 只从两端剥掉的装饰字符：模型爱把 slug 写成 "free-ai"、/blog/free-ai、free-ai. */
 const SLUG_TRIM = /^[\s\-_.,:;'"`<>()[\]{}/\\]+|[\s\-_.,:;'"`<>()[\]{}/\\]+$/g
 
 /** slug 长度上限。再长就不像 slug 了，多半是模型把一句话塞进来了 */
 const SLUG_MAX = 80
 
-/**
- * 把模型给的 slug 收拾成合法的，收拾不动就返回**空串**。
- *
- * **为什么不直接信模型、也不直接报错。** slug 要进 URL，格式错了保存时会被
- * `posts.ts` 的校验拦下来（`SLUG_RE`）—— 但那时候用户已经点了「填进表单」，
- * 拿到的是一个存不进去的值，还得自己看出哪里不对。所以在这儿就把纯格式问题修掉，
- * 修不了就清空，让界面明确说「AI 没给出可用的 slug」，其余三个字段照常能用。
- *
- * **关键在于「修格式」和「删内容」的界线。**
- * 只做四件不损失信息的事：转小写、空白/下划线当词分隔符、收连续连字符、剥两端装饰字符。
- * 剩下任何非法字符（中文、点、斜杠出现在中间）**一律判为失败，不做删除**。
- *
- * 这条界线是实测出来的：早先的实现是把非法字符直接删掉，于是
- * `免费AI中转站` 会变成 `ai`、`免费-ai` 也变成 `ai` —— 一个看起来完全能用、
- * 实际上把标题主体丢光的 slug，比空着**危险得多**，因为它会被就这么留在 URL 里。
- * 同理刻意不做拼音兜底：`mianfei-ai-zhongzhuanzhan` 这种也是宁可不要。
- */
+// 把模型给的 slug 收拾成合法的，收拾不动就返回空串，让界面明说「AI 没给出可用的 slug」
+// 只做转小写、换分隔符这类不丢信息的事；非法字符判失败不删除（删了「免费AI中转站」只剩 ai），也不做拼音兜底
 export function normalizeSlug(raw: unknown): string {
   if (typeof raw !== 'string') return ''
 
@@ -448,18 +381,8 @@ const VALID_ACTIONS = new Set<AiRequest['action']>([
   'meta',
 ])
 
-/**
- * 已经改过名的动作。旧名字继续认，只是内部映射到新名字。
- *
- * **为什么留着这个映射。** `summarize` 是 `meta` 的旧名（它当初只产出摘要和标签，
- * 后来扩成四个字段就改名了）。改名之后出过一次真实故障：编辑 `server/**` 会让
- * Vite 重启 dev server（这些文件是 vite.config.ts 的依赖），于是**服务端换成了新代码，
- * 而浏览器里那个页面还是旧的**，一点「生成摘要与标签」就报「不认识的 AI 动作：summarize」——
- * 用户什么都没做错，只是没刷新。
- *
- * 教训：接口的入参名字一旦发出去过，就别指望两端同时更新。新增名字、旧名字继续收，
- * 代价是两行代码，比让人对着一句看不懂的报错猜「要刷新」划算得多。
- */
+// 改过名的动作，旧名字继续认（`summarize` 是 `meta` 的旧名）
+// 服务端热重启后浏览器里可能还是旧代码，不收旧名就会报「不认识的 AI 动作」
 const LEGACY_ACTIONS: Record<string, AiRequest['action']> = { summarize: 'meta' }
 
 /** 把标题和分类拼成一句背景交代，让模型知道领域，术语才不会翻错 */
@@ -490,10 +413,7 @@ export async function runAi(config: AiConfig, request: AiRequest): Promise<AiRes
   const text = typeof input.text === 'string' ? input.text : ''
   const title = input.title?.trim() ?? ''
 
-  /*
-   * `meta` 只要有标题就能干活（把中文标题意译成 slug 是个正当用法，正文还没写也该能用），
-   * 改写类动作没有正文就无从下手。
-   */
+  // `meta` 只要有标题就能干活（把中文标题意译成 slug），改写类动作没有正文就无从下手
   if (!text.trim() && !(input.action === 'meta' && title)) {
     throw badRequest(input.action === 'meta' ? '正文和标题都是空的' : '没有要处理的内容')
   }
@@ -510,10 +430,7 @@ export async function runAi(config: AiConfig, request: AiRequest): Promise<AiRes
 
   const spec = ACTIONS[input.action]
 
-  /*
-   * `fix` 强制整篇。标题层级是**全局**属性 —— 只看选中的一段，根本判断不出
-   * 「整篇最浅的标题是几级」，改出来的层级必然是错的。
-   */
+  // `fix` 强制整篇：标题层级是全局属性，只看选中的一段判断不出「整篇最浅的标题是几级」
   const scope: AiRequest['scope'] =
     input.action === 'fix' ? 'all' : input.scope === 'selection' ? 'selection' : 'all'
 

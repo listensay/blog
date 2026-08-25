@@ -1,14 +1,7 @@
 import type { MaybeRefOrGetter } from 'vue'
 
-/**
- * 页面 SEO 元信息的统一入口。
- *
- * 在 useSeoMeta 之上补齐了每个页面都该有、但一个个页面写会漏的东西：
- * canonical、og:*、twitter:*。各页面只需要给「标题（不含站点名）」和描述。
- *
- * 全部参数都接受 getter，因为列表/详情页的取数是 lazy 的 —— 标题要等数据回来
- * 才有值，写成常量会把 SSR 之后的更新丢掉。
- */
+// 页面 SEO 元信息的统一入口：在 useSeoMeta 之上补齐 canonical、og:*、twitter:*。
+// 参数都接受 getter——列表/详情页取数是 lazy 的，写成常量会丢掉 SSR 之后的更新
 export interface SeoOptions {
   /** 页面标题，**不含站点名**。留空表示只用站点名（首页） */
   title?: MaybeRefOrGetter<string | undefined | null>
@@ -75,12 +68,8 @@ export function useSeo(options: SeoOptions = {}): void {
   })
 }
 
-/**
- * 输出一段 JSON-LD 结构化数据。
- *
- * 用 innerHTML 直接塞进 script 标签，所以必须把 `<` 转义掉 —— 否则正文标题里
- * 一个 `</script>` 就能提前闭合标签。`<` 在 JSON 里和 `<` 等价，解析不受影响。
- */
+// 输出一段 JSON-LD 结构化数据。innerHTML 直塞 script 标签，必须把 `<` 转义掉，
+// 否则正文标题里一个 `</script>` 就能提前闭合标签
 export function useJsonLd(data: MaybeRefOrGetter<Record<string, unknown>>): void {
   useHead({
     script: [{

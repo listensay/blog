@@ -1,0 +1,8 @@
+[
+  { "label": "Home", "to": "/", "icon": "home", "color": "#3b82f6" },
+  { "label": "Articles", "to": "/blog", "icon": "articles", "color": "#10b981" },
+  { "label": "Categories", "to": "/categories", "icon": "categories", "color": "#8b5cf6" },
+  { "label": "Tags", "to": "/tags", "icon": "tags", "color": "#f59e0b" },
+  { "label": "About", "to": "/about", "icon": "about", "color": "#06b6d4" },
+  { "label": "Links", "to": "/links", "icon": "links", "color": "#f43f5e" }
+]

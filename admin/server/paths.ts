@@ -1,12 +1,5 @@
-/**
- * 定位 blog 仓库里的几个目录，并且把「相对 content/ 的路径」安全地还原成绝对路径。
- *
- * 后台只允许碰三个地方：
- *   - `content/blog/**.md`   文章
- *   - `public/images/`       图片
- *   - `admin/.trash/`        删掉的文章挪过去（不是真删，误删能捞回来）
- * 其余路径一律拒绝，避免一个手写的 `?file=../../.env` 就把仓库外的文件读出来。
- */
+// 定位 blog 仓库里的几个目录，把「相对 content/ 的路径」安全还原成绝对路径
+// 只允许碰 content/、public/images/、admin/.trash/，其余一律拒绝，免得 `?file=../../.env` 读到仓库外
 import { existsSync, mkdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 
@@ -19,6 +12,10 @@ export interface Workspace {
   contentDir: string
   /** `<blogRoot>/content/blog`，文章都在这下面 */
   postsDir: string
+  /** `<blogRoot>/content/pages`，固定页都在这下面 */
+  pagesDir: string
+  /** `<blogRoot>/content/data/nav.json`，顶部菜单 */
+  navFile: string
   /** `<blogRoot>/public` */
   publicDir: string
   /** `<blogRoot>/public/images` */
@@ -30,13 +27,11 @@ export interface Workspace {
 /** 文章路径的集合前缀。`file` 一律形如 `blog/ai/xxx.md` */
 export const POSTS_PREFIX = 'blog'
 
-/**
- * 解析工作区。
- *
- * `adminRoot` 传 Vite 的 `config.root`（也就是 admin 目录）；blog 根默认是它的上一级，
- * 可以用环境变量 `ADMIN_BLOG_ROOT` 覆盖 —— 验证脚本靠它指到临时副本上，
- * 不然测试会写到真仓库里。
- */
+/** 固定页路径的集合前缀。`file` 一律形如 `pages/about.md` */
+export const PAGES_PREFIX = 'pages'
+
+// 解析工作区。`adminRoot` 传 Vite 的 config.root，blog 根默认取它的上一级
+// `ADMIN_BLOG_ROOT` 可以覆盖：验证脚本靠它指到临时副本，不然测试会写进真仓库
 export function resolveWorkspace(adminRoot: string): Workspace {
   const fromEnv = process.env.ADMIN_BLOG_ROOT?.trim()
   const blogRoot = fromEnv ? path.resolve(adminRoot, fromEnv) : path.resolve(adminRoot, '..')
@@ -45,12 +40,15 @@ export function resolveWorkspace(adminRoot: string): Workspace {
     blogRoot,
     contentDir: path.join(blogRoot, 'content'),
     postsDir: path.join(blogRoot, 'content', 'blog'),
+    pagesDir: path.join(blogRoot, 'content', 'pages'),
+    navFile: path.join(blogRoot, 'content', 'data', 'nav.json'),
     publicDir: path.join(blogRoot, 'public'),
     imagesDir: path.join(blogRoot, 'public', 'images'),
     trashDir: path.join(adminRoot, '.trash'),
   }
 
-  // 目录不对就直接说清楚是哪个不对，别等到第一次请求才报一个 ENOENT
+  // 目录不对就直接说清楚是哪个，别等到第一次请求才报 ENOENT。
+  // 不检查 pages/ 和 data/：那两个是「有就管、没有就现建」的
   for (const dir of [ws.contentDir, ws.postsDir, ws.publicDir] as const) {
     if (!existsSync(dir) || !statSync(dir).isDirectory()) {
       throw new Error(
@@ -80,21 +78,33 @@ function assertSafeRelative(relative: string, label: string): void {
   }
 }
 
-/**
- * `blog/ai/xxx.md` → `<blogRoot>/content/blog/ai/xxx.md`
- *
- * 除了字符串层面的校验，最后还会用规范化后的绝对路径复核一次「确实落在 postsDir 里」，
- * 这样连符号链接和大小写差异都兜住了。
- */
+// `blog/ai/xxx.md` → `<blogRoot>/content/blog/ai/xxx.md`
+// 先按字符串挡掉 `..`、绝对路径、NUL，再用绝对路径复核确实落在 postsDir 里（不解析符号链接）
 export function resolvePostFile(ws: Workspace, file: string): string {
+  return resolveContentFile(ws.postsDir, ws.contentDir, file, POSTS_PREFIX, '文章目录')
+}
+
+/** `pages/about.md` → `<blogRoot>/content/pages/about.md`，同上 */
+export function resolvePageFile(ws: Workspace, file: string): string {
+  return resolveContentFile(ws.pagesDir, ws.contentDir, file, PAGES_PREFIX, '页面目录')
+}
+
+/** 文章和页面共用一套解析，区别只有该落在哪个子目录里 —— 校验只留一份 */
+function resolveContentFile(
+  rootDir: string,
+  contentDir: string,
+  file: string,
+  prefix: string,
+  label: string,
+): string {
   assertSafeRelative(file, 'file')
-  if (!file.startsWith(`${POSTS_PREFIX}/`)) {
-    throw badRequest(`file 必须以 ${POSTS_PREFIX}/ 开头：${file}`)
+  if (!file.startsWith(`${prefix}/`)) {
+    throw badRequest(`file 必须以 ${prefix}/ 开头：${file}`)
   }
   if (!file.toLowerCase().endsWith('.md')) throw badRequest(`只能操作 .md 文件：${file}`)
 
-  const absolute = path.resolve(ws.contentDir, file)
-  if (!isInside(ws.postsDir, absolute)) throw badRequest(`file 超出文章目录：${file}`)
+  const absolute = path.resolve(contentDir, file)
+  if (!isInside(rootDir, absolute)) throw badRequest(`file 超出${label}：${file}`)
   return absolute
 }
 

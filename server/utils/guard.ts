@@ -25,10 +25,7 @@ function fail(message: string): never {
   throw httpError(400, message)
 }
 
-/**
- * 评论提交后直接可见，所以校验必须在这一步拦住绝大部分垃圾。
- * 三道防线：蜜罐字段、字段合法性、频率限制。
- */
+/** 评论提交后直接可见，所以垃圾必须在这一步拦住：蜜罐字段、字段合法性、频率限制 */
 export function validateComment(raw: Record<string, unknown>): CommentInput {
   // 蜜罐：真人看不到 homepage 这个输入框，脚本会无脑填满所有 input。
   // 刻意不叫 nickname/url 之类的名字——那些在浏览器自动填充的白名单里，会误伤真人。

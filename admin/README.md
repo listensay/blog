@@ -1,7 +1,10 @@
-# blog 文章管理后台
+# blog 管理后台
 
-`blog` 仓库的本地文章管理界面：列出、新建、编辑、删除 `content/blog/**.md`，
-顺手管 `public/images/` 里的图片。
+`blog` 仓库的本地管理界面，三块：
+
+- **文章** —— 列出、新建、编辑、删除 `content/blog/**.md`，顺手管 `public/images/` 里的图片
+- **页面** —— `content/pages/**.md`，也就是关于、友情链接这类固定页
+- **菜单** —— 站点顶栏那一排导航（`content/data/nav.json`）
 
 **只在本机跑，不部署。** 接口没有任何鉴权 —— 谁能访问这个端口，谁就能改仓库里的文件。
 dev server 只监听 `127.0.0.1`，而且读写文件的那套接口用 `apply: 'serve'` 挂在 Vite 插件里，
@@ -21,7 +24,8 @@ admin 默认把**上一级目录**当作 blog 仓库根（也就是 `blog/admin`
 ADMIN_BLOG_ROOT=~/Desktop/工作台/blog npm run dev
 ```
 
-顶栏会一直显示当前在改哪个仓库，以及文章数和图片数。
+顶栏左边是三个分区（文章 / 页面 / 菜单），右边一直显示当前在改哪个仓库，
+以及文章数、页面数和图片数。
 
 ## 配 AI 润色（可选）
 
@@ -43,28 +47,35 @@ cp .env.example .env.local   # 填上 ADMIN_AI_API_KEY，然后重启 dev server
 挂在 dev server 的中间件链上，所以 `npm run dev` 一条命令就够了，也完全不用改 blog 项目的代码。
 
 ```
-浏览器 ── /api/*         ──→ server/  ──→ ../content/blog/**.md
+浏览器 ── /api/*         ──→ server/  ──→ ../content/blog/**.md      文章
+       │                                 ../content/pages/**.md     固定页
+       │                                 ../content/data/nav.json   顶部菜单
        └─ /blog-public/* ──→            ../public/           （编辑器里的图片预览）
 ```
 
 | 接口 | 作用 |
 | --- | --- |
-| `GET /api/workspace` | 仓库路径、文章数、图片数 |
+| `GET /api/workspace` | 仓库路径、文章数、页面数、图片数 |
 | `GET /api/posts` | 文章列表，附带分类 / 标签 / 子目录候选 |
 | `GET /api/post?file=` | 读一篇（含正文和整份 frontmatter） |
 | `POST /api/post` | 新建 |
 | `PUT /api/post?file=` | 保存（可同时改名、换目录） |
 | `DELETE /api/post?file=` | 移到 `admin/.trash/` |
+| `GET /api/pages` | 页面列表，附带不能用的文件名 |
+| `GET /api/page?file=` | 读一个页面（含正文、friends、整份 frontmatter） |
+| `POST /api/page` · `PUT /api/page?file=` · `DELETE /api/page?file=` | 同文章那三个 |
+| `GET /api/nav` · `PUT /api/nav` | 顶部菜单（整份数组一起存） |
 | `GET /api/images` · `POST /api/images?name=` | 列图 / 存图 |
 | `GET /api/ai` | AI 配没配（模型名、base URL；**不回传密钥**） |
 | `POST /api/ai` | 跑一个 AI 动作 |
 
-`file` 一律是相对 `content/` 的路径，如 `blog/ai/免费AI公益中转站收集分享.md`。
+`file` 一律是相对 `content/` 的路径，如 `blog/ai/免费AI公益中转站收集分享.md`、`pages/about.md`。
+文章接口只认 `blog/` 开头的，页面接口只认 `pages/` 开头的，互相都进不去。
 
 ## 几个刻意的设计
 
-**删除不是真删。** 文章会被移到 `admin/.trash/`，文件名前面加时间戳（`.trash` 已进 gitignore）。
-误点一下能捞回来。
+**删除不是真删。** 文章和页面会被移到 `admin/.trash/`，文件名前面加时间戳（`.trash` 已进 gitignore）。
+误点一下能捞回来。页面会多一个 `pages__` 前缀，一眼能分出是页面还是文章。
 
 **正文没动过就一个字节都不改。** 只改分类、标签、日期的时候，后台原样写回原正文。
 富文本往返虽然渲染结果一样，但会把表格空格、列表符号规范化，git diff 会很难看。
@@ -247,6 +258,102 @@ slug 有两道额外保护：
 现在 `server/ai.ts` 里留了一张 `LEGACY_ACTIONS` 映射表把旧名字继续认下来 ——
 两行代码，换来「旧页面也不会炸」。要加新动作就加新名字，别改旧的。
 
+## 页面管理
+
+`content/pages/**.md` —— 关于、友情链接，以及以后随手加的任何一页。正文用的是和文章
+完全同一套编辑器（富文本 + Markdown 源码两个标签），「正文没动过就一个字节都不改」
+这条也一样管。
+
+**文件名就是网址。** 页面没有 slug 字段（`content.config.ts` 里 pages 集合的 `prefix` 是 `/`），
+所以 `pages/about.md` 就是 `/about`。这带来两件事：
+
+- 文件名只收小写字母、数字和连字符。中文文件名会变成 `/%E5%85%B3%E4%BA%8E` 那种网址，
+  能用但没人想要。
+- **改名 = 换网址 = 老链接 404。** 改之前会弹一次确认，而且会去顶部菜单里找有没有哪一项
+  正指着旧网址，有就在确认框里点名说出来（这是最容易忘的一处）。删除同理。
+- **frontmatter 里别写 `slug`**：页面的网址就是文件名。写了不会生效，
+  因为 `slug-path` transformer 只管 blog 集合 —— 早先它对所有 `.md` 都生效，
+  于是页面上手写一个 slug 会把网址静默改成 `/pages/<slug>`。
+
+`/links` 这种**站点上有专属 .vue** 的页面是个例外：删了或改名**不会 404**，
+那个 .vue 还在、只是查不到内容，会渲染成一个标题回退、正文和卡片全空的页面而且不报错。
+确认框会照实说这一点（名单在 `server/pages.ts` 的 `CUSTOM_ROUTE_FILES`）。
+
+**新建的页面站点上自动就有路由**：`app/pages/[...page].vue` 兜住了所有
+`content/pages/**` 的路径，加一个 md 文件不用写任何 .vue。
+
+**有些文件名建了也白建**，后台会直接拦下来：`blog`、`categories`、`tags`、`admin`、`index`。
+站点在这些路径上有自己手写的页面，静态路由优先级更高，md 文件永远不会被渲染 ——
+而且不会有任何报错，是那种能白折腾半小时的坑。这份名单由服务端给前端
+（`GET /api/pages` 的 `reserved`），所以只有一处需要维护。
+
+`/links` **不在**这份名单里：`app/pages/links.vue` 恰恰是去读 `pages/links.md` 的
+（标题、说明文字、友链列表都从它来），那个页面必须能编辑。
+
+### 友情链接
+
+`/links` 这一个页面在编辑器下方多一栏友链编辑器：一条一行，可增删、可上下挪
+（顺序就是页面上卡片的顺序）。别的页面不显示这一栏 —— 站点侧只有 `links.vue` 会渲染
+`friends`，给个编辑框只会让人白填。
+
+数据存在 `pages/links.md` 的 frontmatter 里，和说明文字同一个文件、同一个 commit。
+
+**friends 这个数组由后台独占维护**，这是它和 frontmatter 顶层唯一不一样的地方：
+顶层不认识的字段一律原样留着，而 friends 里某一条上的陌生键会被丢掉，键序、引号、
+空值写法也会被归一化。所以「打开不改再保存逐字节不变」对 friends 只在**规范形状**下成立
+（后台自己写出来的那种）。之所以敢这样，是因为这些条目全部来自界面上那个编辑器，
+不是人会手写的地方。
+
+两条校验值得说一下，都是「写进去不会报错、但线上是坏的」那类：
+
+- **网址必须带协议或以 `/` 开头。** `example.com` 会被浏览器当成相对地址，
+  点下去跳到 `/links/example.com`。
+- **头像必须写站点上真实存在的地址**（`/images/x.png`，点按钮能直接从图片库选）
+  或者 http 链接。frontmatter 里只有 `cover` 会被 `image-src` transformer 改写成站点 URL，
+  `avatar` **不会** —— 写成 `../../public/images/x.png` 的话后台预览得到、线上 404。
+
+空着的条目（点了「加一条」又没写）保存时直接忽略，不当成错误。
+
+## 菜单管理
+
+站点顶栏那一排导航，数据在 `content/data/nav.json`，站点侧由 `app/utils/site.ts`
+import 成 `siteConfig.nav`。
+
+站点侧是静态 import 这个 JSON 的（菜单每个页面都要渲染，运行时查一次不值得），
+本地 `npm run dev` 保存后会立刻热更新。
+
+**整份数组一起存**，没有单条增删的接口 —— 顺序本身就是数据，逐条改反而要额外处理
+「第几项」，而且会出现「存了一半」的中间状态。
+
+校验比文章那边严，因为这份数据**每一页都会渲染**：一条坏数据就是整站顶栏出问题，
+而不是某一篇文章打不开。保存时会拦住：文字为空、路径不以 `/` 开头、图标不认识、
+颜色不是 `#rrggbb`、两项指向同一个地址（那样当前页会同时高亮两项，看着像 bug）。
+**校验不过一个字都不落盘。**
+
+**路径只收站内地址。** 顶栏的「当前页高亮」是拿当前路径去比的，外链永远比不中，
+而且点一下就把人带出站了。想放外链就写在页脚或者友链页。
+
+**图标列表有两份，这是没办法的事。** admin 和 blog 是两个独立应用，admin 的 Vite 里
+import 不到 blog 的源码。所以 `server/nav.ts` 存一份（带中文说明，给下拉用），
+`app/utils/site.ts` 的 `NAV_ICONS` 存一份（`SiteHeader.vue` 拿它做 `Record<NavIcon, 组件>`
+映射表，漏一个直接类型报错）。两道保险：
+
+1. `npm run check` 里有一条用例把两份列表 `deepEqual` 比一遍，走散了会报出来。
+2. 站点侧对不认识的图标名**兜底**成一个通用图标，而不是让 `<component :is>` 拿到
+   `undefined` —— 那会让整个菜单项渲染不出来，而且控制台只有一句模糊的告警。
+
+菜单文件被手改坏（JSON 语法错之类）时接口**不报 500**：界面会显示「这个文件读不动」
+并让你重新保存一份正确的。否则唯一的修复途径变成去文本编辑器里改 JSON，
+那这个后台就没用了。
+
+`nav.json` 不存在时后台不报错（比如刚 clone 下来还没建过），保存一次就会创建。
+但**站点那边是硬依赖**：`app/utils/site.ts` 是静态 import 它的，文件不在的话
+连 `npm run dev` 都起不来。别把它删了。
+
+站点侧对坏数据有兜底（见 `site.ts` 的 `toNavItem`）：图标名或颜色不认识 → 换成兜底值；
+文字或路径空着 → 整条丢掉。**后者是必要的**，`<NuxtLink :to="undefined">` 会在
+vue-router 里直接抛错，而顶栏在布局里 —— 那是整站白屏，比少一项严重得多。
+
 ## 自检
 
 ```sh
@@ -258,9 +365,10 @@ npm run check
 - `check:roundtrip` 拿仓库里**真实的文章**过一遍 Markdown → 富文本 → Markdown，
   断言图片路径一字不差、标题/围栏/表格/列表的数量不变，另外跑一组语法定向用例。
   改动 `src/utils/markdown.ts` 或 tiptap 扩展之后一定要跑这个。
-- `check:api` 真的起一个 dev server 打全套增删改，顺带把 `src/` 下每个模块都请求一遍
-  （Vite 是按请求编译的，所以模板语法错误、解析不到的 import 都会在这一步暴露）。
-  它会先把 `content/` 和 `public/` 复制到临时目录再指过去，**不碰真仓库**。
+- `check:api` 真的起一个 dev server 打全套增删改（文章、页面、菜单都有），顺带把 `src/`
+  下每个模块都请求一遍（Vite 是按请求编译的，所以模板语法错误、解析不到的 import
+  都会在这一步暴露）。它会先把 `content/` 和 `public/` 复制到临时目录再指过去，
+  **不碰真仓库**。
   AI 那几条只测接口形状和入参校验，**不会真的调模型** —— 要花钱、要网络、结果还不确定，
   放进自检等于每次跑 check 都赌一次。「配没配 AI」是问 `GET /api/ai` 拿的，
   不是看 `process.env`（密钥在 `.env.local` 里，压根不在 process.env）。
@@ -274,7 +382,10 @@ npm run check
 server/           跑在 Node 侧的本地接口（Vite 插件）
   blog-api.ts     路由表 + blog/public 静态伺服 + 插件入口
   posts.ts        文章增删改查
-  frontmatter.ts  frontmatter 切分与拼回（正文逐字节保留）
+  pages.ts        固定页增删改查（文件名就是网址，所以校验严得多）
+  nav.ts          顶部菜单的读写 + 图标白名单
+  frontmatter.ts  frontmatter 切分与拼回（正文逐字节保留），文章和页面共用
+  trash.ts        删除 = 挪进 admin/.trash/，文章和页面共用
   images.ts       图片存取与命名
   ai.ts           AI 改写：配置、提示词、调 OpenAI 兼容接口
   paths.ts        目录定位与路径安全校验
@@ -286,9 +397,16 @@ src/
   utils/fences.ts    逐行围栏扫描（「这行在不在代码块里」只在这儿判一次）
   utils/ai.ts     AI 结果的完整性校验、行级差异、插回编辑器的形状处理
   editor/extensions.ts  tiptap 扩展配置
-  views/          列表页、编辑页
-  components/     富文本编辑器、图片选择器、封面缩略图、差异视图、两个 AI 弹窗
+  views/          文章列表/编辑、页面列表/编辑、菜单
+  components/     富文本编辑器、图片选择器、封面缩略图、友链编辑器、差异视图、两个 AI 弹窗
 scripts/          自检脚本
 ```
 
 `src/types.ts` 被两边同时引用，所以里面只放纯类型，不要 import 任何运行时代码。
+
+`utils/markdown.ts` 里那些函数收的 `contentDir` 是**文件相对 `content/` 的目录**
+（一篇 `content/blog/ai/x.md` 传 `blog/ai`，一个页面 `content/pages/about.md` 传 `pages`）。
+早先这个参数是「content/blog 下的子目录」，加页面管理时改成了现在这样 ——
+页面不在 content/blog 下面，用旧的口径压根表达不出来。虽然 `content/pages/` 和顶层文章
+深度相同、算出来的 `../` 层数碰巧一样，但依赖这种巧合的代码下次挪一层目录就会静默出错，
+而这类错误的症状是「本地有图、线上一片空白」。

@@ -24,11 +24,7 @@ export interface PublicComment {
   replies: PublicComment[]
 }
 
-/**
- * 头像本地生成（色块 + 首字），不走 Gravatar：
- * 既不把邮箱哈希发到第三方，也不让读者的 IP 暴露给外部图床。
- * 只回传 0-359 的色相，反推不出邮箱。
- */
+/** 头像色相本地算，不走 Gravatar：邮箱哈希不外发、读者 IP 不暴露，色相也反推不出邮箱 */
 function hueOf(row: CommentRow) {
   const seed = row.email_hash || row.author
   let hue = 0
@@ -52,10 +48,7 @@ function toPublic(row: CommentRow, replyTo: string | null): PublicComment {
   }
 }
 
-/**
- * 只做一层嵌套：回复的回复也挂到同一个顶层评论下，靠 replyTo 说明对象。
- * 这样缩进不会越来越深，手机上也读得下去。
- */
+/** 只做一层嵌套：回复的回复也挂到同一个顶层评论下，靠 replyTo 说明对象，免得缩进越来越深 */
 export function buildTree(rows: CommentRow[]): PublicComment[] {
   const byId = new Map(rows.map(row => [row.id, row]))
   const roots: PublicComment[] = []
