@@ -216,7 +216,9 @@ for (const collection of collections) {
     try {
       assert.deepEqual(after, before)
     } catch {
-      fail(`${rel} 的图片路径变了：\n      原: ${JSON.stringify(before)}\n      新: ${JSON.stringify(after)}`)
+      fail(
+        `${rel} 的图片路径变了：\n      原: ${JSON.stringify(before)}\n      新: ${JSON.stringify(after)}`,
+      )
       continue
     }
 
@@ -237,7 +239,9 @@ for (const collection of collections) {
           changed.map(([label, re]) => `${label} ${count(re, body)}→${count(re, back)}`).join('、'),
       )
     } else {
-      const note = risks.length ? `（含${risks.map((r) => r.label).join('、')}，界面会提示走源码标签）` : ''
+      const note = risks.length
+        ? `（含${risks.map((r) => r.label).join('、')}，界面会提示走源码标签）`
+        : ''
       pass(`${rel} ${body.length}→${back.length} 字节，图片 ${before.length} 个原样保留${note}`)
     }
   }

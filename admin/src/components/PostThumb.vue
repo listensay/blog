@@ -22,8 +22,8 @@ watch(src, () => {
 })
 
 const problem = computed(() => {
-  if (unresolved.value) return `这个路径解析不到 public/ 里，线上会 404：${props.cover}`
-  if (broken.value) return `public/ 里找不到这个文件，线上会 404：${props.cover}`
+  if (unresolved.value) return `路径无法解析到 public/：${props.cover}`
+  if (broken.value) return `public/ 中不存在该文件：${props.cover}`
   return ''
 })
 </script>

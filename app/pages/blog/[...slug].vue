@@ -157,7 +157,7 @@ useJsonLd(() => ({
         <NuxtLink
           v-if="surround?.[0]"
           :to="surround[0].path"
-          class="group rounded-xl border border-slate-200 p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+          class="group rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
         >
           <span class="text-xs font-medium uppercase tracking-wider text-slate-400">上一篇</span>
           <p class="mt-1 font-medium text-slate-900 group-hover:text-brand-700">
@@ -167,7 +167,7 @@ useJsonLd(() => ({
         <NuxtLink
           v-if="surround?.[1]"
           :to="surround[1].path"
-          class="group rounded-xl border border-slate-200 p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40 sm:col-start-2 sm:text-right"
+          class="group rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40 sm:col-start-2 sm:text-right"
         >
           <span class="text-xs font-medium uppercase tracking-wider text-slate-400">下一篇</span>
           <p class="mt-1 font-medium text-slate-900 group-hover:text-brand-700">

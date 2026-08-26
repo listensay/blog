@@ -27,8 +27,8 @@ defineExpose({ changed })
       <span class="small muted">{{ changed }} 行有改动</span>
     </div>
 
-    <div v-if="!rows" class="empty">内容太长，行级对比会很慢，直接看「结果」标签吧。</div>
-    <div v-else-if="!changed" class="empty">和原文一模一样，没有任何改动。</div>
+    <div v-if="!rows" class="empty">内容过长，已跳过行级对比，请查看「结果」标签。</div>
+    <div v-else-if="!changed" class="empty">与原文完全一致，没有改动。</div>
 
     <div v-else class="diff mono">
       <div v-for="(row, index) in shown" :key="index" :class="['row', row.kind]">

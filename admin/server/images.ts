@@ -78,7 +78,7 @@ export async function saveImage(
     return { item: await toImageItem(ws, name), reused: false }
   }
 
-  throw badRequest(`${clean} 的同名文件太多了，换个名字`)
+  throw badRequest(`${clean} 的同名文件过多，请更换名称`)
 }
 
 async function toImageItem(ws: Workspace, name: string): Promise<ImageItem> {

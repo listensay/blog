@@ -191,7 +191,9 @@ function normalizeEditorHtml(html: string): string {
     const firstRow = table.rows[0]
     const inTbody = firstRow?.parentElement?.tagName === 'TBODY'
     const allHeaderCells =
-      !!firstRow && firstRow.cells.length > 0 && [...firstRow.cells].every((c) => c.tagName === 'TH')
+      !!firstRow &&
+      firstRow.cells.length > 0 &&
+      [...firstRow.cells].every((c) => c.tagName === 'TH')
 
     if (firstRow && inTbody && allHeaderCells) {
       const thead = doc.createElement('thead')
@@ -200,13 +202,16 @@ function normalizeEditorHtml(html: string): string {
     }
   }
 
-  for (const p of body.querySelectorAll('li > p:only-child, th > p:only-child, td > p:only-child')) {
+  for (const p of body.querySelectorAll(
+    'li > p:only-child, th > p:only-child, td > p:only-child',
+  )) {
     unwrap(p)
   }
 
   for (const li of body.querySelectorAll('li')) {
     const [first, ...rest] = [...li.children]
-    const restAllLists = rest.length > 0 && rest.every((el) => el.tagName === 'UL' || el.tagName === 'OL')
+    const restAllLists =
+      rest.length > 0 && rest.every((el) => el.tagName === 'UL' || el.tagName === 'OL')
     if (first?.tagName === 'P' && restAllLists) unwrap(first)
   }
 
@@ -220,12 +225,10 @@ function normalizeEditorHtml(html: string): string {
 }
 
 export function htmlToMd(html: string, contentDir: string): string {
-  const markdown = tidyHeadingEscapes(createTurndown(contentDir).turndown(normalizeEditorHtml(html)))
-  return (
-    markdown
-      .replace(/^[ \t]+$/gm, '')
-      .replace(/\s+$/, '') + '\n'
+  const markdown = tidyHeadingEscapes(
+    createTurndown(contentDir).turndown(normalizeEditorHtml(html)),
   )
+  return markdown.replace(/^[ \t]+$/gm, '').replace(/\s+$/, '') + '\n'
 }
 
 export interface RichTextRisk {

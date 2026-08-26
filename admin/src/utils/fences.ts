@@ -1,4 +1,3 @@
-
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})(.*)$/
 const FENCE_CLOSE_ONLY = /^ {0,3}(?:`{3,}|~{3,})\s*$/
 
@@ -21,7 +20,13 @@ export function scanLines(markdown: string): MdLine[] {
     if (!fence) {
       if (matched) {
         fence = matched[1] ?? ''
-        out.push({ text, inCode: true, opensFence: true, closesFence: false, info: (matched[2] ?? '').trim() })
+        out.push({
+          text,
+          inCode: true,
+          opensFence: true,
+          closesFence: false,
+          info: (matched[2] ?? '').trim(),
+        })
       } else {
         out.push({ text, inCode: false, opensFence: false, closesFence: false, info: '' })
       }
@@ -42,13 +47,77 @@ export function scanLines(markdown: string): MdLine[] {
 }
 
 export const CODE_LANGUAGES = new Set([
-  'bash', 'sh', 'shell', 'zsh', 'fish', 'console', 'terminal', 'cmd', 'bat', 'powershell', 'ps1',
-  'python', 'py', 'javascript', 'js', 'typescript', 'ts', 'jsx', 'tsx', 'vue', 'svelte',
-  'json', 'json5', 'yaml', 'yml', 'toml', 'ini', 'xml', 'html', 'css', 'scss', 'less',
-  'sql', 'graphql', 'go', 'golang', 'rust', 'java', 'kotlin', 'swift', 'c', 'cpp', 'c++',
-  'csharp', 'cs', 'php', 'ruby', 'rb', 'perl', 'lua', 'r', 'matlab', 'dart', 'scala',
-  'dockerfile', 'docker', 'nginx', 'apache', 'makefile', 'cmake', 'diff', 'patch',
-  'markdown', 'md', 'text', 'plaintext', 'txt', 'log', 'env', 'gitignore', 'vim',
+  'bash',
+  'sh',
+  'shell',
+  'zsh',
+  'fish',
+  'console',
+  'terminal',
+  'cmd',
+  'bat',
+  'powershell',
+  'ps1',
+  'python',
+  'py',
+  'javascript',
+  'js',
+  'typescript',
+  'ts',
+  'jsx',
+  'tsx',
+  'vue',
+  'svelte',
+  'json',
+  'json5',
+  'yaml',
+  'yml',
+  'toml',
+  'ini',
+  'xml',
+  'html',
+  'css',
+  'scss',
+  'less',
+  'sql',
+  'graphql',
+  'go',
+  'golang',
+  'rust',
+  'java',
+  'kotlin',
+  'swift',
+  'c',
+  'cpp',
+  'c++',
+  'csharp',
+  'cs',
+  'php',
+  'ruby',
+  'rb',
+  'perl',
+  'lua',
+  'r',
+  'matlab',
+  'dart',
+  'scala',
+  'dockerfile',
+  'docker',
+  'nginx',
+  'apache',
+  'makefile',
+  'cmake',
+  'diff',
+  'patch',
+  'markdown',
+  'md',
+  'text',
+  'plaintext',
+  'txt',
+  'log',
+  'env',
+  'gitignore',
+  'vim',
 ])
 
 export function isLanguageLabelLine(line: string): boolean {

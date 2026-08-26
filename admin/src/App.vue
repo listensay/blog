@@ -18,6 +18,7 @@ const sections = [
     match: (path: string) => path === '/' || path.startsWith('/new') || path.startsWith('/edit'),
   },
   { name: 'pages', label: '页面', match: (path: string) => path.startsWith('/pages') },
+  { name: 'links', label: '链接', match: (path: string) => path.startsWith('/links') },
   { name: 'menu', label: '菜单', match: (path: string) => path.startsWith('/menu') },
 ] as const
 
@@ -62,7 +63,7 @@ onMounted(async () => {
                 {{ info.imageCount }} 张图片
               </span>
             </template>
-            <a-tag v-else-if="loadError" color="error">连不上本地接口</a-tag>
+            <a-tag v-else-if="loadError" color="error">本地接口连接失败</a-tag>
           </div>
         </div>
       </a-layout-header>
@@ -73,13 +74,13 @@ onMounted(async () => {
           class="boot-error"
           type="error"
           show-icon
-          message="读不到 blog 仓库"
+          message="无法读取 blog 仓库"
         >
           <template #description>
             {{ loadError }}
             <br />
-            admin 需要放在 blog 仓库里面（`blog/admin`）才能找到
-            <code>../content/blog</code>。目录不在这儿的话，用环境变量
+            admin 需要位于 blog 仓库内（<code>blog/admin</code>）才能定位
+            <code>../content/blog</code>。目录不在此处时，用环境变量
             <code>ADMIN_BLOG_ROOT</code> 指定 blog 根目录后重启 dev server。
           </template>
         </a-alert>

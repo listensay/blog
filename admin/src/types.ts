@@ -1,4 +1,3 @@
-
 export interface PostFrontmatter {
   title: string
   description: string
@@ -58,7 +57,6 @@ export interface ApiError {
   error: string
 }
 
-
 export interface FriendLink {
   name: string
   url: string
@@ -98,7 +96,6 @@ export interface PageListResponse {
   reserved: string[]
 }
 
-
 export interface NavItem {
   label: string
   to: string
@@ -118,7 +115,6 @@ export interface NavResponse {
   missing?: boolean
   error?: string
 }
-
 
 export type AiAction = 'fix' | 'polish' | 'condense' | 'expand' | 'meta'
 

@@ -109,9 +109,7 @@ function nameFor(file: File): string {
   if (!generic) return file.name
 
   const ext = file.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png'
-  const stamp = new Date()
-    .toLocaleString('sv-SE', { hour12: false })
-    .replace(/[-: ]/g, '')
+  const stamp = new Date().toLocaleString('sv-SE', { hour12: false }).replace(/[-: ]/g, '')
   return `Pasted-image-${stamp}.${ext}`
 }
 
@@ -121,9 +119,7 @@ async function uploadAndInsert(files: File[], pos?: number) {
     for (const file of files) {
       const { image, reused } = await api.uploadImage(nameFor(file), file)
       insertImage(image.previewUrl, pos)
-      message.success(
-        reused ? `复用了已有的 ${image.name}` : `已存到 public/images/${image.name}`,
-      )
+      message.success(reused ? `复用了已有的 ${image.name}` : `已存到 public/images/${image.name}`)
     }
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
@@ -321,13 +317,7 @@ function applyLink() {
 
     <ImagePickerModal v-model:open="pickerOpen" @select="insertImage($event.previewUrl)" />
 
-    <a-modal
-      v-model:open="linkOpen"
-      title="链接"
-      ok-text="确定"
-      cancel-text="取消"
-      @ok="applyLink"
-    >
+    <a-modal v-model:open="linkOpen" title="链接" ok-text="确定" cancel-text="取消" @ok="applyLink">
       <a-input
         v-model:value="linkHref"
         placeholder="https://… 或 /blog/xxx（留空则取消链接）"

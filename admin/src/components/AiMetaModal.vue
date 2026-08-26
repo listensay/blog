@@ -100,7 +100,9 @@ function apply() {
 
       <div v-else-if="result" class="body">
         <p class="lead">
-          勾上的才会填进表单。<span class="muted">空着的字段默认帮你填，已经有值的默认不动。</span>
+          仅勾选的字段会填入表单。<span class="muted"
+            >默认勾选空字段，已有内容的字段默认不勾选。</span
+          >
         </p>
 
         <section :class="{ off: !use.title }">
@@ -142,8 +144,8 @@ function apply() {
             type="warning"
             show-icon
             class="url-warn"
-            message="这会换掉文章的网址"
-            description="如果这篇已经发出去过，老链接会 404，搜索引擎收录也得重来。没发过就没关系。"
+            message="文章网址将改变"
+            description="已发布的文章原链接将返回 404，搜索引擎收录需重新建立。"
           />
         </section>
 

@@ -201,7 +201,6 @@ export function buildFrontmatter(
   return data
 }
 
-
 function asFriend(value: unknown): FriendLink | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const item = value as Record<string, unknown>

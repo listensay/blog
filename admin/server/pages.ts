@@ -115,15 +115,14 @@ function validateFriends(input: FriendLink[] | undefined): FriendLink[] {
     const description = item?.description?.trim() ?? ''
     if (!name && !url && !avatar && !description) continue
 
-    if (!name) throw badRequest(`${at}没写名字`)
-    if (!url) throw badRequest(`${at}（${name}）没写网址`)
+    if (!name) throw badRequest(`${at}的名称不能为空`)
+    if (!url) throw badRequest(`${at}（${name}）的网址不能为空`)
     if (!USABLE_LINK.test(url)) {
       throw badRequest(`${at}（${name}）的网址要以 https:// 或 / 开头：${url}`)
     }
     if (avatar && !USABLE_LINK.test(avatar)) {
       throw badRequest(
-        `${at}（${name}）的头像要写站点地址（/images/x.png）或 http(s) 链接，` +
-          `相对路径线上会 404：${avatar}`,
+        `${at}（${name}）的头像需填站点地址（/images/x.png）或 http(s) 链接：${avatar}`,
       )
     }
 
@@ -138,17 +137,14 @@ function validate(input: PageInput): PageInput {
   const title = input.title?.trim() ?? ''
 
   if (!title) throw badRequest('标题不能为空')
-  if (!name) throw badRequest('文件名不能为空（页面的网址就是它）')
+  if (!name) throw badRequest('文件名不能为空')
   if (!PAGE_NAME_RE.test(name)) {
-    throw badRequest(`文件名只能用小写字母、数字和连字符（它就是网址）：${name}`)
+    throw badRequest(`文件名只能用小写字母、数字和连字符：${name}`)
   }
 
   const first = name.split('/')[0] ?? ''
   if (RESERVED_FIRST_SEGMENTS.has(first)) {
-    throw badRequest(
-      `/${first} 是站点自己的页面（app/pages/${first} 那边手写的），` +
-        `这里建的 pages/${name}.md 永远不会被访问到，换个名字吧`,
-    )
+    throw badRequest(`/${first} 是站点内置页面，pages/${name}.md 不会生效，请更换文件名`)
   }
 
   return {

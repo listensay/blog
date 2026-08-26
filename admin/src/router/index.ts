@@ -40,6 +40,12 @@ const router = createRouter({
       name: 'menu',
       component: () => import('@/views/NavView.vue'),
     },
+
+    {
+      path: '/links',
+      name: 'links',
+      component: () => import('@/views/LinkView.vue'),
+    },
   ],
 })
 

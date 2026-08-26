@@ -43,7 +43,6 @@ export function aiStatus(config: AiConfig): AiStatus {
   }
 }
 
-
 function rulesFor(action: AiRequest['action']): string {
   const heading =
     action === 'fix'
@@ -164,7 +163,6 @@ const META_PROMPT = [
   '  不要造词，也不要「技术」「分享」「记录」这种贴在任何文章上都成立的词 —— 除非这篇确实就是一篇教程，那 tags 里可以有「教程」。',
 ].join('\n')
 
-
 interface ChatChoice {
   message?: { content?: unknown }
   finish_reason?: unknown
@@ -181,14 +179,13 @@ function explainFailure(status: number, body: string): HttpError {
   try {
     const parsed = JSON.parse(body) as ChatResponse
     if (parsed.error?.message) detail = String(parsed.error.message)
-  } catch {
-  }
+  } catch {}
 
   const reason: Record<number, string> = {
     401: '密钥不对或者过期了（ADMIN_AI_API_KEY）',
     403: '这个密钥没有访问权限',
     404: 'ADMIN_AI_BASE_URL 或 ADMIN_AI_MODEL 不对，接口路径找不到',
-    429: '被限流了，等一下再试',
+    429: '请求过于频繁，请稍后重试',
   }
 
   const prefix = reason[status] ?? `AI 接口返回 HTTP ${status}`
@@ -232,7 +229,7 @@ async function chat(
     }
     throw new HttpError(
       502,
-      `连不上 AI 接口 ${config.baseUrl}：${err instanceof Error ? err.message : String(err)}`,
+      `AI 接口连接失败 ${config.baseUrl}：${err instanceof Error ? err.message : String(err)}`,
     )
   }
 
@@ -260,7 +257,6 @@ async function chat(
 
   return { text: content, usage, truncated: choice?.finish_reason === 'length' }
 }
-
 
 function stripWrappingFence(text: string): string {
   const trimmed = text.trim()
@@ -340,14 +336,7 @@ function parseMeta(text: string): Omit<AiMetaResult, 'kind' | 'model' | 'usage'>
   return result
 }
 
-
-const VALID_ACTIONS = new Set<AiRequest['action']>([
-  'fix',
-  'polish',
-  'condense',
-  'expand',
-  'meta',
-])
+const VALID_ACTIONS = new Set<AiRequest['action']>(['fix', 'polish', 'condense', 'expand', 'meta'])
 
 const LEGACY_ACTIONS: Record<string, AiRequest['action']> = { summarize: 'meta' }
 
@@ -368,9 +357,9 @@ export async function runAi(config: AiConfig, request: AiRequest): Promise<AiRes
 
   if (!VALID_ACTIONS.has(action)) {
     throw badRequest(
-      `不认识的 AI 动作：${String(request.action)}。` +
-        `能用的是 ${[...VALID_ACTIONS].join(' / ')}。` +
-        `如果这个页面开了很久，刷新一下再试 —— 大概是浏览器里还是旧代码。`,
+      `不支持的 AI 动作：${String(request.action)}。` +
+        `可用动作：${[...VALID_ACTIONS].join(' / ')}。` +
+        `若页面长时间未刷新，请刷新后重试。`,
     )
   }
 
@@ -387,7 +376,12 @@ export async function runAi(config: AiConfig, request: AiRequest): Promise<AiRes
   }
 
   if (input.action === 'meta') {
-    const { text: raw, usage } = await chat(config, META_PROMPT, `${contextLine(input)}${text}`, 0.2)
+    const { text: raw, usage } = await chat(
+      config,
+      META_PROMPT,
+      `${contextLine(input)}${text}`,
+      0.2,
+    )
     return { kind: 'meta', ...parseMeta(raw), model: config.model, usage }
   }
 

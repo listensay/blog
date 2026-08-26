@@ -145,7 +145,10 @@ try {
     created = String(data.file)
 
     const raw = await readFile(path.join(sandbox, 'content', created), 'utf8')
-    assert.ok(raw.startsWith('---\ntitle: 接口自测文章\n'), `文件开头是 ${JSON.stringify(raw.slice(0, 40))}`)
+    assert.ok(
+      raw.startsWith('---\ntitle: 接口自测文章\n'),
+      `文件开头是 ${JSON.stringify(raw.slice(0, 40))}`,
+    )
     assert.ok(raw.includes('date: 2026-08-21 14:05'), '日期时间没按 YYYY-MM-DD HH:mm 落盘')
     assert.ok(raw.includes('draft: true'))
     assert.ok(!raw.includes('cover:'), '空 cover 不该写进文件')
@@ -219,7 +222,11 @@ try {
     ['日期不存在', { date: '2026-02-31' }, 400],
     ['小时越界', { date: '2026-08-21 25:00' }, 400],
     ['分钟越界', { date: '2026-08-21 12:60' }, 400],
-    ['只有日期也接受（按 00:00）', { date: '2026-08-21', name: '只给日期', slug: 'date-only-ok' }, 201],
+    [
+      '只有日期也接受（按 00:00）',
+      { date: '2026-08-21', name: '只给日期', slug: 'date-only-ok' },
+      201,
+    ],
     ['文件名带斜杠', { name: 'a/b' }, 400],
     ['子目录想跳出去', { dir: '../../etc' }, 400],
   ]
@@ -368,7 +375,11 @@ try {
     })
 
     await check('带时区的写法按本地时间归一', async () => {
-      await writeFile(absolute, legacy.replace('date: 2026-08-19', 'date: 2026-08-19T09:30:00+08:00'), 'utf8')
+      await writeFile(
+        absolute,
+        legacy.replace('date: 2026-08-19', 'date: 2026-08-19T09:30:00+08:00'),
+        'utf8',
+      )
       const { data } = await call('GET', `/api/post?file=${encodeURIComponent(file)}`)
       assert.equal(data.date, '2026-08-19 09:30')
     })
@@ -381,7 +392,10 @@ try {
     assert.equal(status, 200)
     const pages = data.pages as Array<Json>
     assert.ok(pages.length >= 1, `页面数是 ${pages.length}`)
-    assert.ok(pages.some((p) => p.file === 'pages/about.md'), '没列出 pages/about.md')
+    assert.ok(
+      pages.some((p) => p.file === 'pages/about.md'),
+      '没列出 pages/about.md',
+    )
     assert.ok((data.reserved as string[]).includes('blog'), 'reserved 里没有 blog')
   })
 
@@ -435,7 +449,10 @@ try {
     createdPage = String(data.file)
 
     const raw = await readFile(path.join(sandbox, 'content', createdPage), 'utf8')
-    assert.ok(raw.startsWith('---\ntitle: 接口自测页面\n'), `文件开头是 ${JSON.stringify(raw.slice(0, 40))}`)
+    assert.ok(
+      raw.startsWith('---\ntitle: 接口自测页面\n'),
+      `文件开头是 ${JSON.stringify(raw.slice(0, 40))}`,
+    )
     assert.ok(!raw.includes('friends:'), '空 friends 不该写进文件')
     assert.ok(raw.endsWith('![](../../public/images/x.png)\n'), '正文没原样写进去')
   })
@@ -448,11 +465,15 @@ try {
 
   await check('PUT /api/page 改名换到子目录，正文原样写入，旧文件被清掉', async () => {
     const { data: detail } = await call('GET', `/api/page?file=${encodeURIComponent(createdPage)}`)
-    const { status, data } = await call('PUT', `/api/page?file=${encodeURIComponent(createdPage)}`, {
-      ...detail,
-      name: 'sub/api-check-page',
-      title: '改过的页面标题',
-    })
+    const { status, data } = await call(
+      'PUT',
+      `/api/page?file=${encodeURIComponent(createdPage)}`,
+      {
+        ...detail,
+        name: 'sub/api-check-page',
+        title: '改过的页面标题',
+      },
+    )
     assert.equal(status, 200)
     assert.equal(data.file, 'pages/sub/api-check-page.md')
     assert.equal(data.path, '/sub/api-check-page')
@@ -507,7 +528,10 @@ try {
   })
 
   await check('DELETE /api/page 移到 admin/.trash/', async () => {
-    const { status, data } = await call('DELETE', `/api/page?file=${encodeURIComponent(createdPage)}`)
+    const { status, data } = await call(
+      'DELETE',
+      `/api/page?file=${encodeURIComponent(createdPage)}`,
+    )
     assert.equal(status, 200)
 
     const trashed = String(data.trashed)
@@ -609,7 +633,10 @@ try {
   const badNav: Array<[string, unknown]> = [
     ['不是数组', { label: '首页' }],
     ['文字为空', [{ label: ' ', to: '/', icon: 'home', color: '#3b82f6' }]],
-    ['路径不以 / 开头（顶栏只放站内页面）', [{ label: '外链', to: 'https://a.com', icon: 'home', color: '#3b82f6' }]],
+    [
+      '路径不以 / 开头（顶栏只放站内页面）',
+      [{ label: '外链', to: 'https://a.com', icon: 'home', color: '#3b82f6' }],
+    ],
     ['图标不认识', [{ label: '首页', to: '/', icon: '飞机', color: '#3b82f6' }]],
     ['颜色不是 #rrggbb', [{ label: '首页', to: '/', icon: 'home', color: 'red' }]],
     [
@@ -630,7 +657,9 @@ try {
 
   await check('校验不过时一个字都不落盘', async () => {
     const before = await readFile(navFile, 'utf8')
-    await call('PUT', '/api/nav', { items: [{ label: '坏的', to: 'x', icon: 'home', color: '#000000' }] })
+    await call('PUT', '/api/nav', {
+      items: [{ label: '坏的', to: 'x', icon: 'home', color: '#000000' }],
+    })
     assert.equal(await readFile(navFile, 'utf8'), before)
   })
 
@@ -671,7 +700,11 @@ try {
   const rejected = (status: number) => [400, 503].includes(status)
 
   await check('不认识的动作 → 400', async () => {
-    const { status } = await call('POST', '/api/ai', { action: '删掉全文', scope: 'all', text: 'x' })
+    const { status } = await call('POST', '/api/ai', {
+      action: '删掉全文',
+      scope: 'all',
+      text: 'x',
+    })
     assert.ok(rejected(status), `状态码是 ${status}`)
   })
 
@@ -681,7 +714,11 @@ try {
   })
 
   await check('meta：正文和标题都空 → 400', async () => {
-    const { status, data } = await call('POST', '/api/ai', { action: 'meta', scope: 'all', text: '' })
+    const { status, data } = await call('POST', '/api/ai', {
+      action: 'meta',
+      scope: 'all',
+      text: '',
+    })
     assert.ok(rejected(status), `状态码是 ${status}`)
     if (aiConfigured) assert.match(String(data.error), /正文和标题都是空的/)
   })
@@ -743,11 +780,7 @@ try {
 
         for (const [, styleUrl] of text.matchAll(/from\s+"(\/src\/[^"]*type=style[^"]*)"/g)) {
           const styleResponse = await fetch(`${base}${styleUrl}`)
-          assert.equal(
-            styleResponse.status,
-            200,
-            `样式 ${styleUrl} → HTTP ${styleResponse.status}`,
-          )
+          assert.equal(styleResponse.status, 200, `样式 ${styleUrl} → HTTP ${styleResponse.status}`)
         }
       })
     }

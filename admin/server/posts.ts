@@ -21,6 +21,17 @@ export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 const BAD_FILENAME_CHARS = /[\\/:*?"<>|]|\p{Cc}/u
 
+const MAX_NAME = 120
+
+const WINDOWS_RESERVED = new Set([
+  'con',
+  'prn',
+  'aux',
+  'nul',
+  ...Array.from({ length: 9 }, (_, i) => `com${i + 1}`),
+  ...Array.from({ length: 9 }, (_, i) => `lpt${i + 1}`),
+])
+
 async function walkMarkdown(dir: string, base = ''): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })
   const files: string[] = []
@@ -148,15 +159,18 @@ function validate(input: PostInput): PostInput {
 
   if (!title) throw badRequest('标题不能为空')
   if (!name) throw badRequest('文件名不能为空')
+  if (name.length > MAX_NAME) throw badRequest(`文件名最多 ${MAX_NAME} 个字：${name}`)
   if (BAD_FILENAME_CHARS.test(name)) throw badRequest(`文件名不能包含 \\ / : * ? " < > | ：${name}`)
-  if (name.startsWith('.') || /[. ]$/.test(name)) throw badRequest(`文件名不能以点或空格开头结尾：${name}`)
+  if (name.startsWith('.') || /[. ]$/.test(name))
+    throw badRequest(`文件名不能以点或空格开头结尾：${name}`)
+  if (WINDOWS_RESERVED.has(name.toLowerCase())) throw badRequest(`${name} 是系统保留名称`)
   if (dir && !DIR_RE.test(dir)) throw badRequest(`子目录只能用字母数字和 - _ .：${dir}`)
-  if (!slug) throw badRequest('slug 不能为空（文章 URL 靠它生成）')
+  if (!slug) throw badRequest('slug 不能为空')
   if (!SLUG_RE.test(slug)) throw badRequest(`slug 只能用小写字母、数字和连字符：${slug}`)
   if (!DATE_TIME_FORMAT.test(date)) {
     throw badRequest(`日期时间要写成 YYYY-MM-DD HH:mm：${input.date}`)
   }
-  if (!isRealDateTime(date)) throw badRequest(`这个时刻不存在：${date}`)
+  if (!isRealDateTime(date)) throw badRequest(`日期时间无效：${date}`)
 
   return {
     ...input,
@@ -189,8 +203,7 @@ async function assertSlugFree(
   }
 }
 
-const fileIdOf = (dir: string, name: string) =>
-  `${POSTS_PREFIX}/${dir ? `${dir}/` : ''}${name}.md`
+const fileIdOf = (dir: string, name: string) => `${POSTS_PREFIX}/${dir ? `${dir}/` : ''}${name}.md`
 
 async function exists(absolute: string): Promise<boolean> {
   try {

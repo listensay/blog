@@ -71,8 +71,8 @@ function openEditor(post: PostSummary) {
 
 async function remove(post: PostSummary) {
   try {
-    const { trashed } = await api.deletePost(post.file)
-    message.success(`已把《${post.title || post.name}》移到 admin/.trash/${trashed}`)
+    await api.deletePost(post.file)
+    message.success(`已将《${post.title || post.name}》移到回收站`)
     await load()
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
@@ -155,7 +155,7 @@ const columns = [
   >
     <template #emptyText>
       <div class="empty">
-        <p v-if="posts.length">没有符合条件的文章，换个筛选条件试试。</p>
+        <p v-if="posts.length">没有符合条件的文章。</p>
         <p v-else>content/blog 下还没有文章。</p>
         <a-button type="primary" @click="router.push({ name: 'post-new' })">写新文章</a-button>
       </div>
@@ -168,7 +168,7 @@ const columns = [
 
       <template v-else-if="column.key === 'title'">
         <a class="title-link" @click="openEditor(record as PostSummary)">
-          {{ (record as PostSummary).title || '（没有标题）' }}
+          {{ (record as PostSummary).title || '未命名' }}
         </a>
         <a-tag v-if="(record as PostSummary).draft" color="orange" class="draft-tag">草稿</a-tag>
         <div class="sub">
@@ -183,7 +183,9 @@ const columns = [
       </template>
 
       <template v-else-if="column.key === 'category'">
-        <a-tag v-if="(record as PostSummary).category">{{ (record as PostSummary).category }}</a-tag>
+        <a-tag v-if="(record as PostSummary).category">{{
+          (record as PostSummary).category
+        }}</a-tag>
         <span v-else class="muted">—</span>
       </template>
 
@@ -215,9 +217,9 @@ const columns = [
           </a-tooltip>
 
           <a-popconfirm
-            :title="`把《${(record as PostSummary).title || (record as PostSummary).name}》移到 admin/.trash/？`"
+            :title="`将《${(record as PostSummary).title || (record as PostSummary).name}》移到回收站？`"
             ok-text="移到回收站"
-            cancel-text="算了"
+            cancel-text="取消"
             @confirm="remove(record as PostSummary)"
           >
             <a-tooltip title="删除">

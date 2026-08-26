@@ -64,11 +64,11 @@ function apply() {
 
   if (blocking.value.length) {
     Modal.confirm({
-      title: '这个结果有问题，确定还要用？',
-      content: `${blocking.value.map((i) => i.label).join('、')}。用了之后记得自己再核一遍。`,
-      okText: '知道了，还是替换',
+      title: '结果存在问题，确认使用？',
+      content: `${blocking.value.map((i) => i.label).join('、')}。应用后请自行核对。`,
+      okText: '仍然替换',
       okType: 'danger',
-      cancelText: '算了，我再改改',
+      cancelText: '取消',
       onOk: () => emit('apply', text),
     })
     return
@@ -98,8 +98,8 @@ function apply() {
           type="error"
           show-icon
           class="notice"
-          message="结果被截断了"
-          description="模型是因为输出长度上限停下来的，后面的内容没生成。把 ADMIN_AI_MAX_TOKENS 调大，或者分段来改。"
+          message="结果已截断"
+          description="已达到输出长度上限，剩余内容未生成。可调大 ADMIN_AI_MAX_TOKENS，或分段处理。"
         />
 
         <a-alert
@@ -119,8 +119,8 @@ function apply() {
           class="notice"
           :message="
             formatOnly
-              ? '文字一个字都没变，图片地址、代码块、标题数量也都对得上'
-              : '图片地址、代码块、标题层级都和原文一致'
+              ? '文字未改动，图片地址、代码块和标题数量一致'
+              : '图片地址、代码块和标题层级与原文一致'
           "
         />
 

@@ -47,9 +47,9 @@ function asItem(value: unknown, index: number): NavItem {
   const icon = typeof item.icon === 'string' ? item.icon.trim() : ''
   const color = typeof item.color === 'string' ? item.color.trim() : ''
 
-  if (!label) throw badRequest(`${at}没写文字`)
+  if (!label) throw badRequest(`${at}的名称不能为空`)
   if (label.length > MAX_LABEL) throw badRequest(`${at}的文字太长了（最多 ${MAX_LABEL} 个字）`)
-  if (!to) throw badRequest(`${at}（${label}）没写路径`)
+  if (!to) throw badRequest(`${at}（${label}）的路径不能为空`)
   if (!to.startsWith('/')) {
     throw badRequest(`${at}（${label}）的路径要以 / 开头，顶栏只放站内页面：${to}`)
   }
@@ -69,7 +69,7 @@ function validate(input: unknown): NavItem[] {
 
   const seen = new Set<string>()
   for (const item of items) {
-    if (seen.has(item.to)) throw badRequest(`有两项都指向 ${item.to}，留一个就好`)
+    if (seen.has(item.to)) throw badRequest(`有两项都指向 ${item.to}，请删除重复项`)
     seen.add(item.to)
   }
 

@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons-vue'
 
 import { api } from '@/api'
+import NavIcon from '@/components/NavIcon.vue'
 import type { NavIconOption, NavItem, PageSummary } from '@/types'
 
 const loading = ref(true)
@@ -88,11 +89,11 @@ onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
   return new Promise<boolean>((resolve) => {
     Modal.confirm({
-      title: '菜单还没保存',
-      content: '改动会丢掉，确定离开吗？',
-      okText: '不保存，离开',
+      title: '有未保存的修改',
+      content: '离开后修改会丢失。',
+      okText: '不保存并离开',
       okType: 'danger',
-      cancelText: '留下继续改',
+      cancelText: '取消',
       onOk: () => resolve(true),
       onCancel: () => resolve(false),
     })
@@ -148,16 +149,13 @@ async function save() {
     baseline.value = JSON.stringify(items.value)
     fileMissing.value = false
     fileError.value = ''
-    message.success(`已存进 ${nav.file}`)
+    message.success(`已保存到 ${nav.file}`)
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
   } finally {
     saving.value = false
   }
 }
-
-const iconLabel = (value: string) =>
-  icons.value.find((item) => item.value === value)?.label ?? value
 </script>
 
 <template>
@@ -187,8 +185,8 @@ const iconLabel = (value: string) =>
       type="warning"
       show-icon
       class="banner"
-      message="还没有这个文件"
-      :description="`${filePath} 不存在，保存一次就会建出来。`"
+      message="文件不存在"
+      :description="`${filePath} 不存在，保存后自动创建。`"
     />
 
     <a-alert
@@ -196,7 +194,7 @@ const iconLabel = (value: string) =>
       type="error"
       show-icon
       class="banner"
-      message="这个文件读不动，界面上显示的是空菜单"
+      message="文件解析失败，当前显示为空菜单"
       :description="`${fileError}。保存一次会用这里的内容覆盖它 —— 覆盖之前先确认下面列的就是你想要的。`"
     />
 
@@ -204,11 +202,10 @@ const iconLabel = (value: string) =>
       <div class="card-title">预览</div>
       <nav class="preview">
         <span v-for="(item, index) in items" :key="index" class="preview-item">
-          <span class="preview-dot" :style="{ background: item.color }" />
-          {{ item.label || '（没写文字）' }}
-          <span class="preview-icon">{{ iconLabel(item.icon) }}</span>
+          <NavIcon :name="item.icon" :size="16" :style="{ color: item.color }" />
+          {{ item.label || '未命名' }}
         </span>
-        <span v-if="!items.length" class="muted">一项都没有，顶栏会是空的。</span>
+        <span v-if="!items.length" class="muted">暂无菜单项</span>
       </nav>
     </div>
 
@@ -222,7 +219,7 @@ const iconLabel = (value: string) =>
           <a-input
             :value="item.label"
             class="label-input"
-            placeholder="显示的文字，如 About"
+            placeholder="菜单名称"
             @update:value="(v: string) => update(index, { label: v })"
           />
 
@@ -234,23 +231,31 @@ const iconLabel = (value: string) =>
               :options="pathOptions"
               @update:value="(v: unknown) => update(index, { to: String(v ?? '') })"
             />
-            <div v-if="duplicated.has(item.to)" class="field-error">
-              和另一项指向同一个地址，选中状态会同时亮两个
-            </div>
+            <div v-if="duplicated.has(item.to)" class="field-error">与其他菜单项路径重复</div>
             <div v-else-if="looksMissing(item.to)" class="field-warn">
-              没有这个页面 —— 去「页面」里建一个，或者检查是不是写错了
+              页面不存在，请先创建或检查路径
             </div>
           </div>
 
           <a-select
             :value="item.icon"
             class="icon-select"
-            :options="icons"
-            :field-names="{ label: 'label', value: 'value' }"
             show-search
             option-filter-prop="label"
             @update:value="(v: unknown) => update(index, { icon: String(v) })"
-          />
+          >
+            <a-select-option
+              v-for="option in icons"
+              :key="option.value"
+              :value="option.value"
+              :label="option.label"
+            >
+              <span class="icon-option">
+                <NavIcon :name="option.value" :size="16" />
+                {{ option.label }}
+              </span>
+            </a-select-option>
+          </a-select>
 
           <a-input
             :value="item.color"
@@ -277,9 +282,9 @@ const iconLabel = (value: string) =>
             </a-button>
           </a-tooltip>
           <a-popconfirm
-            :title="`删掉「${item.label || '这一项'}」？`"
-            ok-text="删掉"
-            cancel-text="算了"
+            :title="`删除「${item.label || '当前项'}」？`"
+            ok-text="删除"
+            cancel-text="取消"
             @confirm="remove(index)"
           >
             <a-button type="text" size="small" danger>
@@ -353,15 +358,10 @@ const iconLabel = (value: string) =>
   font-size: 13px;
 }
 
-.preview-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.preview-icon {
-  color: #bfbfbf;
-  font-size: 12px;
+.icon-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .row {
@@ -420,13 +420,6 @@ const iconLabel = (value: string) =>
 
 .add {
   margin-top: 12px;
-}
-
-.card-hint {
-  margin: 12px 0 0;
-  color: #8c8c8c;
-  font-size: 12px;
-  line-height: 1.7;
 }
 
 .field-error {

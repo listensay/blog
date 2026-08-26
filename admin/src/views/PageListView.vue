@@ -9,13 +9,16 @@ import type { PageSummary } from '@/types'
 
 const router = useRouter()
 
+const LINKS_FILE = 'pages/links.md'
+
 const loading = ref(false)
 const pages = ref<PageSummary[]>([])
 
 async function load() {
   loading.value = true
   try {
-    pages.value = (await api.listPages()).pages
+    const list = await api.listPages()
+    pages.value = list.pages.filter((page) => page.file !== LINKS_FILE)
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
   } finally {
@@ -31,8 +34,8 @@ function openEditor(page: PageSummary) {
 
 async function remove(page: PageSummary) {
   try {
-    const { trashed } = await api.deletePage(page.file)
-    message.success(`已把《${page.title || page.name}》移到 admin/.trash/${trashed}`)
+    await api.deletePage(page.file)
+    message.success(`已将《${page.title || page.name}》移到回收站`)
     await load()
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
@@ -47,13 +50,8 @@ function formatSize(bytes: number): string {
   return bytes < 1024 ? `${bytes} B` : `${Math.round(bytes / 1024)} KB`
 }
 
-const friendCount = (page: PageSummary) => page.friends.length
-
 function removeHint(page: PageSummary): string {
-  const gone = page.customRoute
-    ? `${page.path} 的排版是站点上手写的，删了不会 404，会变成一个空页面（不报错）`
-    : `${page.path} 会 404`
-  return `把《${page.title || page.name}》移到 admin/.trash/？${gone}`
+  return `将《${page.title || page.name}》移到回收站？${page.path} 将返回 404。`
 }
 
 const columns = [
@@ -100,11 +98,8 @@ const total = computed(() => pages.value.length)
     <template #bodyCell="{ column, record }">
       <template v-if="column.key === 'title'">
         <a class="title-link" @click="openEditor(record as PageSummary)">
-          {{ (record as PageSummary).title || '（没有标题）' }}
+          {{ (record as PageSummary).title || '未命名' }}
         </a>
-        <a-tag v-if="friendCount(record as PageSummary)" color="blue" class="friend-tag">
-          {{ friendCount(record as PageSummary) }} 条友链
-        </a-tag>
         <div v-if="(record as PageSummary).description" class="sub">
           {{ (record as PageSummary).description }}
         </div>
@@ -134,7 +129,7 @@ const total = computed(() => pages.value.length)
           <a-popconfirm
             :title="removeHint(record as PageSummary)"
             ok-text="移到回收站"
-            cancel-text="算了"
+            cancel-text="取消"
             @confirm="remove(record as PageSummary)"
           >
             <a-tooltip title="删除">
@@ -158,13 +153,6 @@ const total = computed(() => pages.value.length)
   margin-bottom: 16px;
 }
 
-.hint {
-  max-width: 640px;
-  color: #8c8c8c;
-  font-size: 12px;
-  line-height: 1.7;
-}
-
 .spacer {
   flex: 1;
 }
@@ -176,10 +164,6 @@ const total = computed(() => pages.value.length)
 
 .title-link {
   font-weight: 500;
-}
-
-.friend-tag {
-  margin-left: 6px;
 }
 
 .sub {

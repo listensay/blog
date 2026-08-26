@@ -70,7 +70,7 @@ const initial = (name: string) => [...(name || '?')][0] ?? '?'
         <div class="line">
           <a-input
             :value="item.name"
-            placeholder="站点名字"
+            placeholder="站点名称"
             @update:value="(v: string) => update(index, { name: v })"
           />
           <a-input
@@ -84,14 +84,14 @@ const initial = (name: string) => [...(name || '?')][0] ?? '?'
         <div class="line">
           <a-input
             :value="item.description"
-            placeholder="一句话描述（可留空）"
+            placeholder="描述（可选）"
             @update:value="(v: string) => update(index, { description: v })"
           />
           <a-space-compact class="avatar-field">
             <a-input
               :value="item.avatar ?? ''"
               class="mono-input"
-              placeholder="/images/x.png 或 http 链接（可留空）"
+              placeholder="头像地址（可选）"
               @update:value="(v: string) => update(index, { avatar: v })"
             />
             <a-tooltip title="从图片库选一张">
@@ -120,9 +120,9 @@ const initial = (name: string) => [...(name || '?')][0] ?? '?'
           </a-button>
         </a-tooltip>
         <a-popconfirm
-          :title="`删掉「${item.name || '这一条'}」？`"
-          ok-text="删掉"
-          cancel-text="算了"
+          :title="`删除「${item.name || '当前项'}」？`"
+          ok-text="删除"
+          cancel-text="取消"
           @confirm="remove(index)"
         >
           <a-button type="text" size="small" danger>

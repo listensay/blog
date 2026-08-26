@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
 import {
@@ -17,7 +17,15 @@ import AiActionModal from '@/components/AiActionModal.vue'
 import AiMetaModal from '@/components/AiMetaModal.vue'
 import ImagePickerModal from '@/components/ImagePickerModal.vue'
 import RichTextEditor from '@/components/RichTextEditor.vue'
-import type { AiAction, AiMetaResult, AiScope, AiStatus, AiTextResult, PostDetail, PostInput } from '@/types'
+import type {
+  AiAction,
+  AiMetaResult,
+  AiScope,
+  AiStatus,
+  AiTextResult,
+  PostDetail,
+  PostInput,
+} from '@/types'
 import { AI_ACTIONS, actionLabel, replaceBodyKeepEdges, unwrapSingleParagraph } from '@/utils/ai'
 import {
   detectRichTextRisks,
@@ -50,7 +58,6 @@ const form = reactive({
   draft: false,
   cover: '',
   dir: '',
-  name: '',
 })
 
 const raw = ref<Record<string, unknown>>({})
@@ -76,7 +83,6 @@ function formSnapshot(): string {
     form.draft === true,
     text(form.cover),
     text(form.dir),
-    text(form.name),
   ])
 }
 
@@ -94,8 +100,6 @@ const coverPickerOpen = ref(false)
 
 const otherPosts = ref<Array<{ realPath: string; file: string }>>([])
 
-const nameTouched = ref(false)
-
 function nowLocal(): string {
   return new Date().toLocaleString('sv-SE').slice(0, 16)
 }
@@ -109,12 +113,10 @@ const realPath = computed(() =>
   form.slug ? `/${['blog', ...form.dir.split('/').filter(Boolean), form.slug].join('/')}` : '',
 )
 
-const pathMismatch = computed(
-  () => !!form.path && !!realPath.value && form.path !== realPath.value,
-)
+const pathMismatch = computed(() => !!form.path && !!realPath.value && form.path !== realPath.value)
 
 const slugError = computed(() => {
-  if (!form.slug) return '必填：文章 URL 由它生成'
+  if (!form.slug) return '必填项'
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) return '只能用小写字母、数字和连字符'
   return ''
 })
@@ -126,6 +128,42 @@ function slugClash(slug: string): string {
 }
 
 const slugClashWith = computed(() => (slugError.value ? '' : slugClash(form.slug)))
+
+const BAD_FILENAME_CHARS = /[\\/:*?"<>|]|\p{Cc}/u
+
+const WINDOWS_RESERVED = new Set([
+  'con',
+  'prn',
+  'aux',
+  'nul',
+  ...Array.from({ length: 9 }, (_, i) => `com${i + 1}`),
+  ...Array.from({ length: 9 }, (_, i) => `lpt${i + 1}`),
+])
+
+const MAX_TITLE = 120
+
+const fileName = computed(() => form.title.trim())
+
+const titleError = computed(() => {
+  const title = fileName.value
+  if (!title) return '必填项'
+  if (title.length > MAX_TITLE) return `最多 ${MAX_TITLE} 个字`
+  if (BAD_FILENAME_CHARS.test(title)) return '不能包含 \\ / : * ? " < > | 和控制字符'
+  if (title.startsWith('.') || /[. ]$/.test(title)) return '不能以点或空格开头、结尾'
+  if (WINDOWS_RESERVED.has(title.toLowerCase())) return `${title} 是系统保留名称`
+  return ''
+})
+
+const postFile = computed(() =>
+  ['blog', ...form.dir.split('/').filter(Boolean), `${fileName.value}.md`].join('/'),
+)
+
+const fileClashWith = computed(() => {
+  if (titleError.value) return ''
+  return (
+    otherPosts.value.find((p) => p.file === postFile.value && p.file !== original.file)?.file ?? ''
+  )
+})
 
 const risks = computed(() => detectRichTextRisks(bodyMarkdown.value))
 
@@ -148,13 +186,6 @@ const stats = computed(() => {
   }
 })
 
-watch(
-  () => form.title,
-  (title) => {
-    if (isNew.value && !nameTouched.value) form.name = title.trim()
-  },
-)
-
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('beforeunload', onBeforeUnload)
@@ -169,7 +200,7 @@ onMounted(async () => {
         enabled: false,
         model: '',
         baseUrl: '',
-        hint: `取不到 AI 配置：${err instanceof Error ? err.message : String(err)}`,
+        hint: `无法读取 AI 配置：${err instanceof Error ? err.message : String(err)}`,
       }
     })
 
@@ -212,7 +243,6 @@ function fill(detail: PostDetail) {
   form.draft = detail.draft
   form.cover = detail.cover
   form.dir = detail.dir
-  form.name = detail.name
 
   raw.value = detail.raw
   original.body = detail.body
@@ -234,7 +264,8 @@ function setBody(markdown: string) {
 
 function onTabChange(key: string | number) {
   if (key === 'source') {
-    if (bodyDirty.value) bodyMarkdown.value = htmlToMd(editorRef.value?.getHtml() ?? '', bodyDir.value)
+    if (bodyDirty.value)
+      bodyMarkdown.value = htmlToMd(editorRef.value?.getHtml() ?? '', bodyDir.value)
   } else {
     bodyHtml.value = mdToHtml(bodyMarkdown.value, bodyDir.value)
     editorRef.value?.setHtml(bodyHtml.value)
@@ -266,16 +297,12 @@ function currentBody(): string {
 async function save() {
   if (saving.value || loading.value) return
 
-  if (!form.title.trim()) {
-    message.warning('先写个标题')
+  if (titleError.value) {
+    message.warning(form.title.trim() ? `标题${titleError.value}` : '标题不能为空')
     return
   }
   if (slugError.value) {
-    message.warning(`slug ${slugError.value}`)
-    return
-  }
-  if (!form.name.trim()) {
-    message.warning('文件名不能为空')
+    message.warning(form.slug.trim() ? `slug ${slugError.value}` : 'slug 不能为空')
     return
   }
 
@@ -290,7 +317,7 @@ async function save() {
     draft: form.draft,
     cover: form.cover ? retargetImagePaths(form.cover, bodyDir.value, saveDir.value) : '',
     dir: form.dir,
-    name: form.name,
+    name: fileName.value,
     body: currentBody(),
     raw: raw.value,
   }
@@ -319,8 +346,8 @@ async function save() {
 
 async function remove() {
   try {
-    const { trashed } = await api.deletePost(original.file)
-    message.success(`已移到 admin/.trash/${trashed}`)
+    await api.deletePost(original.file)
+    message.success('已移到回收站')
     baseline.value = formSnapshot()
     bodyDirty.value = false
     await router.push({ name: 'posts' })
@@ -344,11 +371,11 @@ onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
   return new Promise<boolean>((resolve) => {
     Modal.confirm({
-      title: '还没保存',
-      content: '改动会丢掉，确定离开吗？',
-      okText: '不保存，离开',
+      title: '有未保存的修改',
+      content: '离开后修改会丢失。',
+      okText: '不保存并离开',
       okType: 'danger',
-      cancelText: '留下继续改',
+      cancelText: '取消',
       onOk: () => resolve(true),
       onCancel: () => resolve(false),
     })
@@ -358,7 +385,6 @@ onBeforeRouteLeave(async () => {
 function pickCover(name: string) {
   form.cover = imageMarkdownPath(bodyDir.value, name)
 }
-
 
 const aiStatus = ref<AiStatus>({ enabled: false, model: '', baseUrl: '', hint: '正在读 AI 配置…' })
 
@@ -459,7 +485,11 @@ async function runAi(action: AiAction) {
 
   if (!text.trim() && !(isMeta && form.title.trim())) {
     message.warning(
-      isMeta ? '正文和标题都是空的，AI 没有可依据的东西' : wholeOnly ? '正文是空的' : '选中的内容是空的',
+      isMeta
+        ? '正文和标题都是空的，AI 没有可依据的东西'
+        : wholeOnly
+          ? '正文是空的'
+          : '选中的内容是空的',
     )
     return
   }
@@ -554,7 +584,7 @@ function applyAiMeta(payload: {
     payload.tags ? '标签' : '',
   ].filter(Boolean)
 
-  message.success(`已填入${filled.join('、')}，记得保存`)
+  message.success(`已填入${filled.join('、')}，保存后生效`)
 }
 </script>
 
@@ -568,16 +598,16 @@ function applyAiMeta(payload: {
         文章列表
       </a-button>
 
-      <span class="head-title">{{ isNew ? '新文章' : form.title || '（没有标题）' }}</span>
+      <span class="head-title">{{ isNew ? '新文章' : form.title || '未命名' }}</span>
       <a-tag v-if="dirty" color="orange">未保存</a-tag>
 
       <span class="spacer" />
 
       <a-popconfirm
         v-if="!isNew"
-        title="把这篇文章移到 admin/.trash/？"
+        title="将这篇文章移到回收站？"
         ok-text="移到回收站"
-        cancel-text="算了"
+        cancel-text="取消"
         @confirm="remove"
       >
         <a-button danger>
@@ -599,17 +629,17 @@ function applyAiMeta(payload: {
           class="title-input"
           placeholder="文章标题"
           size="large"
+          :status="titleError ? 'error' : ''"
         />
+        <div v-if="titleError" class="title-error">{{ titleError }}</div>
 
         <a-alert v-if="risks.length" type="warning" show-icon class="risk">
-          <template #message>
-            这篇文章里有富文本编辑器撑不住的语法，建议在「Markdown 源码」里改
-          </template>
+          <template #message> 存在富文本编辑器不支持的语法，请在「Markdown 源码」中编辑 </template>
           <template #description>
             <div v-for="risk in risks" :key="risk.label" class="risk-item">
               {{ risk.label }} —— <code>{{ risk.sample }}</code>
             </div>
-            富文本标签会把这些结构拍平成纯文字（比如 <code>&lt;details&gt;</code> 折叠块会散掉）。
+            富文本模式会丢失这些结构。
           </template>
         </a-alert>
 
@@ -619,7 +649,7 @@ function applyAiMeta(payload: {
               <a-tooltip
                 :title="
                   aiStatus.enabled
-                    ? '修标题层级、多余转义、代码围栏的语言、垃圾空行。只改 Markdown 标记，一个字都不改'
+                    ? '修正标题层级、多余转义、代码围栏语言和多余空行，不改动文字'
                     : aiStatus.hint
                 "
               >
@@ -673,7 +703,12 @@ function applyAiMeta(payload: {
           </template>
 
           <a-tab-pane key="rich" tab="富文本">
-            <RichTextEditor v-if="!loading" ref="editor" :html="bodyHtml" @dirty="bodyDirty = true" />
+            <RichTextEditor
+              v-if="!loading"
+              ref="editor"
+              :html="bodyHtml"
+              @dirty="bodyDirty = true"
+            />
           </a-tab-pane>
 
           <a-tab-pane key="source" tab="Markdown 源码">
@@ -686,10 +721,6 @@ function applyAiMeta(payload: {
                 @input="onSourceInput"
               />
             </div>
-            <p class="source-hint">
-              这里写的内容会原样存进文件。图片路径按仓库约定写相对路径，比如
-              <code>{{ imageMarkdownPath(bodyDir, 'x.png') }}</code>
-            </p>
           </a-tab-pane>
         </a-tabs>
 
@@ -710,14 +741,14 @@ function applyAiMeta(payload: {
           </a-form-item>
 
           <a-form-item label="文章 URL">
-            <div class="url-preview mono">{{ realPath || '（先填 slug）' }}</div>
+            <div class="url-preview mono">{{ realPath || '未设置' }}</div>
             <a-alert
               v-if="pathMismatch"
               type="warning"
               show-icon
               class="url-warn"
-              :message="`frontmatter 里的 path 写的是 ${form.path}`"
-              :description="`真实 URL 由 slug 决定，是上面这个。path 字段在 blog 里其实没用上，留着不影响，但两边不一致容易看错。`"
+              :message="`frontmatter 中的 path 为 ${form.path}`"
+              :description="`实际 URL 由 slug 决定，即上方地址。path 字段不影响访问。`"
             />
           </a-form-item>
 
@@ -743,7 +774,7 @@ function applyAiMeta(payload: {
           <a-form-item label="分类">
             <a-auto-complete
               v-model:value="form.category"
-              placeholder="点击选择分类，或输入一个新分类"
+              placeholder="选择或输入分类"
               :options="categoryOptions"
               :filter-option="filterOption"
               allow-clear
@@ -762,27 +793,23 @@ function applyAiMeta(payload: {
           <a-form-item label="子目录">
             <a-auto-complete
               v-model:value="form.dir"
-              placeholder="留空 = content/blog 顶层"
+              placeholder="留空表示放在顶层"
               :options="dirOptions"
               :filter-option="filterOption"
               allow-clear
             />
           </a-form-item>
 
-          <a-form-item label="文件名称">
-            <a-input
-              v-model:value="form.name"
-              addon-after=".md"
-              @change="nameTouched = true"
-            />
-            <div class="field-hint mono">
-              content/blog/{{ form.dir ? form.dir + '/' : '' }}{{ form.name || '…' }}.md
+          <a-form-item label="文件">
+            <div class="url-preview mono">content/{{ postFile }}</div>
+            <div v-if="fileClashWith" class="field-hint clash">
+              已有同名文件 <span class="mono">content/{{ fileClashWith }}</span>
             </div>
           </a-form-item>
 
           <a-form-item label="封面">
             <a-space-compact style="width: 100%">
-              <a-input v-model:value="form.cover" placeholder="可留空" />
+              <a-input v-model:value="form.cover" placeholder="可选" />
               <a-button @click="coverPickerOpen = true">
                 <template #icon><PictureOutlined /></template>
               </a-button>
@@ -872,6 +899,12 @@ function applyAiMeta(payload: {
   margin-bottom: 12px;
   font-size: 18px;
   font-weight: 600;
+}
+
+.title-error {
+  margin: -8px 0 12px;
+  color: #cf1322;
+  font-size: 12px;
 }
 
 .risk {

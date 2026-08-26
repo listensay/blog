@@ -2,7 +2,6 @@ import type { AiAction } from '@/types'
 import { codeBlockList, isLanguageLabelLine, proseOnly } from '@/utils/fences'
 import { collectImageSrcs } from '@/utils/markdown'
 
-
 export interface AiActionMeta {
   action: AiAction
   label: string
@@ -11,21 +10,20 @@ export interface AiActionMeta {
 }
 
 export const AI_ACTIONS: AiActionMeta[] = [
-  { action: 'fix', label: '修复格式', hint: '只改 Markdown 标记，一个字都不改', wholeOnly: true },
-  { action: 'polish', label: '润色', hint: '改通顺、修错别字，信息不增不减', wholeOnly: false },
-  { action: 'condense', label: '精简', hint: '压到六七成篇幅，信息一条不少', wholeOnly: false },
-  { action: 'expand', label: '扩写', hint: '补解释、前提和坑，不编事实', wholeOnly: false },
+  { action: 'fix', label: '修复格式', hint: '仅调整 Markdown 标记，不改动文字', wholeOnly: true },
+  { action: 'polish', label: '润色', hint: '理顺语句、修正错别字，信息不增不减', wholeOnly: false },
+  { action: 'condense', label: '精简', hint: '压缩至约七成篇幅，信息不减少', wholeOnly: false },
+  { action: 'expand', label: '扩写', hint: '补充解释与前提，不新增事实', wholeOnly: false },
   {
     action: 'meta',
     label: '生成标题 / slug / 摘要 / 标签',
-    hint: '读全文，填右边表单的四个字段',
+    hint: '读取全文，填写右侧四个字段',
     wholeOnly: true,
   },
 ]
 
 export const actionLabel = (action: AiAction): string =>
   AI_ACTIONS.find((a) => a.action === action)?.label ?? action
-
 
 function headingLevels(prose: string): number[] {
   return [...prose.matchAll(/^ {0,3}(#{1,6})[ \t]/gm)].map((m) => m[1]!.length)
@@ -35,7 +33,6 @@ function linkHrefs(prose: string): string[] {
   return [...prose.matchAll(/(?<!!)\[[^\]]*\]\(\s*([^)\s]+)/g)].map((m) => m[1]!)
 }
 
-
 export interface IntegrityIssue {
   level: 'error' | 'warn'
   label: string
@@ -43,25 +40,23 @@ export interface IntegrityIssue {
 }
 
 export function proseText(markdown: string): string {
-  return (
-    proseOnly(markdown)
-      .split('\n')
-      .filter((line) => !isLanguageLabelLine(line))
-      .join('\n')
-      .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
-      .replace(/^[ \t]*>[ \t]*/gm, '')
-      .replace(/^[ \t]*(?:[-*+]|\d+[.)])[ \t]+/gm, '')
-      .replace(/^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$/gm, '')
-      .replace(/^[ \t]*\|?[ \t:|-]+\|[ \t:|-]*$/gm, '')
-      .replace(/`+/g, '')
-      .replace(/[*_~]{1,3}/g, '')
-      .replace(/\|/g, '')
-      .replace(/\\([^a-zA-Z0-9])/g, '$1')
-      .replace(/\\$/gm, '')
-      .replace(/\s+/g, '')
-  )
+  return proseOnly(markdown)
+    .split('\n')
+    .filter((line) => !isLanguageLabelLine(line))
+    .join('\n')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
+    .replace(/^[ \t]*>[ \t]*/gm, '')
+    .replace(/^[ \t]*(?:[-*+]|\d+[.)])[ \t]+/gm, '')
+    .replace(/^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$/gm, '')
+    .replace(/^[ \t]*\|?[ \t:|-]+\|[ \t:|-]*$/gm, '')
+    .replace(/`+/g, '')
+    .replace(/[*_~]{1,3}/g, '')
+    .replace(/\|/g, '')
+    .replace(/\\([^a-zA-Z0-9])/g, '$1')
+    .replace(/\\$/gm, '')
+    .replace(/\s+/g, '')
 }
 
 function firstDifference(a: string, b: string): string {
@@ -110,7 +105,7 @@ export function checkMarkdownIntegrity(
     issues.push({
       level: 'error',
       label: '图片地址被改动',
-      detail: `${parts.join('；')}。相对路径改错了本地预览照样有图，但线上会 404 —— 建议弃用这个结果，或者在「结果」标签里手动改回来。`,
+      detail: `${parts.join('；')}。建议放弃本次结果，或在「结果」标签中手动修正。`,
     })
   }
 
@@ -129,7 +124,9 @@ export function checkMarkdownIntegrity(
       detail: `原文 ${beforeBlocks.length} 个，结果 ${afterBlocks.length} 个。可能是模型把整段结果包进围栏了，也可能吃掉了一个代码块。`,
     })
   } else {
-    const changed = beforeBlocks.filter((block, i) => codeOf(block) !== codeOf(afterBlocks[i]!)).length
+    const changed = beforeBlocks.filter(
+      (block, i) => codeOf(block) !== codeOf(afterBlocks[i]!),
+    ).length
     if (changed) {
       issues.push({
         level: 'error',
@@ -168,12 +165,12 @@ export function checkMarkdownIntegrity(
       const delta = afterWords.length - beforeWords.length
       issues.push({
         level: 'error',
-        label: '文字被改动了（不只是格式）',
+        label: '文字被改动（不只是格式）',
         detail:
-          `修复格式本来应该一个字都不改，但读者读到的文字变了` +
-          `（${beforeWords.length} → ${afterWords.length} 字，${delta > 0 ? '多' : '少'}了 ${Math.abs(delta)} 个）。` +
-          `第一处不同：${firstDifference(beforeWords, afterWords)}。` +
-          `建议在「结果」标签里改回来，或者干脆别用这次结果。`,
+          `修复格式不应改动文字，但正文发生了变化` +
+          `（${beforeWords.length} → ${afterWords.length} 字，${delta > 0 ? '增加' : '减少'} ${Math.abs(delta)} 字）。` +
+          `第一处差异：${firstDifference(beforeWords, afterWords)}。` +
+          `建议放弃本次结果，或在「结果」标签中手动修正。`,
       })
     }
   }
@@ -188,7 +185,6 @@ export function checkMarkdownIntegrity(
 
   return issues
 }
-
 
 export interface DiffRow {
   kind: 'same' | 'add' | 'del' | 'skip'
@@ -273,7 +269,6 @@ export function collapseDiff(rows: DiffRow[], context = 2): DiffRow[] {
 
 export const changedRowCount = (rows: DiffRow[]): number =>
   rows.filter((r) => r.kind === 'add' || r.kind === 'del').length
-
 
 export function unwrapSingleParagraph(html: string): string {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')

@@ -64,7 +64,6 @@ export const api = {
       method: 'DELETE',
     }),
 
-
   listPages: () => request<PageListResponse>('/api/pages'),
 
   getPage: (file: string) => request<PageDetail>(`/api/page?file=${encodeURIComponent(file)}`),
@@ -82,12 +81,10 @@ export const api = {
       method: 'DELETE',
     }),
 
-
   getNav: () => request<NavResponse>('/api/nav'),
 
   saveNav: (items: NavItem[]) =>
     request<NavResponse>('/api/nav', { ...json({ items }), method: 'PUT' }),
-
 
   listImages: () => request<{ images: ImageItem[] }>('/api/images'),
 

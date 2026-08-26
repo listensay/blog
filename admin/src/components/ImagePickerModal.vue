@@ -62,12 +62,7 @@ const sizeText = (bytes: number) =>
   <a-modal v-model:open="open" title="图片" width="760px" :footer="null">
     <div class="head">
       <a-input v-model:value="keyword" placeholder="按文件名搜" allow-clear style="width: 240px" />
-      <a-upload
-        :before-upload="handleUpload"
-        :show-upload-list="false"
-        accept="image/*"
-        multiple
-      >
+      <a-upload :before-upload="handleUpload" :show-upload-list="false" accept="image/*" multiple>
         <a-button type="primary" :loading="uploading">
           <template #icon><InboxOutlined /></template>
           上传新图片
