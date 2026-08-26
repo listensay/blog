@@ -1,8 +1,6 @@
 <script setup lang="ts">
-/** 文章卡片的骨架屏，几何形状对着 PostCard 抄，撑住相近高度，数据到位时页面不会往下跳 */
 const { count = 5 } = defineProps<{ count?: number }>()
 
-// 末行给点长短变化，整列一样宽会很假
 const tailWidths = ['w-4/5', 'w-2/3', 'w-3/4', 'w-1/2', 'w-5/6']
 </script>
 
@@ -10,7 +8,6 @@ const tailWidths = ['w-4/5', 'w-2/3', 'w-3/4', 'w-1/2', 'w-5/6']
   <div role="status" aria-busy="true" class="skeleton-group overflow-hidden rounded-2xl bg-white shadow">
     <span class="sr-only">正在加载文章列表…</span>
 
-    <!-- 内外边距必须和 PostCard 逐一对齐（含断点），不然骨架屏换成真内容时会跳 -->
     <div
       v-for="i in count"
       :key="i"

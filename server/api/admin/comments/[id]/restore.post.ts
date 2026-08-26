@@ -1,4 +1,3 @@
-/** 恢复被软删的评论：hidden = 0 */
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
 

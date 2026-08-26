@@ -1,8 +1,5 @@
-/** 一点点 HTTP 胶水。刻意不引框架：只有几个接口，Vite 的 server.middlewares 就是原生 connect */
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
-// 带状态码的错误。handler 里 throw 它，最外层统一转成 JSON 响应
-// 不用构造器参数属性（`readonly status: number`）：node 的类型擦除跑不了，测试脚本就没法直接跑
 export class HttpError extends Error {
   readonly status: number
 
@@ -17,14 +14,12 @@ export const badRequest = (msg: string) => new HttpError(400, msg)
 export const notFound = (msg: string) => new HttpError(404, msg)
 export const conflict = (msg: string) => new HttpError(409, msg)
 
-/** 请求体上限 32MB：粘贴的截图走这条路，留够余量 */
 const BODY_LIMIT = 32 * 1024 * 1024
 
 export function sendJson(res: ServerResponse, status: number, data: unknown): void {
   const payload = JSON.stringify(data)
   res.statusCode = status
   res.setHeader('content-type', 'application/json; charset=utf-8')
-  // 后台数据随时在变，别让任何一层缓存住
   res.setHeader('cache-control', 'no-store')
   res.end(payload)
 }
@@ -57,7 +52,6 @@ export async function readJson<T>(req: IncomingMessage): Promise<T> {
   }
 }
 
-/** 取查询参数。connect 里的 `req.url` 是被挂载路径截过的相对路径，所以配个占位 origin */
 export function parseUrl(req: IncomingMessage): URL {
   return new URL(req.url ?? '/', 'http://localhost')
 }

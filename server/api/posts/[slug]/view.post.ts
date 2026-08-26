@@ -1,7 +1,5 @@
 const WINDOW_MS = 24 * 3600_000
 
-// 记一次浏览：同一访客同一篇 24 小时内只计一次，靠 visitor_views 的复合主键去重。
-// 必须由前端挂载后调用，放进 SSR 会把爬虫和预取请求也算进去
 export default defineEventHandler(async (event) => {
   const slug = requireSlug(event)
   await assertPostExists(event, slug)

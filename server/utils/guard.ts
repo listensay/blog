@@ -5,11 +5,8 @@ export const COMMENT_LIMITS = {
   email: 120,
   website: 200,
   body: 1000,
-  /** 正文里最多允许几个链接 */
   links: 2,
-  /** 两条评论之间的最小间隔 */
   cooldownMs: 30_000,
-  /** 一小时内同一访客最多几条 */
   perHour: 8,
 }
 
@@ -25,10 +22,7 @@ function fail(message: string): never {
   throw httpError(400, message)
 }
 
-/** 评论提交后直接可见，所以垃圾必须在这一步拦住：蜜罐字段、字段合法性、频率限制 */
 export function validateComment(raw: Record<string, unknown>): CommentInput {
-  // 蜜罐：真人看不到 homepage 这个输入框，脚本会无脑填满所有 input。
-  // 刻意不叫 nickname/url 之类的名字——那些在浏览器自动填充的白名单里，会误伤真人。
   if (typeof raw.homepage === 'string' && raw.homepage.trim()) {
     fail('提交被拒绝')
   }
@@ -65,7 +59,6 @@ export function validateComment(raw: Record<string, unknown>): CommentInput {
   return { author, email, website, body, parentId }
 }
 
-/** 同一访客的发言频率限制，直接查 comments 表，不用额外的计数表 */
 export async function assertNotFlooding(visitor: string) {
   const db = await useReadyDb()
   const now = Date.now()
@@ -88,7 +81,6 @@ export async function assertNotFlooding(visitor: string) {
   }
 }
 
-/** slug 只允许出现在 URL 里的安全字符，顺手挡掉注入和越界查询 */
 export function requireSlug(event: H3Event) {
   const slug = String(getRouterParam(event, 'slug') ?? '').trim()
   if (!slug || slug.length > 120 || !/^[\w-]+$/.test(slug)) {
@@ -97,7 +89,6 @@ export function requireSlug(event: H3Event) {
   return slug
 }
 
-/** 评论 ID 只接受 crypto.randomUUID() 的形状 */
 export function requireCommentId(event: H3Event) {
   const id = String(getRouterParam(event, 'id') ?? '')
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {

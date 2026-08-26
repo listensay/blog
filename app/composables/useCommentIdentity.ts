@@ -6,7 +6,6 @@ export interface CommentIdentity {
 
 const STORAGE_KEY = 'blog:comment-identity'
 
-/** 昵称/邮箱/网址在所有评论框之间共享并记在浏览器里，只存本地，不会随评论一起公开 */
 export function useCommentIdentity() {
   const identity = useState<CommentIdentity>('comment-identity', () => ({
     author: '',
@@ -14,7 +13,6 @@ export function useCommentIdentity() {
     website: '',
   }))
 
-  // localStorage 只有客户端有，且要等 hydration 之后再填，否则会和服务端渲染的空值打架
   onMounted(() => {
     if (identity.value.author || identity.value.email || identity.value.website) return
     try {
@@ -28,7 +26,6 @@ export function useCommentIdentity() {
       }
     }
     catch {
-      // 存的东西坏了就当没存过
     }
   })
 
@@ -37,7 +34,6 @@ export function useCommentIdentity() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(identity.value))
     }
     catch {
-      // 隐私模式下可能写不进去，忽略
     }
   }
 

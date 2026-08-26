@@ -9,7 +9,6 @@ const { data: posts, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
-// tags 在数据库里是 JSON 字段，没法用 SQL 聚合，取回来在 JS 里统计
 const tagCounts = computed(() => {
   const map = new Map<string, number>()
   for (const post of posts.value ?? []) {
@@ -20,7 +19,6 @@ const tagCounts = computed(() => {
   return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'))
 })
 
-// 骨架屏用长短不一的宽度，才像一堆标签而不是一排格子
 const skeletonWidths = ['w-24', 'w-32', 'w-20', 'w-28', 'w-36', 'w-24', 'w-28', 'w-20']
 
 useSeo({
@@ -61,7 +59,6 @@ useSeo({
           :class="tagTone(tag)"
         >
           <span class="font-medium">{{ tag }}</span>
-          <!-- 计数块用半透明白：不用管外面是哪个色系，压在任何色底上都读得清 -->
           <span class="rounded-full bg-white/70 px-2 py-0.5 text-xs">{{ count }}</span>
         </NuxtLink>
       </li>

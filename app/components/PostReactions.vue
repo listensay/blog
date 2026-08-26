@@ -3,31 +3,24 @@ import type { PostStats } from '~/types/blog'
 
 const props = defineProps<{ slug: string }>()
 
-// 首屏就带上数字，避免读者看到 0 再跳变。客户端刻意不重复取：挂载后那次 POST /view
-// 本来就会把最新数字带回来，两边同时发会互相覆盖，浏览量可能少算一次
 const { data: stats, status } = await useFetch<PostStats>(() => `/api/posts/${props.slug}/stats`, {
   key: () => `stats-${props.slug}`,
   default: () => ({ views: 0, likes: 0, comments: 0, liked: false }),
   immediate: import.meta.server,
 })
 
-// 前端跳转过来的那一下还没有真实数字：hydration 时 status 已经是 success（数据在
-// payload 里），换路由过来则是 idle。后者先占位，别把默认值 0 当结果显示出去。
 const ready = ref(status.value === 'success')
 
-// 和列表页共用同一套节奏：占位一旦出现就撑够最短时长，不然只是闪一下
 const showPlaceholder = useLoadingHold(computed(() => !ready.value))
 
 const pending = ref(false)
 const error = ref('')
 
-// 浏览量在挂载后才计数：放在 SSR 里会把爬虫、预取、探活请求全算进去
 onMounted(async () => {
   try {
     stats.value = await $fetch<PostStats>(`/api/posts/${props.slug}/view`, { method: 'POST' })
   }
   catch {
-    // 计数失败不影响读文章，静默处理
   }
   finally {
     ready.value = true
@@ -39,7 +32,6 @@ async function toggleLike() {
   pending.value = true
   error.value = ''
 
-  // 先改 UI 再发请求，失败回滚——点赞必须是零延迟的手感
   const snapshot = { ...stats.value }
   stats.value = {
     views: snapshot.views,
@@ -63,7 +55,6 @@ async function toggleLike() {
 
 <template>
   <div class="mt-12 flex flex-col items-center gap-3 border-t border-slate-200 pt-8">
-    <!-- 数字还没到位：占位而不是显示 0，也不让人点到一个状态未知的赞 -->
     <template v-if="showPlaceholder">
       <div class="skeleton h-11 w-28 rounded-full" aria-hidden="true" />
       <div class="skeleton h-4 w-20" aria-hidden="true" />

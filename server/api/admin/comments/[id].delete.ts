@@ -1,4 +1,3 @@
-// 删评论：默认软删（hidden = 1），读接口立刻看不到但还能恢复；带 ?purge=1 才真删除
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
 
@@ -12,7 +11,6 @@ export default defineEventHandler(async (event) => {
   }
 
   if (purge) {
-    // 真删的时候把挂在它下面的回复一起带走，不留孤儿
     await db.sql`DELETE FROM comments WHERE id = ${id} OR parent_id = ${id}`
   }
   else {

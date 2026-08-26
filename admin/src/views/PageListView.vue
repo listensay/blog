@@ -1,6 +1,4 @@
 <script setup lang="ts">
-/** 页面列表：content/pages/**.md（关于、友情链接这类固定页），搜索、进编辑页、删除 */
-// 直接读磁盘，所以「刷新」是个显式按钮
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
@@ -45,15 +43,12 @@ function formatDate(value: number): string {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 
-/** 不到 1 KB 就显示字节数，否则全是「0 KB」 */
 function formatSize(bytes: number): string {
   return bytes < 1024 ? `${bytes} B` : `${Math.round(bytes / 1024)} KB`
 }
 
-/** 有几条友链，列表里标一下 */
 const friendCount = (page: PageSummary) => page.friends.length
 
-/** 删除确认框的文案。有专属 .vue 的页面删了不会 404，会变成空页面 */
 function removeHint(page: PageSummary): string {
   const gone = page.customRoute
     ? `${page.path} 的排版是站点上手写的，删了不会 404，会变成一个空页面（不报错）`

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// 「生成标题 / slug / 摘要 / 标签」的结果确认，四个字段各自独立勾选
-// 默认「空着的填，已有值的不动」；改 slug 等于换网址，标签是合并不是覆盖
 import { computed, ref, watch } from 'vue'
 
 import type { AiMetaResult } from '@/types'
@@ -11,12 +9,10 @@ const props = defineProps<{
   loading: boolean
   error: string
   result: AiMetaResult | null
-  /** 表单里现在的值，用来对照 */
   currentTitle: string
   currentSlug: string
   currentDescription: string
   currentTags: string[]
-  /** 问「同目录下有没有别的文章占了这个 slug」，撞了返回文件名；不查就要等保存时 409 */
   slugClash: (slug: string) => string
 }>()
 
@@ -25,10 +21,8 @@ const emit = defineEmits<{
   retry: []
 }>()
 
-/** 三个文本字段都可以直接改，改完再填进表单 */
 const draft = ref({ title: '', slug: '', description: '' })
 const use = ref({ title: false, slug: false, description: false })
-/** 勾上的新标签 */
 const picked = ref<string[]>([])
 
 watch(
@@ -40,19 +34,16 @@ watch(
       description: result?.description ?? '',
     }
 
-    // 「空着的默认填，已经有值的默认不动」—— 见文件头的说明
     use.value = {
       title: !!result?.title && !props.currentTitle.trim(),
       slug: !!result?.slug && !props.currentSlug.trim(),
       description: !!result?.description,
     }
 
-    // 标签默认只勾「现在还没有的」，已有的不用再加一遍
     picked.value = (result?.tags ?? []).filter((tag) => !props.currentTags.includes(tag))
   },
 )
 
-/** AI 给的标签里表单已经有的那些 —— 标出来，不用再选 */
 const alreadyHave = computed(() =>
   (props.result?.tags ?? []).filter((tag) => props.currentTags.includes(tag)),
 )
@@ -61,7 +52,6 @@ const newTags = computed(() =>
   (props.result?.tags ?? []).filter((tag) => !props.currentTags.includes(tag)),
 )
 
-/** 手动改过 slug 之后也要校验，不能只信服务端归一化过的那一版 */
 const slugError = computed(() => {
   const slug = draft.value.slug.trim()
   if (!slug) return ''
@@ -70,7 +60,6 @@ const slugError = computed(() => {
   return clash ? `和 ${clash} 撞了，两篇文章的 URL 会一样` : ''
 })
 
-/** 换 slug 就是换 URL，已经有 slug 时要说清楚 */
 const slugIsReplacing = computed(
   () => !!props.currentSlug.trim() && draft.value.slug.trim() !== props.currentSlug.trim(),
 )
@@ -83,7 +72,6 @@ const nothingPicked = computed(
   () => !use.value.title && !use.value.slug && !use.value.description && !picked.value.length,
 )
 
-/** 勾了 slug 但 slug 本身有问题 —— 不让填，否则保存时才报错 */
 const blocked = computed(() => use.value.slug && !!slugError.value)
 
 function apply() {
@@ -94,7 +82,6 @@ function apply() {
   if (use.value.description && draft.value.description.trim()) {
     payload.description = draft.value.description.trim()
   }
-  // 合并：现有的排前面，保持原来的顺序
   if (picked.value.length) payload.tags = [...props.currentTags, ...picked.value]
 
   emit('apply', payload)
@@ -116,7 +103,6 @@ function apply() {
           勾上的才会填进表单。<span class="muted">空着的字段默认帮你填，已经有值的默认不动。</span>
         </p>
 
-        <!-- ------------------------------------------------------------ 标题 -->
         <section :class="{ off: !use.title }">
           <div class="head">
             <a-checkbox v-model:checked="use.title" :disabled="!result.title">填入标题</a-checkbox>
@@ -134,7 +120,6 @@ function apply() {
           <div class="hint">改标题不影响网址 —— URL 由下面的 slug 决定</div>
         </section>
 
-        <!-- -------------------------------------------------------------- slug -->
         <section :class="{ off: !use.slug }">
           <div class="head">
             <a-checkbox v-model:checked="use.slug" :disabled="!result.slug">填入 slug</a-checkbox>
@@ -162,7 +147,6 @@ function apply() {
           />
         </section>
 
-        <!-- ------------------------------------------------------------ 描述 -->
         <section :class="{ off: !use.description }">
           <div class="head">
             <a-checkbox v-model:checked="use.description" :disabled="!result.description">
@@ -181,7 +165,6 @@ function apply() {
           <div v-else class="old muted">描述现在是空的</div>
         </section>
 
-        <!-- ------------------------------------------------------------ 标签 -->
         <section>
           <div class="head">
             <span class="label">标签</span>
@@ -240,7 +223,6 @@ function apply() {
   color: #595959;
 }
 
-/* 没勾的那块压暗但字仍可读（刻意不用 disabled）：要先看清建议才能决定勾不勾 */
 .off {
   opacity: 0.72;
 }

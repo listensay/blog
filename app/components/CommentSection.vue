@@ -3,8 +3,6 @@ import type { CommentListResponse, CommentNode, PostStats } from '~/types/blog'
 
 const props = defineProps<{ slug: string }>()
 
-// 首屏就把评论渲染出来：对读者不闪，对搜索引擎也可见。
-// lazy 只影响客户端——换路由过来时不阻塞导航，先出骨架屏
 const { data, refresh, status } = await useFetch<CommentListResponse>(
   () => `/api/posts/${props.slug}/comments`,
   {
@@ -14,8 +12,6 @@ const { data, refresh, status } = await useFetch<CommentListResponse>(
   },
 )
 
-// 评论没取到不该把整篇文章变成错误页，所以这里不往 useQueryState 传 error，
-// 失败就在原地提示一行、让人点刷新
 const { loading } = useQueryState(status)
 
 const replyTo = ref<CommentNode | null>(null)
@@ -26,11 +22,9 @@ watch(() => data.value.total, total => {
 })
 
 function startReply(comment: CommentNode) {
-  // 再点一次同一条就收起回复框
   replyTo.value = replyTo.value?.id === comment.id ? null : comment
 }
 
-/** 提交接口直接回传整棵树，本地换掉即可，不用再发一次请求 */
 function onSubmitted(result: CommentListResponse) {
   data.value = { total: result.total, comments: result.comments }
   replyTo.value = null
@@ -58,7 +52,6 @@ function onSubmitted(result: CommentListResponse) {
       <CommentForm v-if="!replyTo" :slug="slug" @submitted="onSubmitted" />
     </div>
 
-    <!-- data 有默认值，取数期间 comments 是空数组：不挡一下会先闪一句「还没有人评论」 -->
     <CommentsSkeleton v-if="loading" class="mt-8" :count="2" />
 
     <p v-else-if="status === 'error'" class="mt-6 text-sm text-slate-400">

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-/** 文章列表：搜索、按分类/目录/草稿筛选、进编辑页、删除 */
-// 直接读磁盘，所以「刷新」是个显式按钮；不做文件监听，跨到 ../content 监听容易触发整页刷新
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
@@ -26,7 +24,6 @@ const dirs = ref<string[]>([])
 const keyword = ref('')
 const categoryFilter = ref<string[]>([])
 const dirFilter = ref<string[]>([])
-/** 'all' | 'draft' | 'published' */
 const draftFilter = ref<'all' | 'draft' | 'published'>('all')
 
 async function load() {
@@ -55,7 +52,6 @@ const filtered = computed(() => {
     if (draftFilter.value === 'published' && post.draft) return false
     if (!kw) return true
 
-    // 标题、描述、slug、文件名、标签都能搜到
     return [post.title, post.description, post.slug, post.name, post.tags.join(' ')]
       .join('\n')
       .toLowerCase()
@@ -63,7 +59,6 @@ const filtered = computed(() => {
   })
 })
 
-/** frontmatter 里的 path 和 slug 算出来的真实 URL 不一致时提醒一下 */
 function pathMismatch(post: PostSummary): boolean {
   return !!post.path && !!post.realPath && post.path !== post.realPath
 }
@@ -89,7 +84,6 @@ function formatDate(value: number): string {
 }
 
 const columns = [
-  // 88 = 72 的图 + 单元格左右内边距，固定住，缩略图列不要跟着内容伸缩
   { title: '封面', key: 'cover', width: 88 },
   { title: '标题', key: 'title' },
   { title: '分类', key: 'category', width: 110 },
@@ -199,7 +193,6 @@ const columns = [
       </template>
 
       <template v-else-if="column.key === 'date'">
-        <!-- 日期和时刻分两行：等宽字体下时间对齐，扫一眼就能比较 -->
         <div class="mono">{{ (record as PostSummary).date.slice(0, 10) || '—' }}</div>
         <div class="mono sub">{{ (record as PostSummary).date.slice(11) || '' }}</div>
       </template>

@@ -1,5 +1,3 @@
-// 标签配色：色系由标签名哈希得出，同一个标签全站永远同色。类名必须完整出现在源码里，
-// 拼接成 `bg-${tone}-50` Tailwind 就不生成 CSS；也别改成算 oklch 色相，这么浅的明度下 sRGB 没有彩度余量
 const TAG_TONES = [
   'bg-pink-50 text-pink-700 hover:bg-pink-100',
   'bg-red-50 text-red-700 hover:bg-red-100',
@@ -13,7 +11,6 @@ const TAG_TONES = [
   'bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100',
 ]
 
-/** 和评论头像取色（server/utils/comments.ts 的 hueOf）同一个多项式哈希 */
 export function tagTone(tag: string): string {
   let hash = 0
   for (let i = 0; i < tag.length; i++) {

@@ -3,14 +3,11 @@ import type { CommentNode } from '~/types/blog'
 
 const props = defineProps<{
   comment: CommentNode
-  /** 回复项：缩进并去掉边框，视觉上归到父评论下面 */
   nested?: boolean
 }>()
 
 defineEmits<{ reply: [comment: CommentNode] }>()
 
-// 相对时间依赖“现在”，服务端算出来的和客户端不一样会导致 hydration 警告。
-// 所以首屏渲染绝对日期，挂载后再切成“3 分钟前”。
 const mounted = ref(false)
 onMounted(() => {
   mounted.value = true
@@ -55,7 +52,6 @@ const initial = computed(() => [...props.comment.author][0] ?? '?')
         >{{ timeLabel }}</time>
       </div>
 
-      <!-- 用文本插值渲染，评论内容永远不会被当成 HTML 执行 -->
       <p class="mt-1.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap break-words text-slate-700">
         {{ comment.body }}
       </p>
@@ -70,7 +66,6 @@ const initial = computed(() => [...props.comment.author][0] ?? '?')
 
       <slot name="form" />
 
-      <!-- 手机上宽度金贵：缩进和头像间距都收一档，回复层级仍看得出来 -->
       <div v-if="!nested && comment.replies.length" class="mt-4 space-y-4 border-l-2 border-slate-100 pl-2.5 sm:pl-4">
         <slot name="replies" />
       </div>

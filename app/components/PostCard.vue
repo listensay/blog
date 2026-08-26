@@ -3,11 +3,9 @@ interface PostLike {
   path?: string
   title?: string
   description?: string
-  /** `YYYY-MM-DD HH:mm`，见 app/utils/date.ts */
   date?: string
   category?: string
   tags?: string[]
-  /** 封面图，站点绝对路径（相对路径已由 image-src transformer 改写）；没设就不显示缩略图 */
   cover?: string
 }
 
@@ -18,8 +16,6 @@ defineProps<{ post: PostLike }>()
   <article
     class="group relative flex gap-3.5 px-4 py-5 sm:gap-5 sm:px-6 sm:py-7 border-b last:border-none border-zinc-100"
   >
-    <!-- 缩略图不用包链接：卡片靠标题里那层 absolute inset-0 已经整块可点，再套 <a> 就是嵌套链接。
-         min-w-0 少了长标题会把图挤变形；alt 刻意留空，标题就在旁边，屏幕阅读器已经念过一遍 -->
     <img
       v-if="post.cover"
       :src="post.cover"

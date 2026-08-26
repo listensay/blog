@@ -1,4 +1,3 @@
-// RSS 2.0 订阅源 /feed.xml：查 blog 集合，与列表页同一套 draft 过滤和时间倒序
 import { queryCollection } from '@nuxt/content/server'
 import { isoDateTime } from '../../app/utils/date'
 import { siteConfig } from '../../app/utils/site'
@@ -27,8 +26,6 @@ export default defineEventHandler(async (event) => {
       `<title>${escapeXml(post.title)}</title>`,
       `<link>${escapeXml(link)}</link>`,
       `<guid isPermaLink="true">${escapeXml(link)}</guid>`,
-      // 先补上站点时区偏移再转 UTC —— 文章日期是墙上时间，直接 new Date()
-      // 在 Workers 运行时（时区是 UTC）会当成 UTC，pubDate 会差 8 小时
       `<pubDate>${new Date(isoDateTime(post.date)).toUTCString()}</pubDate>`,
       `<description>${escapeXml(post.description ?? '')}</description>`,
       '</item>',

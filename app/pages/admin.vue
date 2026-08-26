@@ -3,7 +3,6 @@ import type { AdminCommentsResponse } from '~/types/blog'
 
 useSeo({
   title: '评论管理',
-  // 后台不该被收录
   noindex: true,
 })
 
@@ -24,7 +23,6 @@ async function loadComments() {
     })
   }
   catch (e) {
-    // 会话过期时退回登录界面，而不是留一个报错的空列表
     screen.value = 'guest'
     error.value = apiErrorMessage(e, '读取评论失败')
   }
@@ -42,7 +40,6 @@ async function loadSession() {
   }
 }
 
-// 私有数据不走 SSR，避免出现在 HTML 里
 onMounted(loadSession)
 
 watch(filter, () => {
@@ -114,7 +111,6 @@ const tabs = [
       正在检查登录状态…
     </p>
 
-    <!-- 密钥没配好：直接告诉怎么配，而不是让人反复试密码 -->
     <div v-else-if="screen === 'disabled'" class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
       <p class="font-medium">
         后台还没启用

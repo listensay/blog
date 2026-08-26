@@ -1,29 +1,22 @@
 <script setup lang="ts">
-// 列表页的封面缩略图。cover 先过 toPreviewSrc；解析不到或文件不在都是线上 404，而构建期只有一行 warn
-// 用原生 <img> 不用 a-image：后者转发 class 却不带 scoped 的 data-v，样式会静默失效
 import { computed, ref, watch } from 'vue'
 import { FileImageOutlined, WarningOutlined } from '@ant-design/icons-vue'
 
 import { PUBLIC_MOUNT, postContentDir, toPreviewSrc } from '@/utils/markdown'
 
 const props = defineProps<{
-  /** frontmatter 里的 cover 原文 */
   cover: string
-  /** 文章所在子目录，相对路径要靠它算层数 */
   dir: string
 }>()
 
-/** 地址算对了，但文件不在 */
 const broken = ref(false)
 
 const src = computed(() =>
   props.cover ? toPreviewSrc(props.cover, postContentDir(props.dir)) : '',
 )
 
-/** 解析不到 public/ 时 toPreviewSrc 原样返回，所以换算成功的标志是变成了 `/blog-public/…` */
 const unresolved = computed(() => !!src.value && !src.value.startsWith(`${PUBLIC_MOUNT}/`))
 
-// 表格翻页时组件会被复用，换了文章要把失败状态清掉，否则一直显示上一张的错误
 watch(src, () => {
   broken.value = false
 })
@@ -58,7 +51,6 @@ const problem = computed(() => {
   height: 48px;
   border-radius: 4px;
   background: #fafafa;
-  /* 缩略图只是用来认图的，裁掉溢出比整张缩瘪了更好认 */
   object-fit: cover;
 }
 

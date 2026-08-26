@@ -1,4 +1,3 @@
-/** 提交评论。审核策略是「先发后审」，所以校验和限流都压在这一步 */
 export default defineEventHandler(async (event) => {
   const slug = requireSlug(event)
   await assertPostExists(event, slug)
@@ -9,7 +8,6 @@ export default defineEventHandler(async (event) => {
 
   const db = await useReadyDb()
 
-  // 回复必须指向同一篇文章下、还没被删的评论，避免跨文章挂楼
   if (input.parentId) {
     const parent = await db.sql`
       SELECT id FROM comments
@@ -31,7 +29,6 @@ export default defineEventHandler(async (event) => {
     )
   `
 
-  // 回传整棵树，前端直接换掉列表，省一次请求也不用自己插节点
   const result = await db.sql`
     SELECT id, slug, parent_id, author, email_hash, website, body, visitor, hidden, created_at
     FROM comments

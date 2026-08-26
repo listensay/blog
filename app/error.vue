@@ -3,15 +3,12 @@ import type { NuxtError } from '#app'
 
 const props = defineProps<{ error: NuxtError }>()
 
-// 提示文案优先读 message：中文一律放在那里（statusMessage 会被 h3 清洗）。
-// 但生产环境下 500 的 message 可能带内部细节，所以只在 4xx 时展示。
 const detail = computed(() => {
   const code = props.error.statusCode ?? 500
   if (code >= 500) return '服务端出现了一个意外错误。'
   return props.error.message || props.error.statusMessage || '请求无法完成。'
 })
 
-// 错误页有标题才不至于在浏览器标签和搜索结果里裸着，同时明确不要被收录
 useSeo({
   title: () => (props.error.statusCode === 404 ? '页面不存在' : '出错了'),
   description: () => detail.value,

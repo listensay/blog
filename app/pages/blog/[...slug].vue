@@ -8,15 +8,14 @@ const pathSegments = computed(() => Array.isArray(route.params.slug)
 const slug = computed(() => pathSegments.value.at(-1) ?? '')
 const path = computed(() => `/blog/${pathSegments.value.join('/')}`)
 
-// 按文章路径稳定取色：同一篇文章刷新后颜色不变，不会造成 SSR/客户端水合闪烁。
 const headerColors = [
-  '#e11d48', // rose-600
-  '#a21caf', // fuchsia-700
-  '#7c3aed', // violet-600
-  '#0369a1', // sky-700
-  '#0f766e', // teal-700
-  '#047857', // emerald-700
-  '#b45309', // amber-700
+  '#e11d48',
+  '#a21caf',
+  '#7c3aed',
+  '#0369a1',
+  '#0f766e',
+  '#047857',
+  '#b45309',
 ]
 
 function colorIndex(value: string) {
@@ -31,8 +30,6 @@ const { data: post, status, error } = await useAsyncData(
   () => `post-${path.value}`,
   () => {
     let q = queryCollection('blog').path(path.value)
-    // 草稿不能对外：列表页和评论/点赞接口都按 draft=false 过滤，详情页也得一致，
-    // 否则 SSR 下猜到 URL 就能直接读到未发布的稿子。dev 下放开，方便自己预览。
     if (!import.meta.dev) q = q.where('draft', '=', false)
     return q.first()
   },
@@ -41,8 +38,6 @@ const { data: post, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
-// header 的底：有封面就铺封面，没有就用按路径哈希取的纯色。刻意用 CSS 背景图而不是 <img>，
-// 否则封面会被正文灯箱当成配图收进画廊；压一层暗色渐变，白底截图上标题的白字才看得清
 const headerStyle = computed(() => {
   const cover = post.value?.cover
   if (!cover) return { backgroundColor: headerColor.value }
@@ -55,13 +50,9 @@ const headerStyle = computed(() => {
   }
 })
 
-// 404 判定必须等数据真正落地。客户端是 lazy 的，setup 跑到这里时 post 还是
-// undefined，直上 `if (!post.value)` 会把每一次前端跳转都判成文章不存在。
 function assertFound() {
   if (post.value) return
-  // 中文只写 message：h3 会对非 ASCII 的 statusMessage 发告警，将来还会清洗掉
   const notFound = createError({ statusCode: 404, message: '文章不存在', fatal: true })
-  // SSR 还在 setup 里，可以直接抛；客户端此时早过了 setup，得走 showError
   if (import.meta.server) throw notFound
   showError(notFound)
 }
@@ -70,12 +61,9 @@ if (import.meta.server) {
   assertFound()
 }
 else {
-  // hydration 时数据来自 payload，status 一上来就是 success，immediate 能立刻兜住
   watch(status, s => s === 'success' && assertFound(), { immediate: true })
 }
 
-// 内置的 queryCollectionItemSurroundings 按路径字母序取邻居，slug 的字母序对读者没意义，
-// 这里按发布时间取：上一篇是更早的，下一篇是更新的
 const { data: surround } = await useAsyncData(
   () => `surround-${path.value}`,
   async () => {
@@ -91,25 +79,18 @@ const { data: surround } = await useAsyncData(
   { lazy: true },
 )
 
-// 正文里的图片点开是灯箱。容器在 v-else-if 里，前端跳转时要等骨架屏换成
-// 真内容才拿得到元素，所以由 composable 监听这个 ref（见 useProseLightbox）
 const proseEl = ref<HTMLElement>()
 useProseLightbox(proseEl)
 
 useSeo({
-  // 取 getter 形式：lazy 之下标题要等数据回来才有
   title: () => post.value?.title,
   description: () => post.value?.description,
-  // 有封面就用封面当社交卡片图（cover 的相对路径已由 image-src transformer 改写）
   image: () => post.value?.cover,
   type: 'article',
   publishedTime: () => isoDateTime(post.value?.date),
-  // 草稿只有 dev 能看到，别让它意外进索引
   noindex: post.value?.draft === true,
 })
 
-// 文章页的结构化数据：BlogPosting 让搜索结果能显示作者和日期，
-// BreadcrumbList 让面包屑取代结果里那串裸 URL
 useJsonLd(() => ({
   '@type': 'BlogPosting',
   'headline': post.value?.title ?? '',

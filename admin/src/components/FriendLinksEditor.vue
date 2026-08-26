@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// 友情链接编辑器（只用在 `/links`）：一条一行，可增删、可上下挪，数组顺序就是卡片顺序
 import { computed, ref } from 'vue'
 import {
   DeleteOutlined,
@@ -15,7 +14,6 @@ import { toSitePreviewSrc } from '@/utils/markdown'
 
 const friends = defineModel<FriendLink[]>({ required: true })
 
-/** 正在给第几条挑头像。null = 没开挑图弹窗 */
 const pickingFor = ref<number | null>(null)
 
 const pickerOpen = computed({
@@ -25,7 +23,6 @@ const pickerOpen = computed({
   },
 })
 
-/** 改一条里的一个字段。整条替换而不是就地改属性，父组件的快照才一定看得见 */
 function update(index: number, patch: Partial<FriendLink>) {
   friends.value = friends.value.map((item, i) => (i === index ? { ...item, ...patch } : item))
 }
@@ -38,7 +35,6 @@ function remove(index: number) {
   friends.value = friends.value.filter((_, i) => i !== index)
 }
 
-/** 和上/下一条交换。`delta` 是 -1 或 1 */
 function move(index: number, delta: number) {
   const target = index + delta
   if (target < 0 || target >= friends.value.length) return
@@ -53,15 +49,12 @@ function move(index: number, delta: number) {
 function pickAvatar(name: string) {
   const index = pickingFor.value
   if (index === null) return
-  // 存站点绝对路径：这个字段不走 image-src 改写，相对路径线上会 404
   update(index, { avatar: `/images/${encodeURI(name)}` })
   pickingFor.value = null
 }
 
-/** 头像预览地址：站点路径要转到后台挂的 /blog-public 才看得见 */
 const previewOf = (avatar: string | undefined) => toSitePreviewSrc(avatar ?? '')
 
-/** 没头像时显示名字首字，和站点一致 */
 const initial = (name: string) => [...(name || '?')][0] ?? '?'
 </script>
 
@@ -146,12 +139,6 @@ const initial = (name: string) => [...(name || '?')][0] ?? '?'
       加一条友链
     </a-button>
 
-    <p class="hint">
-      顺序就是页面上卡片的顺序。头像要写站点上真实存在的地址（/images/x.png 这种，
-      点右边的按钮能直接从图片库选），或者填 http 链接 —— 这个字段不像正文和封面那样
-      会被自动改写，写相对路径线上会 404。
-    </p>
-
     <ImagePickerModal v-model:open="pickerOpen" @select="pickAvatar($event.name)" />
   </div>
 </template>
@@ -173,7 +160,6 @@ const initial = (name: string) => [...(name || '?')][0] ?? '?'
   border-radius: 8px;
 }
 
-/* 就是站点上那个尺寸（48px） */
 .avatar {
   flex: none;
   width: 48px;

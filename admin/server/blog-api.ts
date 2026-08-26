@@ -1,4 +1,3 @@
-/** 读写 blog 仓库的本地接口，做成 Vite 插件挂在中间件链上；`apply: 'serve'` 不进构建产物 */
 import type { Connect, Plugin, ViteDevServer } from 'vite'
 import { loadEnv } from 'vite'
 import { createReadStream } from 'node:fs'
@@ -14,13 +13,10 @@ import { createPage, listPages, readPage, trashPage, updatePage } from './pages.
 import { createPost, listPosts, readPost, trashPost, updatePost } from './posts.ts'
 import { type Workspace, isInside, resolveWorkspace } from './paths.ts'
 
-/** API 前缀。前端统一打 `/api/...`，同源，不涉及 CORS */
 const API_PREFIX = '/api'
 
-/** 只允许本机访问。远端 IP 一律拒绝，避免局域网里别人能改你仓库 */
 const LOCAL_HOSTS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 
-/** 所有 handler 拿到的上下文：仓库位置 + AI 配置。两样都在启动时算一次 */
 interface Context {
   ws: Workspace
   ai: AiConfig
@@ -32,7 +28,6 @@ type Handler = (
   ctx: Context,
 ) => Promise<void>
 
-/** `GET /api/posts` 之类的路由表，key 是 `METHOD /path` */
 const routes: Record<string, Handler> = {
   'GET /workspace': async (_req, res, { ws }) => {
     const [{ posts }, { pages }, images] = await Promise.all([
@@ -74,7 +69,6 @@ const routes: Record<string, Handler> = {
     sendJson(res, 200, await trashPost(ws, file))
   },
 
-  // 固定页（content/pages/**.md）。和文章分开两套接口：字段和校验完全不同
   'GET /pages': async (_req, res, { ws }) => {
     sendJson(res, 200, await listPages(ws))
   },
@@ -100,7 +94,6 @@ const routes: Record<string, Handler> = {
     sendJson(res, 200, await trashPage(ws, file))
   },
 
-  // 顶部菜单（content/data/nav.json），整份数组一起存
   'GET /nav': async (_req, res, { ws }) => {
     sendJson(res, 200, await readNav(ws))
   },
@@ -114,8 +107,6 @@ const routes: Record<string, Handler> = {
     sendJson(res, 200, { images: await listImages(ws) })
   },
 
-  // 图片走裸 body 上传（`?name=x.png` + 二进制正文），不用 multipart：
-  // 前端手里本来就是 File/Blob，直接 fetch(body: blob) 最省事，也不用引解析库
   'POST /images': async (req, res, { ws }) => {
     const name = requireQuery(parseUrl(req), 'name')
     const data = await readBody(req)
@@ -123,7 +114,6 @@ const routes: Record<string, Handler> = {
     sendJson(res, reused ? 200 : 201, { image: item, reused })
   },
 
-  // AI 配好了没。没配好前端把按钮禁掉并显示 hint，而不是让人点了才报错
   'GET /ai': async (_req, res, { ai }) => {
     sendJson(res, 200, aiStatus(ai))
   },
@@ -134,7 +124,6 @@ const routes: Record<string, Handler> = {
   },
 }
 
-/** 静态伺服 blog/public，让编辑器里的图片能预览 */
 async function servePublic(
   req: Connect.IncomingMessage,
   res: import('node:http').ServerResponse,
@@ -143,7 +132,6 @@ async function servePublic(
   const url = parseUrl(req)
   if (!url.pathname.startsWith(`${PUBLIC_MOUNT}/`)) return false
 
-  // decodeURIComponent 会对残缺的 % 序列抛错，别让它把 dev server 带崩
   let relative: string
   try {
     relative = decodeURIComponent(url.pathname.slice(PUBLIC_MOUNT.length + 1))
@@ -167,7 +155,6 @@ async function servePublic(
     res.statusCode = 200
     res.setHeader('content-type', contentTypeOf(absolute))
     res.setHeader('content-length', String(stats.size))
-    // 图片可能被覆盖（同名换图），不缓存，省得看到旧图以为没生效
     res.setHeader('cache-control', 'no-store')
     createReadStream(absolute).pipe(res)
   } catch {
@@ -202,7 +189,6 @@ function isLocal(req: Connect.IncomingMessage): boolean {
 export function blogAdminApi(): Plugin {
   let ctx: Context
 
-  /** dev 和 preview 共用同一套中间件 */
   const middleware =
     (log: (msg: string, err: unknown) => void): Connect.NextHandleFunction =>
     async (req, res, next) => {
@@ -229,7 +215,6 @@ export function blogAdminApi(): Plugin {
           sendJson(res, err.status, { error: err.message })
           return
         }
-        // 预期外的错误：控制台留完整堆栈，界面上只给一句话
         log(`[blog-admin] ${url.pathname} 出错`, err)
         const message = err instanceof Error ? err.message : String(err)
         sendJson(res, 500, { error: message })
@@ -241,10 +226,8 @@ export function blogAdminApi(): Plugin {
     apply: 'serve',
 
     configResolved(config) {
-      // config.root 就是 admin 目录；blog 根默认取它的上一级
       const ws = resolveWorkspace(config.root)
 
-      // 用 loadEnv 读 `.env.local`：这层跑在 Node 里，process.env 看不到 .env 文件的内容
       const fromFiles = loadEnv(config.mode, config.envDir, 'ADMIN_')
       const ai = resolveAiConfig({ ...fromFiles, ...process.env })
 
@@ -265,7 +248,6 @@ export function blogAdminApi(): Plugin {
       )
     },
 
-    // `npm run build && npm run preview` 也能用，接口行为和 dev 完全一致
     configurePreviewServer(server) {
       server.middlewares.use(middleware((msg, err) => console.error(msg, err)))
     },

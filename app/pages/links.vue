@@ -1,7 +1,4 @@
 <script setup lang="ts">
-/** 友情链接页，内容来自 content/pages/links.md；没走 [...page].vue 通吃路由是为了下面这组卡片 */
-// NuxtLink 要从 #components 显式引入：它没注册成全局组件，resolveComponent 解析不到，
-// 会原样吐出 <NuxtLink> 标签，内链就点不动了
 import { NuxtLink } from '#components'
 
 const { data: page, status, error } = await useAsyncData(
@@ -12,19 +9,15 @@ const { data: page, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
-// friends 在 schema 里有 `.default([])`，但页面文件缺失时 page 整个是 null
 const friends = computed(() => page.value?.friends ?? [])
 
-// 正文里有没有东西。不能直接判 page.body：那是 minimark 结构，空正文也是个对象，永远为真
 const hasBody = computed(() => {
   const value = page.value?.body?.value
   return Array.isArray(value) && value.length > 0
 })
 
-// 外链要新窗口打开并加 noopener，内链走前端路由
 const isExternal = (url: string) => /^https?:\/\//.test(url)
 
-// 无头像时用名字首字符占位
 const initial = (name: string) => [...name][0] ?? '?'
 
 useSeo({
@@ -50,7 +43,6 @@ useSeo({
       </template>
     </header>
 
-    <!-- 说明文字在卡片前面 -->
     <div v-if="loading" class="prose-cn mt-6 sm:mt-10">
       <ProseSkeleton :paragraphs="2" />
     </div>

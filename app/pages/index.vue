@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { taxonomySlug } from '../utils/taxonomy'
 
-// lazy 的取舍见 useQueryState：客户端换路由不阻塞导航，先出骨架屏；SSR 照旧阻塞
 const { data: allPosts, status, error } = await useAsyncData(
   'home-posts',
   () =>
@@ -38,16 +37,13 @@ onMounted(() => {
   if (avatar.value?.complete) startAvatarAnimation()
 })
 
-// url 留空的社交项不渲染，方便在 site.ts 里占位
 const socialLinks = computed(() => siteConfig.socials.filter(s => s.url))
 const authorColors = ['#4285f4', '#ea4335', '#f9ab00', '#34a853', '#a855f7']
 
 useSeo({
-  // 首页不传 title：titleTemplate 会只输出站点名，不至于变成「站点名 - 站点名」
   description: siteConfig.description,
 })
 
-// 首页声明站点与作者本人，让搜索结果能把两者关联起来
 useJsonLd({
   '@type': 'WebSite',
   'name': siteConfig.title,
@@ -68,8 +64,6 @@ useJsonLd({
 
 <template>
   <div>
-    <!-- 手机上仍是「头像在左、文字在右」，只是整体缩一号：头像 80px、
-         标题降到 text-2xl、留白收紧，好让文章列表早点进视口 -->
     <section v-reveal class="mt-2 flex items-center gap-4 py-8 sm:mt-4 sm:gap-6 sm:px-6 sm:py-20">
       <img
         ref="avatar"

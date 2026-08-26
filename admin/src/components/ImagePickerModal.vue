@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// 图片选择器：从 blog/public/images/ 里挑一张，或者现场上传
-// emit 的是完整 ImageItem，调用方自己决定要 previewUrl（正文）还是 name（封面）
 import { computed, ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { InboxOutlined } from '@ant-design/icons-vue'
@@ -27,7 +25,6 @@ async function load() {
   }
 }
 
-// 打开时才拉列表：图片是会变的，每次都拿最新的
 watch(open, (isOpen) => {
   if (isOpen) void load()
 })
@@ -42,7 +39,6 @@ function choose(item: ImageItem) {
   open.value = false
 }
 
-/** a-upload 的 before-upload：自己传，返回 false 阻止它默认的 XHR */
 async function handleUpload(file: File): Promise<boolean> {
   uploading.value = true
   try {

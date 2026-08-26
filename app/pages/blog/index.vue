@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// lazy 的取舍见 useQueryState
 const { data: posts, status, error } = await useAsyncData(
   'all-posts',
   () =>
@@ -22,7 +21,6 @@ useSeo({
   <div class="py-8 sm:py-16">
     <header class="pb-6 sm:pb-8">
       <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">全部文章</h1>
-      <!-- 取数期间 posts 是 undefined，别把「共 0 篇」当结果写出来 -->
       <div v-if="loading" class="skeleton mt-3 h-5 w-20" aria-hidden="true" />
       <p v-else class="mt-2 text-slate-600">
         共 {{ posts?.length ?? 0 }} 篇

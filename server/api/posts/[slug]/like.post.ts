@@ -1,4 +1,3 @@
-// 点赞 / 取消点赞（toggle）：一个访客一篇只算一次，post_likes 的复合主键保证不重复计数
 export default defineEventHandler(async (event) => {
   const slug = requireSlug(event)
   await assertPostExists(event, slug)
@@ -13,7 +12,6 @@ export default defineEventHandler(async (event) => {
 
   if (hadLiked) {
     await db.sql`DELETE FROM post_likes WHERE slug = ${slug} AND visitor = ${visitor}`
-    // 用 MAX(0, ...) 兜底，避免历史数据不一致时把计数写成负数
     await db.sql`
       UPDATE post_stats SET likes = MAX(0, likes - 1) WHERE slug = ${slug}
     `

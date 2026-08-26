@@ -3,7 +3,6 @@ import type { CommentListResponse, CommentNode } from '~/types/blog'
 
 const props = defineProps<{
   slug: string
-  /** 有值就是在回复某条评论 */
   parent?: CommentNode | null
 }>()
 
@@ -12,12 +11,10 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-/** 和服务端 COMMENT_LIMITS 保持一致 */
 const MAX_BODY = 1000
 
 const { identity, remember } = useCommentIdentity()
 const body = ref('')
-/** 蜜罐：真人看不见，脚本会填 */
 const homepage = ref('')
 
 const pending = ref(false)
@@ -120,7 +117,6 @@ const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2
       </label>
     </div>
 
-    <!-- 蜜罐字段：移出可视区域而不是 display:none，多数脚本照样会填 -->
     <div class="absolute left-[-9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
       <label>
         Homepage

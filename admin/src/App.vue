@@ -1,6 +1,4 @@
 <script setup lang="ts">
-/** 外壳：顶栏（三个分区 + 当前仓库路径）+ 路由出口 */
-// 路径一直显示着，因为这个后台直接改磁盘上的文件
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
@@ -13,7 +11,6 @@ const route = useRoute()
 const info = ref<WorkspaceInfo | null>(null)
 const loadError = ref('')
 
-/** 三个分区。`match` 按前缀判断，编辑页也要让对应的分区亮着 */
 const sections = [
   {
     name: 'posts',
@@ -39,7 +36,6 @@ onMounted(async () => {
   <a-config-provider :locale="zhCN">
     <a-layout class="shell">
       <a-layout-header class="topbar">
-        <!-- 内包裹和下面的 .content 用同一组宽度，顶栏两端才和正文对齐（见 --shell-max / --shell-pad） -->
         <div class="topbar-inner">
           <div class="topbar-left">
             <RouterLink to="/" class="brand">blog 管理</RouterLink>
@@ -99,21 +95,18 @@ onMounted(async () => {
   min-height: 100%;
   background: #f5f5f5;
 
-  /* 顶栏和正文共用这一组宽度：写成变量，改一处就不会漏掉另一处、让两端对不上 */
   --shell-max: 1440px;
   --shell-pad: 24px;
 }
 
 .topbar {
   height: 56px;
-  /* 内边距交给 .topbar-inner，这里清零，否则会和它叠加 */
   padding: 0;
   background: #fff;
   border-bottom: 1px solid #f0f0f0;
   line-height: normal;
 }
 
-/* 和 .content 完全同一组约束：等宽、居中、同样的左右内边距 */
 .topbar-inner {
   display: flex;
   align-items: center;
@@ -150,7 +143,6 @@ onMounted(async () => {
   gap: 4px;
 }
 
-/* 分区切换做成淡色胶囊而不是 antd 的按钮组：它是导航，不是一个操作 */
 .section {
   padding: 4px 10px;
   border-radius: 6px;
@@ -179,7 +171,6 @@ onMounted(async () => {
   font-size: 12px;
 }
 
-/* 路径可能很长；直接尾部省略，鼠标悬停有完整路径 */
 .blog-root {
   max-width: 30vw;
   overflow: hidden;

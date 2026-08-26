@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// 评论列表的骨架屏。不只是好看：CommentSection 的 useFetch 有 default 值，
-// 取数期间 comments 是空数组，不挡一下会先闪一句「还没有人评论」
 const { count = 2 } = defineProps<{ count?: number }>()
 </script>
 

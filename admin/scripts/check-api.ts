@@ -1,5 +1,3 @@
-// 本地接口的端到端检查：真起一个 Vite dev server，用 fetch 走一遍增删改。跑法 `npm run check`。
-// 不碰真仓库 —— content/ 和 public/ 先复制到临时目录，再用 ADMIN_BLOG_ROOT 把接口指过去。
 import assert from 'node:assert/strict'
 import { cp, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -17,7 +15,6 @@ const fail = (msg: string) => {
   console.log(`  ✗ ${msg}`)
 }
 
-/** 断言包一层，一条失败不影响后面的用例继续跑 */
 async function check(label: string, fn: () => Promise<void> | void) {
   try {
     await fn()
@@ -27,7 +24,6 @@ async function check(label: string, fn: () => Promise<void> | void) {
   }
 }
 
-// ------------------------------------------------------- 造一份仓库副本再起服务
 const sandbox = await mkdtemp(path.join(tmpdir(), 'blog-admin-check-'))
 console.log(`\n临时仓库：${sandbox}（真仓库不会被改）`)
 
@@ -70,7 +66,6 @@ async function call(
 const createdTrash: string[] = []
 
 try {
-  // ------------------------------------------------------------------ 读
   console.log('读')
 
   let firstFile = ''
@@ -91,7 +86,6 @@ try {
     assert.ok(Array.isArray(data.categories))
     assert.ok(Array.isArray(data.dirs))
     firstFile = String(posts[0]!.file)
-    // 列表按日期倒序
     const dates = posts.map((p) => String(p.date))
     assert.deepEqual(dates, [...dates].sort().reverse())
   })
@@ -104,7 +98,6 @@ try {
     assert.equal(typeof data.title, 'string')
   })
 
-  // ------------------------------------------------------- 打开不改再存，逐字节相同
   console.log('\n打开不改、原样保存')
 
   const { data: allPosts } = await call('GET', '/api/posts')
@@ -123,7 +116,6 @@ try {
     })
   }
 
-  // ------------------------------------------------------------------ 增改删
   console.log('\n增 / 改 / 删')
 
   const draft = {
@@ -216,7 +208,6 @@ try {
     assert.equal(status, 404)
   })
 
-  // ------------------------------------------------------------------ 校验
   console.log('\n入参校验')
 
   const invalid: Array<[string, Record<string, unknown>, number]> = [
@@ -266,10 +257,8 @@ try {
     assert.equal(status, 404)
   })
 
-  // ------------------------------------------------------------------ 图片
   console.log('\n图片')
 
-  // 1x1 的 png
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
     'base64',
@@ -323,8 +312,6 @@ try {
   })
 
   await check('/blog-public/ 不给 public 外面的东西', async () => {
-    // 别用 `/blog-public/../content/x`：`..` 会被 URL 解析规范化掉，请求根本进不了这个处理器。
-    // 把斜杠编码成 `%2f`，`..%2fx` 才能作为一整个路径段抵达服务端。
     for (const attack of [
       '..%2fcontent%2fcontent.config.ts',
       '%2e%2e%2f%2e%2e%2fetc%2fpasswd',
@@ -336,7 +323,6 @@ try {
       assert.ok(!body.includes('defineContentConfig'), `${attack} 把仓库文件读出来了`)
     }
   })
-  // ------------------------------------------------- 老文章只写了日期时的行为
   console.log('\n只写了日期的老文章')
   {
     const file = 'blog/docs/只有日期的老文章.md'
@@ -384,12 +370,10 @@ try {
     await check('带时区的写法按本地时间归一', async () => {
       await writeFile(absolute, legacy.replace('date: 2026-08-19', 'date: 2026-08-19T09:30:00+08:00'), 'utf8')
       const { data } = await call('GET', `/api/post?file=${encodeURIComponent(file)}`)
-      // 沙箱和作者机器都是 Asia/Shanghai（+08），所以墙上时间就是 09:30
       assert.equal(data.date, '2026-08-19 09:30')
     })
   }
 
-  // ------------------------------------------------------------ 固定页
   console.log('\n固定页（content/pages）')
 
   await check('GET /api/pages 列出页面，并给出保留名', async () => {
@@ -398,7 +382,6 @@ try {
     const pages = data.pages as Array<Json>
     assert.ok(pages.length >= 1, `页面数是 ${pages.length}`)
     assert.ok(pages.some((p) => p.file === 'pages/about.md'), '没列出 pages/about.md')
-    // 保留名由服务端给，前端不自己抄一份
     assert.ok((data.reserved as string[]).includes('blog'), 'reserved 里没有 blog')
   })
 
@@ -412,12 +395,10 @@ try {
     assert.ok(friends.length >= 1, 'friends 是空的')
     assert.equal(typeof friends[0]!.name, 'string')
     assert.equal(typeof friends[0]!.url, 'string')
-    // 没写的 description 也要给成空串，前端表单直接绑
     assert.equal(typeof friends[0]!.description, 'string')
   })
 
   {
-    // 页面也吃「打开不改、原样保存」这条规矩，friends 那一段尤其容易被序列化改写
     const { data: allPages } = await call('GET', '/api/pages')
     for (const summary of allPages.pages as Array<Json>) {
       const file = String(summary.file)
@@ -476,7 +457,6 @@ try {
     assert.equal(data.file, 'pages/sub/api-check-page.md')
     assert.equal(data.path, '/sub/api-check-page')
 
-    // 正文原样写入，服务端一个字符都不动（图片路径的重定向在前端做）
     const raw = await readFile(path.join(sandbox, 'content', String(data.file)), 'utf8')
     assert.ok(
       raw.endsWith(String(detail.body)),
@@ -494,7 +474,6 @@ try {
     const deep = {
       ...pageDraft,
       name: 'sub/deeper-page',
-      // content/pages/sub/ 回到项目根要跳三层
       body: '\n![](../../../public/images/x.png)\n',
     }
     const { status, data } = await call('POST', '/api/page', deep)
@@ -516,7 +495,6 @@ try {
   })
 
   await check('已有文件不会被补空行（打开不改就是一字不动）', async () => {
-    // 补空行只在新建时生效：手写的正文可能本来就紧贴着 `---`
     const file = 'pages/tight-body.md'
     const absolute = path.join(sandbox, 'content', file)
     const tight = '---\ntitle: 紧贴正文\n---\n没有空行的正文。\n'
@@ -536,7 +514,6 @@ try {
     createdTrash.push(trashed)
     const trashFiles = await readdir(path.join(adminRoot, '.trash'))
     assert.ok(trashFiles.includes(trashed), `.trash 里没有 ${trashed}`)
-    // 前缀能一眼分出这是页面而不是文章
     assert.match(trashed, /pages__sub__api-check-page\.md$/)
   })
 
@@ -589,7 +566,6 @@ try {
     }
   })
 
-  // ------------------------------------------------------------ 菜单
   console.log('\n菜单（content/data/nav.json）')
 
   const navFile = path.join(sandbox, 'content', 'data', 'nav.json')
@@ -621,7 +597,6 @@ try {
       '  { "label": "关于", "to": "/about", "icon": "about", "color": "#06b6d4" }\n' +
       ']\n'
     assert.equal(raw, expected, `落盘内容是 ${JSON.stringify(raw)}`)
-    // 存出来的东西自己要能读回去
     assert.deepEqual(JSON.parse(raw), items)
   })
 
@@ -670,8 +645,6 @@ try {
   })
 
   await check('图标候选和站点侧的 NAV_ICONS 一字不差', async () => {
-    // 两个应用各存一份图标列表，走散了后台就能选出站点不认识的图标。
-    // 读的是真仓库的源码（沙箱只复制了 content/ 和 public/）。
     const source = await readFile(path.join(realBlogRoot, 'app', 'utils', 'site.ts'), 'utf8')
     const block = /export const NAV_ICONS = \[([\s\S]*?)\] as const/.exec(source)
     assert.ok(block, '在 app/utils/site.ts 里找不到 NAV_ICONS')
@@ -682,10 +655,7 @@ try {
     assert.deepEqual(adminIcons, siteIcons)
   })
 
-  // ------------------------------------------------------------------ AI
   console.log('\nAI')
-  // 刻意不真的调模型，只测接口形状和入参校验。
-  // 「配没配」必须问 `GET /api/ai` 的 enabled：密钥是 Vite 的 loadEnv 读的，不在 process.env 里。
   const aiConfigured = ((await call('GET', '/api/ai')).data.enabled as boolean) === true
 
   await check('GET /api/ai 报告配置状态', async () => {
@@ -694,13 +664,10 @@ try {
     assert.equal(typeof data.enabled, 'boolean')
     assert.equal(typeof data.model, 'string')
     assert.ok(String(data.model).length > 0, 'model 是空的')
-    // 密钥绝对不能出现在响应里
     assert.ok(!('apiKey' in data), '响应里带了 apiKey')
     assert.ok(!JSON.stringify(data).includes('sk-'), '响应里像是带了密钥')
   })
 
-  // 下面几条都是「在动网络之前就该被拒掉」的入参错误，配了密钥也不会真的调模型。
-  // 没配密钥时会更早地停在 503，两种都算对。
   const rejected = (status: number) => [400, 503].includes(status)
 
   await check('不认识的动作 → 400', async () => {
@@ -747,7 +714,6 @@ try {
     })
   }
 
-  // ------------------------------------------------------------- 前端能否编译
   console.log('\n前端模块（走 dev server 的真实转换管线）')
 
   await check('GET / 返回后台页面骨架', async () => {
@@ -759,8 +725,6 @@ try {
   })
 
   {
-    // 逐个请求 src 下的模块。Vite 在响应时才编译，模板语法错误、解析不到的 import 都会变成 500 ——
-    // 这是 vue-tsc 之外的一道网，类型检查看不出 import 路径在打包器里解析不到。
     const files: string[] = []
     const walk = async (dir: string, base2 = '/src') => {
       for (const entry of await readdir(path.join(adminRoot, dir), { withFileTypes: true })) {
@@ -777,7 +741,6 @@ try {
         const text = await response.text()
         assert.equal(response.status, 200, `HTTP ${response.status}：${text.slice(0, 300)}`)
 
-        // .vue 的 <style> 是另外一个请求，顺手也拉一次，样式写错同样能发现
         for (const [, styleUrl] of text.matchAll(/from\s+"(\/src\/[^"]*type=style[^"]*)"/g)) {
           const styleResponse = await fetch(`${base}${styleUrl}`)
           assert.equal(
@@ -792,7 +755,6 @@ try {
 } finally {
   await server.close()
   await rm(sandbox, { recursive: true, force: true })
-  // 测试产生的回收站文件清掉，别留在真仓库里
   for (const name of createdTrash) {
     await rm(path.join(adminRoot, '.trash', name), { force: true })
   }

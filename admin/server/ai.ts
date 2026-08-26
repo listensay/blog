@@ -1,5 +1,3 @@
-// AI 改写：调 OpenAI 兼容的 `/chat/completions`，密钥只留在服务端，换供应商只改环境变量
-// 提示词里的「铁律」防模型改坏 Markdown（包围栏、动图片路径、改标题层级），src/utils/ai.ts 还会再校验一遍
 import type { AiMetaResult, AiRequest, AiResult, AiStatus, AiUsage } from '../src/types.ts'
 import { HttpError, badRequest } from './http.ts'
 import { SLUG_RE } from './posts.ts'
@@ -9,21 +7,16 @@ export interface AiConfig {
   apiKey: string
   model: string
   timeoutMs: number
-  /** 不设就不传 max_tokens，用供应商的默认值（见下面 resolveAiConfig 的注释） */
   maxTokens: number
 }
 
-/** 没配 ADMIN_AI_MODEL 时用它。便宜、够用，换模型改环境变量就行 */
 const DEFAULT_MODEL = 'gpt-4o-mini'
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1'
 
-/** 单次请求超时 5 分钟：推理模型改一篇长文实测要 126 秒，超时报错对用户就等于功能坏了 */
 const DEFAULT_TIMEOUT_MS = 300_000
 
-/** 单次请求的正文上限。再长就该拆开改了，一次性发过去只会超时或者烧钱 */
 const TEXT_LIMIT = 60_000
 
-/** 从环境变量读配置。maxTokens 默认 0 = 不传这个参数：传超过模型上限有些供应商直接 400 */
 export function resolveAiConfig(env: Record<string, string | undefined>): AiConfig {
   const number = (value: string | undefined, fallback: number) => {
     const parsed = Number(value?.trim())
@@ -31,7 +24,6 @@ export function resolveAiConfig(env: Record<string, string | undefined>): AiConf
   }
 
   return {
-    // 去掉尾部斜杠，免得拼出 `//chat/completions`
     baseUrl: (env.ADMIN_AI_BASE_URL?.trim() || DEFAULT_BASE_URL).replace(/\/+$/, ''),
     apiKey: env.ADMIN_AI_API_KEY?.trim() ?? '',
     model: env.ADMIN_AI_MODEL?.trim() || DEFAULT_MODEL,
@@ -51,10 +43,7 @@ export function aiStatus(config: AiConfig): AiStatus {
   }
 }
 
-/* -------------------------------------------------------------------- 提示词 */
 
-// 所有动作共用的铁律，每一条都对应一个实测踩过的坑，删掉就会有文章被改坏
-// 第 4 条（标题）因动作而异：改写类一根头发都不许动层级，而 fix 的头等任务就是调层级
 function rulesFor(action: AiRequest['action']): string {
   const heading =
     action === 'fix'
@@ -81,8 +70,6 @@ interface ActionSpec {
 }
 
 const ACTIONS: Record<Exclude<AiRequest['action'], 'meta'>, ActionSpec> = {
-  // 格式修复：和下面三个改写动作性质不同，它一个字都不许改文字，只动 Markdown 标记
-  // temperature 给 0，这活的正确答案只有一个
   fix: {
     label: '修复格式',
     temperature: 0,
@@ -141,7 +128,6 @@ const ACTIONS: Record<Exclude<AiRequest['action'], 'meta'>, ActionSpec> = {
   },
 }
 
-/** 告诉模型手里这段是整篇还是一小段 —— 不说的话，改一个段落它会给你补个开头结尾 */
 const SCOPE_NOTE: Record<AiRequest['scope'], string> = {
   selection: [
     '注意：给你的是整篇文章里的**一小段**，不是全文。',
@@ -151,7 +137,6 @@ const SCOPE_NOTE: Record<AiRequest['scope'], string> = {
   all: '给你的是这篇文章的全部正文（frontmatter 已经摘掉了，不用管它）。',
 }
 
-/** 摘要和标签：输出 JSON，所以约束和上面那组完全不同 */
 const META_PROMPT = [
   '读完下面这篇中文技术博客，产出它的标题、URL slug、摘要和标签。',
   '',
@@ -179,7 +164,6 @@ const META_PROMPT = [
   '  不要造词，也不要「技术」「分享」「记录」这种贴在任何文章上都成立的词 —— 除非这篇确实就是一篇教程，那 tags 里可以有「教程」。',
 ].join('\n')
 
-/* ---------------------------------------------------------------- 调模型接口 */
 
 interface ChatChoice {
   message?: { content?: unknown }
@@ -192,14 +176,12 @@ interface ChatResponse {
   error?: { message?: unknown }
 }
 
-/** 供应商返回的错误翻译成一句人话。状态码带上，方便对着文档查 */
 function explainFailure(status: number, body: string): HttpError {
   let detail = body.slice(0, 300)
   try {
     const parsed = JSON.parse(body) as ChatResponse
     if (parsed.error?.message) detail = String(parsed.error.message)
   } catch {
-    // 不是 JSON（比如网关的 HTML 错误页），detail 就用截断的原文
   }
 
   const reason: Record<number, string> = {
@@ -229,7 +211,6 @@ async function chat(
   }
   if (config.maxTokens) body.max_tokens = config.maxTokens
 
-  // 超时用 AbortSignal.timeout：模型卡住的时候别让后台一直转圈
   let response: Response
   try {
     response = await fetch(`${config.baseUrl}/chat/completions`, {
@@ -280,43 +261,33 @@ async function chat(
   return { text: content, usage, truncated: choice?.finish_reason === 'length' }
 }
 
-/* -------------------------------------------------------------- 结果清理与解析 */
 
-// 模型爱把整段结果包进 ``` 围栏，只有「整个响应就是一个围栏」时才剥掉
-// 正文里本来就有代码块的绝不能碰，所以还要求中间没有别的围栏
 function stripWrappingFence(text: string): string {
   const trimmed = text.trim()
   const match = /^```[^\n]*\n([\s\S]*)\n```$/.exec(trimmed)
   if (!match) return trimmed
 
   const inner = match[1] ?? ''
-  // 中间还有围栏 → 说明原文是「代码块 + 说明」的结构，不是被整体包起来了
   if (inner.includes('```')) return trimmed
   return inner.trim()
 }
 
-/** 模型偶尔会在开头加一句交代。整行都是这种话就删掉，只删第一行且必须以冒号收尾 */
 const LEAD_IN = /^(?:好的|以下是|这是|下面是)[^\n]{0,40}[:：]\s*\n+/
 
 function cleanText(text: string): string {
   return stripWrappingFence(text).replace(LEAD_IN, '').trim()
 }
 
-/** 只从两端剥掉的装饰字符：模型爱把 slug 写成 "free-ai"、/blog/free-ai、free-ai. */
 const SLUG_TRIM = /^[\s\-_.,:;'"`<>()[\]{}/\\]+|[\s\-_.,:;'"`<>()[\]{}/\\]+$/g
 
-/** slug 长度上限。再长就不像 slug 了，多半是模型把一句话塞进来了 */
 const SLUG_MAX = 80
 
-// 把模型给的 slug 收拾成合法的，收拾不动就返回空串，让界面明说「AI 没给出可用的 slug」
-// 只做转小写、换分隔符这类不丢信息的事；非法字符判失败不删除（删了「免费AI中转站」只剩 ai），也不做拼音兜底
 export function normalizeSlug(raw: unknown): string {
   if (typeof raw !== 'string') return ''
 
   const cleaned = raw
     .replace(SLUG_TRIM, '')
     .toLowerCase()
-    // 空白和下划线是词分隔符，换成连字符不算丢信息
     .replace(/[\s_]+/g, '-')
     .replace(/-{2,}/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -325,7 +296,6 @@ export function normalizeSlug(raw: unknown): string {
   return SLUG_RE.test(cleaned) ? cleaned : ''
 }
 
-/** 从可能带围栏、带前后废话的响应里抠出那个 JSON 对象 */
 function parseMeta(text: string): Omit<AiMetaResult, 'kind' | 'model' | 'usage'> {
   const cleaned = stripWrappingFence(text)
   const start = cleaned.indexOf('{')
@@ -360,7 +330,6 @@ function parseMeta(text: string): Omit<AiMetaResult, 'kind' | 'model' | 'usage'>
       : [],
   }
 
-  // 四个字段全空才算这次白跑了；只要有一个能用就交给用户挑
   if (!result.title && !result.slug && !result.description && !result.tags.length) {
     throw new HttpError(
       502,
@@ -371,7 +340,6 @@ function parseMeta(text: string): Omit<AiMetaResult, 'kind' | 'model' | 'usage'>
   return result
 }
 
-/* ------------------------------------------------------------------ 对外入口 */
 
 const VALID_ACTIONS = new Set<AiRequest['action']>([
   'fix',
@@ -381,11 +349,8 @@ const VALID_ACTIONS = new Set<AiRequest['action']>([
   'meta',
 ])
 
-// 改过名的动作，旧名字继续认（`summarize` 是 `meta` 的旧名）
-// 服务端热重启后浏览器里可能还是旧代码，不收旧名就会报「不认识的 AI 动作」
 const LEGACY_ACTIONS: Record<string, AiRequest['action']> = { summarize: 'meta' }
 
-/** 把标题和分类拼成一句背景交代，让模型知道领域，术语才不会翻错 */
 function contextLine(input: AiRequest): string {
   const parts: string[] = []
   if (input.title?.trim()) parts.push(`文章标题《${input.title.trim()}》`)
@@ -398,7 +363,6 @@ export async function runAi(config: AiConfig, request: AiRequest): Promise<AiRes
     throw new HttpError(503, aiStatus(config).hint)
   }
 
-  // 旧动作名先翻译成新的，后面的逻辑只认新名字
   const action = LEGACY_ACTIONS[request.action as string] ?? request.action
   const input: AiRequest = { ...request, action }
 
@@ -413,7 +377,6 @@ export async function runAi(config: AiConfig, request: AiRequest): Promise<AiRes
   const text = typeof input.text === 'string' ? input.text : ''
   const title = input.title?.trim() ?? ''
 
-  // `meta` 只要有标题就能干活（把中文标题意译成 slug），改写类动作没有正文就无从下手
   if (!text.trim() && !(input.action === 'meta' && title)) {
     throw badRequest(input.action === 'meta' ? '正文和标题都是空的' : '没有要处理的内容')
   }
@@ -430,7 +393,6 @@ export async function runAi(config: AiConfig, request: AiRequest): Promise<AiRes
 
   const spec = ACTIONS[input.action]
 
-  // `fix` 强制整篇：标题层级是全局属性，只看选中的一段判断不出「整篇最浅的标题是几级」
   const scope: AiRequest['scope'] =
     input.action === 'fix' ? 'all' : input.scope === 'selection' ? 'selection' : 'all'
 

@@ -14,14 +14,12 @@ const { data: posts, status, error } = await useAsyncData(
 
 const { loading } = useQueryState(status, error)
 
-// 按分类聚合，并记住每个分类下最新的一篇
 const categories = computed(() => {
   const map = new Map<string, { count: number, latest?: string }>()
   for (const post of posts.value ?? []) {
     const key = post.category || '未分类'
     const cur = map.get(key) ?? { count: 0 }
     cur.count += 1
-    // posts 已按日期倒序，第一次遇到的即为最新
     cur.latest ??= post.title
     map.set(key, cur)
   }

@@ -15,7 +15,6 @@ watch(status, value => {
   if (value === 'success') ready.value = true
 })
 
-// 客户端换路由时，底部 PostReactions 挂载后会写入同 key 的共享数据。
 watch(stats, () => {
   ready.value = true
 }, { deep: true })

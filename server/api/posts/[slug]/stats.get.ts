@@ -1,4 +1,3 @@
-/** 读取一篇文章的浏览量/点赞数，以及当前访客是否已点赞 */
 export default defineEventHandler(async (event) => {
   noStore(event)
 

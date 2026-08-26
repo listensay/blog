@@ -1,6 +1,4 @@
 <script setup lang="ts">
-/** 菜单管理：增删、排序、改文字/路径/图标/颜色 */
-// 数据在 content/data/nav.json，整份数组一起存，图标候选由 GET /api/nav 给
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
@@ -19,7 +17,6 @@ import type { NavIconOption, NavItem, PageSummary } from '@/types'
 const loading = ref(true)
 const saving = ref(false)
 const loadError = ref('')
-/** 文件读得到但内容有问题（手改坏了）。保存一次会覆盖成正确的 */
 const fileError = ref('')
 const fileMissing = ref(false)
 const filePath = ref('content/data/nav.json')
@@ -27,14 +24,11 @@ const filePath = ref('content/data/nav.json')
 const items = ref<NavItem[]>([])
 const icons = ref<NavIconOption[]>([])
 
-/** 保存时的快照，用来判断「改过没有」（和编辑页同一套思路） */
 const baseline = ref('[]')
 const dirty = computed(() => JSON.stringify(items.value) !== baseline.value)
 
-/** 路径候选：站点上现有的固定页 + 几个内置列表页 */
 const pagePaths = ref<string[]>([])
 
-/** 内置列表页的路径，给路径下拉当候选（`to` 也能手填任意路径） */
 const BUILTIN_PATHS = ['/', '/blog', '/categories', '/tags'] as const
 
 const pathOptions = computed(() => [
@@ -42,7 +36,6 @@ const pathOptions = computed(() => [
   ...pagePaths.value.map((value) => ({ value })),
 ])
 
-/** 新加一项时的默认颜色，就用站点第一项那个蓝 */
 const DEFAULT_COLOR = '#3b82f6'
 
 async function load() {
@@ -62,7 +55,6 @@ async function load() {
     loading.value = false
   }
 
-  // 页面路径只是给下拉当候选，取不到不算错
   try {
     pagePaths.value = (await api.listPages()).pages.map((page: PageSummary) => page.path)
   } catch {
@@ -92,7 +84,6 @@ function onBeforeUnload(event: BeforeUnloadEvent) {
   if (dirty.value) event.preventDefault()
 }
 
-/** 没保存就离开时拦一下 */
 onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
   return new Promise<boolean>((resolve) => {
@@ -120,7 +111,6 @@ function remove(index: number) {
   items.value = items.value.filter((_, i) => i !== index)
 }
 
-/** 和上/下一项交换。`delta` 是 -1 或 1 */
 function move(index: number, delta: number) {
   const target = index + delta
   if (target < 0 || target >= items.value.length) return
@@ -132,16 +122,13 @@ function move(index: number, delta: number) {
   items.value = next
 }
 
-/** 指向不存在页面的项。只提醒，不拦保存 */
 function looksMissing(to: string): boolean {
   if (!to.startsWith('/') || to === '/') return false
   if ((BUILTIN_PATHS as readonly string[]).includes(to)) return false
   if (pagePaths.value.includes(to)) return false
-  // 有子路径的（/blog/xxx）不判断，那是文章
   return to.split('/').filter(Boolean).length === 1 && pagePaths.value.length > 0
 }
 
-/** 重复的路径。服务端也会拦，这里提前标红 */
 const duplicated = computed(() => {
   const seen = new Set<string>()
   const dupes = new Set<string>()
@@ -169,7 +156,6 @@ async function save() {
   }
 }
 
-/** 图标名 → 中文说明。预览里只显示名字，不画真图标（那套图标在站点项目里） */
 const iconLabel = (value: string) =>
   icons.value.find((item) => item.value === value)?.label ?? value
 </script>
@@ -214,7 +200,6 @@ const iconLabel = (value: string) =>
       :description="`${fileError}。保存一次会用这里的内容覆盖它 —— 覆盖之前先确认下面列的就是你想要的。`"
     />
 
-    <!-- 预览放在最上面：菜单是「长什么样」的东西，光看表格看不出来 -->
     <div class="card">
       <div class="card-title">预览</div>
       <nav class="preview">
@@ -257,7 +242,6 @@ const iconLabel = (value: string) =>
             </div>
           </div>
 
-          <!-- 开了搜索，按中文说明过滤：二十来个图标滚起来太慢 -->
           <a-select
             :value="item.icon"
             class="icon-select"
@@ -349,7 +333,6 @@ const iconLabel = (value: string) =>
   font-weight: 600;
 }
 
-/* 一排胶囊，只表达顺序、文字和颜色，不假装是站点的真实样式 */
 .preview {
   display: flex;
   flex-wrap: wrap;
@@ -376,7 +359,6 @@ const iconLabel = (value: string) =>
   border-radius: 50%;
 }
 
-/* 图标名小一号跟在文字后面：确认「哪一项用了哪个图标」，不假装是真图标 */
 .preview-icon {
   color: #bfbfbf;
   font-size: 12px;
@@ -423,7 +405,6 @@ const iconLabel = (value: string) =>
   width: 140px;
 }
 
-/* type=color 的原生控件很矮，撑到和输入框一样高才不会在一行里显得塌了 */
 .color-input {
   flex: none;
   width: 52px;

@@ -1,5 +1,3 @@
-// 图片：列出 `blog/public/images/`、把粘贴或拖进来的图写进去
-// 新存的图一律把空白换成 `-`：文件名带裸空格的图片 markdown 解析不出来，连 `<img>` 都不生成
 import { createHash } from 'node:crypto'
 import { readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -8,13 +6,10 @@ import type { ImageItem } from '../src/types.ts'
 import { badRequest } from './http.ts'
 import { type Workspace, ensureDir, resolveImageFile } from './paths.ts'
 
-/** 允许写入的图片扩展名 */
 const ALLOWED_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'bmp', 'ico'])
 
-/** 站内预览用的挂载前缀，对应 blog/public/ */
 export const PUBLIC_MOUNT = '/blog-public'
 
-/** 图片在站点上的 URL（构建后 public/images/x.png → /images/x.png） */
 export const IMAGES_SITE_PREFIX = '/images'
 
 export function imagePreviewUrl(name: string): string {
@@ -23,7 +18,6 @@ export function imagePreviewUrl(name: string): string {
 
 const sha256 = (buffer: Buffer): string => createHash('sha256').update(buffer).digest('hex')
 
-/** 清洗上传的文件名：去掉目录、换掉空白和保留字符，保留中文；扩展名不在白名单就拒绝 */
 export function sanitizeImageName(raw: string): string {
   const base = (raw.split(/[/\\]/).pop() ?? '').trim()
   const dot = base.lastIndexOf('.')
@@ -53,7 +47,6 @@ async function readIfExists(absolute: string): Promise<Buffer | null> {
   }
 }
 
-/** 存图，返回最终用的文件名。撞名先比内容，一样就复用，不一样才加 `-1`、`-2` 后缀 */
 export async function saveImage(
   ws: Workspace,
   rawName: string,
@@ -98,7 +91,7 @@ export async function listImages(ws: Workspace): Promise<ImageItem[]> {
   try {
     entries = await readdir(ws.imagesDir, { withFileTypes: true })
   } catch {
-    return [] // public/images 还没建，当空目录
+    return []
   }
 
   const items: ImageItem[] = []
@@ -109,6 +102,5 @@ export async function listImages(ws: Workspace): Promise<ImageItem[]> {
     items.push(await toImageItem(ws, entry.name))
   }
 
-  // 新上传的排前面，方便刚粘完就插入
   return items.sort((a, b) => b.mtime - a.mtime)
 }

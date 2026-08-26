@@ -1,6 +1,4 @@
 <script setup lang="ts">
-/** 页面编辑页：左边正文（富文本 / Markdown 源码两个标签），右边标题、描述、文件名 */
-// 正文机制和文章编辑页共用；页面的文件名就是网址，所以改名会先确认一次，友链编辑器只在 /links 上出现
 import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
@@ -19,7 +17,6 @@ import {
   retargetImagePaths,
 } from '@/utils/markdown'
 
-/** 站点侧唯一会渲染 friends 的页面 */
 const FRIENDS_FILE = 'pages/links.md'
 
 const route = useRoute()
@@ -35,15 +32,12 @@ const loadError = ref('')
 const form = reactive({
   title: '',
   description: '',
-  /** 不含 .md 的文件名，也就是网址 */
   name: '',
   friends: [] as FriendLink[],
 })
 
-/** 保存时要原样带回去的整份原文 frontmatter（服务端靠它保住未知字段和空键） */
 const raw = ref<Record<string, unknown>>({})
 
-/** 打开时的原始正文、文件名和路径。判断「正文动没动」「要不要重定向图片」都靠它 */
 const original = reactive({ body: '', name: '', file: '', path: '', customRoute: false })
 
 const bodyMarkdown = ref('')
@@ -51,14 +45,11 @@ const bodyHtml = ref('')
 const bodyDirty = ref(false)
 const activeTab = ref<'rich' | 'source'>('rich')
 
-/** 服务端给的保留名（站点上已有手写页面的路径），只用来提前提醒 */
 const reserved = ref<string[]>([])
-/** 顶部菜单，用来判断「改名会不会把菜单里的某一项指瞎」 */
 const navItems = ref<NavItem[]>([])
 
 const editorRef = useTemplateRef<InstanceType<typeof RichTextEditor>>('editor')
 
-/** 「改过没有」用快照比对，不监听表单变化（理由和文章编辑页一样） */
 function formSnapshot(): string {
   const text = (value: string | null | undefined) => value ?? ''
   return JSON.stringify([
@@ -78,12 +69,9 @@ const baseline = ref(formSnapshot())
 const metaDirty = computed(() => formSnapshot() !== baseline.value)
 const dirty = computed(() => bodyDirty.value || metaDirty.value)
 
-// 和文章编辑页同一套：编辑期间一切按 bodyDir（打开时文件在哪）算
-// 只在保存那一刻换算到 saveDir，中途重算会把旧路径写进新目录
 const bodyDir = computed(() => pageContentDir(original.name))
 const saveDir = computed(() => pageContentDir(form.name))
 
-/** 这个页面在站点上的网址 */
 const path = computed(() => (form.name ? `/${form.name}` : ''))
 
 const nameError = computed(() => {
@@ -94,25 +82,19 @@ const nameError = computed(() => {
   return ''
 })
 
-/** 撞上站点自己手写的页面，建了也访问不到。真正拦住保存的是服务端 */
 const reservedClash = computed(() => {
   const first = form.name.split('/')[0] ?? ''
   return first && reserved.value.includes(first) ? first : ''
 })
 
-/** 改名了吗（新建页面不算） */
 const renaming = computed(() => !isNew.value && !!original.name && form.name !== original.name)
 
-/** 顶部菜单里指着这个页面的项 */
 const navPointingToPage = computed(() => navItems.value.filter((item) => item.to === original.path))
 
-/** 改名场景下要提醒的那些项（删除有自己的确认框） */
 const navPointingHere = computed(() => (renaming.value ? navPointingToPage.value : []))
 
-/** 菜单项名字连起来，塞进提示文案 */
 const navNames = (items: NavItem[]) => items.map((item) => `「${item.label}」`).join('、')
 
-/** 删除确认框的文案。有专属 .vue 的页面删了不会 404，会变成空页面 */
 const removeHint = computed(() => {
   const gone = original.customRoute
     ? `${original.path} 那个页面的排版是站点上手写的，删了不会 404，会变成一个空页面（不报错）`
@@ -123,7 +105,6 @@ const removeHint = computed(() => {
   return `把这个页面移到 admin/.trash/？${gone}${nav}`
 })
 
-/** 只有 /links 那个页面显示友链编辑器 */
 const showFriends = computed(() => !isNew.value && original.file === FRIENDS_FILE)
 
 const risks = computed(() => detectRichTextRisks(bodyMarkdown.value))
@@ -140,7 +121,6 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('beforeunload', onBeforeUnload)
 
-  // 菜单单独拉、不 await：只用来提醒，取不到最多少一条提示
   api
     .getNav()
     .then((nav) => {
@@ -162,7 +142,6 @@ onMounted(async () => {
     loadError.value = err instanceof Error ? err.message : String(err)
   } finally {
     loading.value = false
-    // 新页面那条分支没走 fill()，这里补一次基准（fill() 自己会更新基准）
     baseline.value = formSnapshot()
   }
 })
@@ -187,10 +166,8 @@ function fill(detail: PageDetail) {
 
   setBody(detail.body)
 
-  // 以磁盘上的这份内容作为「没改动」的基准
   baseline.value = formSnapshot()
 
-  // 正文里有富文本撑不住的语法时，默认停在源码标签
   if (detectRichTextRisks(detail.body).length) activeTab.value = 'source'
 }
 
@@ -200,10 +177,8 @@ function setBody(markdown: string) {
   bodyDirty.value = false
 }
 
-/** 切标签时把内容同步过去，以当前标签的内容为准 */
 function onTabChange(key: string | number) {
   if (key === 'source') {
-    // 富文本 → 源码：只有真编辑过才重新序列化，没动过就保留原文
     if (bodyDirty.value)
       bodyMarkdown.value = htmlToMd(editorRef.value?.getHtml() ?? '', bodyDir.value)
   } else {
@@ -212,19 +187,17 @@ function onTabChange(key: string | number) {
   }
 }
 
-/** 当前要写进文件的正文 */
 function currentBody(): string {
   let body: string
 
   if (!bodyDirty.value) {
-    body = original.body // 没动过：逐字节保留
+    body = original.body
   } else if (activeTab.value === 'rich') {
     body = htmlToMd(editorRef.value?.getHtml() ?? '', bodyDir.value)
   } else {
     body = bodyMarkdown.value
   }
 
-  // 换目录了就换算图片路径的 `../` 层数。三条分支产出的都是 bodyDir 坐标系，无条件做
   if (bodyDir.value !== saveDir.value) {
     body = retargetImagePaths(body, bodyDir.value, saveDir.value)
   }
@@ -244,7 +217,6 @@ async function save() {
     return
   }
 
-  // 改名是破坏性的：老网址会 404，所以问一次再动手
   if (renaming.value && !(await confirmRename())) return
 
   const input: PageInput = {
@@ -258,7 +230,6 @@ async function save() {
 
   saving.value = true
   try {
-    // fill() 会把 original.file 改成新路径，所以先把旧路径存下来再比
     const previousFile = original.file
 
     const saved = isNew.value
@@ -283,7 +254,6 @@ function confirmRename(): Promise<boolean> {
     ? `顶部菜单里有 ${navNames(navPointingHere.value)} 指着 ${original.path}，改完记得去「菜单」里改。`
     : ''
 
-  // 有专属 .vue 的页面：那个 .vue 写死了查哪个路径，改名之后它会查不到内容
   const customNote = original.customRoute
     ? `注意：${original.path} 的排版是站点上单独写的一个页面，它写死了读 ${original.file}。改名之后那个页面会空掉，除非你也去改对应的 .vue。`
     : ''
@@ -305,7 +275,6 @@ async function remove() {
   try {
     const { trashed } = await api.deletePage(original.file)
     message.success(`已移到 admin/.trash/${trashed}`)
-    // 页面已经不在了，别再拦着离开
     baseline.value = formSnapshot()
     bodyDirty.value = false
     await router.push({ name: 'pages' })
@@ -340,8 +309,6 @@ onBeforeRouteLeave(async () => {
   })
 })
 
-// 刻意不在文件名变化时重新渲染正文：路径是按旧目录写的，拿新目录解析会当场变坏图
-// 接着一动正文就把旧路径写进新目录（本地正常、线上 404）。换算只在保存时做
 </script>
 
 <template>
@@ -401,7 +368,6 @@ onBeforeRouteLeave(async () => {
 
         <a-tabs v-model:activeKey="activeTab" @change="onTabChange">
           <a-tab-pane key="rich" tab="富文本">
-            <!-- v-if 等数据到位再挂载，理由同文章编辑页（编辑器只在创建时读一次 html） -->
             <RichTextEditor
               v-if="!loading"
               ref="editor"

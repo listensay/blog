@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// 行级差异视图，AI 改写和 Markdown 修复共用
-// 用行级是为了看结构有没有被动：标题、代码块、图片各占一行，没变就一眼看得出
 import { computed, ref } from 'vue'
 
 import { type DiffRow, changedRowCount, collapseDiff, diffLines } from '@/utils/ai'
@@ -10,10 +8,8 @@ const props = defineProps<{
   after: string
 }>()
 
-/** 只看改动附近，还是整篇都摊开 */
 const compact = ref(true)
 
-/** 太长时 diffLines 返回 null，这时候只能让人去看结果本身 */
 const rows = computed<DiffRow[] | null>(() => diffLines(props.before, props.after))
 const changed = computed(() => (rows.value ? changedRowCount(rows.value) : 0))
 const shown = computed<DiffRow[]>(() => {
@@ -80,7 +76,6 @@ defineExpose({ changed })
   user-select: none;
 }
 
-/* 长行折行显示而不是横向滚动：一行代码或一段中文都得看全 */
 .text {
   min-width: 0;
   white-space: pre-wrap;

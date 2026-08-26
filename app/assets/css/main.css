@@ -1,15 +1,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* 深色模式改为 class 驱动（配合 <html class="dark">），
-   若暂不使用可忽略，不影响默认亮色主题 */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ---------------------------------------------------------------
-   设计令牌：改这里就能整站换风格
-   --------------------------------------------------------------- */
 @theme {
-  /* 品牌色：石墨蓝，克制不刺眼 */
   --color-brand-50: oklch(0.97 0.013 250);
   --color-brand-100: oklch(0.93 0.03 250);
   --color-brand-200: oklch(0.87 0.055 250);
@@ -21,40 +15,25 @@
   --color-brand-800: oklch(0.36 0.1 250);
   --color-brand-900: oklch(0.29 0.075 250);
 
-  /* 正文字体：优先系统中文字体，避免中文回退成宋体 */
   --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
     "Noto Sans CJK SC", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
 
-  /* 正文栏宽 */
   --container-prose: 46rem;
 }
 
-/* ---------------------------------------------------------------
-   动效令牌：整站的快慢和力度都从这四个变量出发
-   刻意压得克制——阅读类站点里，动效应该只是「顺」，不该被看见
-   --------------------------------------------------------------- */
 :root {
-  /* 通用柔光阴影：卡片、头像等浮层统一复用 */
   --color-shadow: rgb(224 224 224 / 60%);
   --anim-fast: 150ms;
   --anim-base: 240ms;
-  /* 收尾快、起步稳，别用 ease-in-out，那个在短时长下显得黏 */
   --anim-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-  /* 入场上浮距离 */
   --anim-rise: 8px;
-  /* 列表逐条入场的间隔 */
   --anim-stagger: 55ms;
 }
 
-/* ---------------------------------------------------------------
-   自定义工具类
-   --------------------------------------------------------------- */
 
-/* 藏掉滚动条但保留滚动能力。用在顶部导航那条横向轨道上：
-   手机本来就没有常驻滚动条，桌面端窄窗口下那条灰杠会把 44px 高的导航压变形 */
 @utility no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -68,9 +47,6 @@
   box-shadow: 0 0.3rem 2rem var(--color-shadow);
 }
 
-/* ---------------------------------------------------------------
-   基础层
-   --------------------------------------------------------------- */
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -87,7 +63,6 @@
     font-family: var(--font-sans);
   }
 
-  /* 纯 CSS 柔光背景：大范围色域先叠加，再整体模糊，避免出现清晰的渐变边界。 */
   body::before {
     content: "";
     position: fixed;
@@ -104,7 +79,6 @@
     pointer-events: none;
   }
 
-  /* 参考图下半部分逐渐发白，内容越往下越安静。 */
   body::after {
     content: "";
     position: fixed;
@@ -120,19 +94,14 @@
     pointer-events: none;
   }
 
-  /* 中文排版：适当放宽行高与字间距 */
   :lang(zh-CN) {
     line-height: 1.8;
   }
 
-  /* 键盘可达性：统一焦点环 */
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-brand-500;
   }
 
-  /* iOS Safari 会在聚焦「字号小于 16px」的输入框时自动放大整个页面，
-     而且退出时不一定缩回去，手机上填评论会变成一场灾难。
-     只在小屏强制 16px：桌面端保留 text-sm 的紧凑观感。 */
   @media (max-width: 639px) {
     input,
     textarea,
@@ -142,15 +111,9 @@
   }
 }
 
-/* ---------------------------------------------------------------
-   组件层：正文排版微调
-   --------------------------------------------------------------- */
 @layer components {
-  /* 在 prose 基础上做中文向的修正 */
   .prose-cn {
     @apply prose prose-slate max-w-none bg-white p-4 rounded-xl sm:p-6;
-    /* 手机上一条长 URL 或长英文标识符就能把整页撑出横向滚动条。
-       中文本来就能任意换行，这里主要是给英文长串兜底 */
     overflow-wrap: break-word;
   }
 
@@ -183,8 +146,6 @@
     @apply rounded-xl border border-slate-200;
   }
 
-  /* 灯箱就绪后才给放大镜光标：手势提示不该出现在还点不开的时候
-     （lightbox-ready 由 useProseLightbox 在初始化成功后加上） */
   .prose-cn.lightbox-ready :where(img) {
     @apply cursor-zoom-in;
   }
@@ -201,31 +162,18 @@
     }
   }
 
-  /* --- 彩色标签 -----------------------------------------------------
-     只管形状，颜色由 utils/tag-color.ts 挑出的 Tailwind 类给（那里有为什么
-     不自己算 oklch 的说明）。标签页要更大一号，用 px-4 py-2 这些工具类覆盖 ——
-     工具层在组件层之后，同优先级下能盖住这里的内边距。 */
   .tag-chip {
     @apply inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-medium transition-colors;
   }
 }
 
-/* ---------------------------------------------------------------
-   动效层
-   --------------------------------------------------------------- */
 @layer components {
-  /* --- 入场显现（v-reveal 指令驱动）---------------------------------
-     初始态在 SSR 的 HTML 里就带上，避免「完整内容闪一下又被 JS 藏起来」。
-     --reveal-index 是列表序号，用来做逐条入场。 */
   [data-reveal] {
     opacity: 0;
     transform: translateY(var(--anim-rise));
-    /* 兜底：JS 没到场（禁用了、挂了、或者弱网还没下载完）就在 900ms 后自己淡出来。
-       正文站点不能因为一个入场动画让读者看不到字。 */
     animation: reveal-fallback var(--anim-base) var(--anim-ease) 900ms both;
   }
 
-  /* JS 接管后撤掉兜底，改成按视口逐个显现 */
   .reveal-ready [data-reveal] {
     animation: none;
     transition:
@@ -239,8 +187,6 @@
     transform: none;
   }
 
-  /* --- 路由切换过渡（out-in，两段不重叠，不会互相盖住）---------------
-     旧页往上收着淡出，新页从下方浮起来，方向一致才有「往前翻」的感觉 */
   .page-leave-active {
     transition:
       opacity var(--anim-fast) ease-in,
@@ -263,9 +209,6 @@
     transform: translateY(6px);
   }
 
-  /* --- 骨架屏 ------------------------------------------------------
-     底色块 + 一道横向扫光。用 ::after 而不是 background-position 动画，
-     省一次整块重绘，长列表上更稳。 */
   .skeleton {
     @apply relative overflow-hidden rounded-md bg-slate-200/70;
   }
@@ -284,8 +227,6 @@
     animation: skeleton-sweep 1.5s ease-in-out infinite;
   }
 
-  /* 骨架屏整体淡入一下，避免灰块硬弹出来。这个时长必须远小于骨架屏的最短展示
-     时长（见 useQueryState 的 SKELETON_MIN_MS），否则还没淡出来就被内容换掉了 */
   .skeleton-group {
     animation: skeleton-appear 100ms var(--anim-ease) both;
   }
@@ -310,10 +251,6 @@
   }
 }
 
-/* ---------------------------------------------------------------
-   无障碍：系统开了「减弱动态效果」就整站停掉动画
-   写在 @layer 外面，优先级高于上面所有分层样式
-   --------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -329,7 +266,6 @@
     transition-delay: 0ms !important;
   }
 
-  /* 入场动画取消后要保证内容可见，不能停在透明那一帧 */
   [data-reveal] {
     opacity: 1 !important;
     transform: none !important;

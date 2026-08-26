@@ -1,4 +1,3 @@
-/** 管理端评论列表：含被隐藏的，按时间倒序，跨文章一起看 */
 export default defineEventHandler(async (event) => {
   noStore(event)
   await requireAdmin(event)
@@ -10,7 +9,6 @@ export default defineEventHandler(async (event) => {
 
   const db = await useReadyDb()
 
-  // 三种视图共用一条 SQL：-1 表示不按 hidden 过滤
   const hiddenFilter = status === 'visible' ? 0 : status === 'hidden' ? 1 : -1
 
   const result = await db.sql`
@@ -57,7 +55,6 @@ export default defineEventHandler(async (event) => {
       body: row.body,
       hidden: Boolean(row.hidden),
       createdAt: row.created_at,
-      // 只给指纹前 8 位：够看出「同一个人换名字连发」，又不额外泄露什么
       visitor: row.visitor.slice(0, 8),
     })),
   }

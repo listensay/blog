@@ -1,16 +1,12 @@
-// AI 结果的前端处理（不调 AI，那在 server/ai.ts）：完整性校验 + 行级差异。
-// 提示词管不住模型，而这里改错一个图片路径的后果是线上 404 而本地一切正常，所以要逐项比对。
 import type { AiAction } from '@/types'
 import { codeBlockList, isLanguageLabelLine, proseOnly } from '@/utils/fences'
 import { collectImageSrcs } from '@/utils/markdown'
 
-/* ------------------------------------------------------------------ 动作元信息 */
 
 export interface AiActionMeta {
   action: AiAction
   label: string
   hint: string
-  /** 只能对全文做 —— 摘要和标签是整篇文章的属性，改一段没有意义 */
   wholeOnly: boolean
 }
 
@@ -30,61 +26,44 @@ export const AI_ACTIONS: AiActionMeta[] = [
 export const actionLabel = (action: AiAction): string =>
   AI_ACTIONS.find((a) => a.action === action)?.label ?? action
 
-/* -------------------------------------------------------------- 代码块与结构提取 */
 
-/** 标题层级序列，如 `[2, 3, 3, 2]` */
 function headingLevels(prose: string): number[] {
   return [...prose.matchAll(/^ {0,3}(#{1,6})[ \t]/gm)].map((m) => m[1]!.length)
 }
 
-/** 链接地址（不含图片 —— 图片单独比，因为它更要紧） */
 function linkHrefs(prose: string): string[] {
   return [...prose.matchAll(/(?<!!)\[[^\]]*\]\(\s*([^)\s]+)/g)].map((m) => m[1]!)
 }
 
-/* ---------------------------------------------------------------- 完整性校验 */
 
 export interface IntegrityIssue {
-  /** error = 别用这个结果；warn = 看一眼确认是你想要的 */
   level: 'error' | 'warn'
   label: string
   detail: string
 }
 
-// 剥掉 Markdown 标记只留「读者读到的文字」，并去掉所有空白 —— 给「格式修复」比对用，
-// 补空格、重排缩进都算格式改动，而增删一个词一定会让这个值变。代码块整块排除。
 export function proseText(markdown: string): string {
   return (
     proseOnly(markdown)
       .split('\n')
-      // 整行只有一个语言名（`Bash`）的行去掉：「修复格式」会把这种标签合进围栏，
-      // 不排除的话它干对了反而会被判成「文字被删了」
       .filter((line) => !isLanguageLabelLine(line))
       .join('\n')
-      // 图片整个去掉（alt 允许改），链接只留可见文字
       .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      // 行首的块标记：标题、引用、列表
       .replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
       .replace(/^[ \t]*>[ \t]*/gm, '')
       .replace(/^[ \t]*(?:[-*+]|\d+[.)])[ \t]+/gm, '')
-      // 分割线、表格分隔行（整行去掉）
       .replace(/^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$/gm, '')
       .replace(/^[ \t]*\|?[ \t:|-]+\|[ \t:|-]*$/gm, '')
-      // 行内标记
       .replace(/`+/g, '')
       .replace(/[*_~]{1,3}/g, '')
       .replace(/\|/g, '')
-      // 转义反斜杠：`1\.` 和 `1.` 在读者眼里是同一个字符
       .replace(/\\([^a-zA-Z0-9])/g, '$1')
-      // 行尾硬换行的两种写法
       .replace(/\\$/gm, '')
-      // 最后去掉所有空白
       .replace(/\s+/g, '')
   )
 }
 
-/** 两段文字第一处不一样的地方，前后各截一点给人看 */
 function firstDifference(a: string, b: string): string {
   let i = 0
   while (i < a.length && i < b.length && a[i] === b[i]) i += 1
@@ -92,7 +71,6 @@ function firstDifference(a: string, b: string): string {
   return `原文「…${around(a)}…」→ 结果「…${around(b)}…」`
 }
 
-/** 多重集合比较：返回「少了的」和「多出来的」 */
 function diffMultiset(before: string[], after: string[]): { lost: string[]; gained: string[] } {
   const pool = new Map<string, number>()
   for (const item of before) pool.set(item, (pool.get(item) ?? 0) + 1)
@@ -112,14 +90,11 @@ function diffMultiset(before: string[], after: string[]): { lost: string[]; gain
   return { lost, gained }
 }
 
-/** 列几个例子，别把整篇都糊到提示里 */
 const sample = (items: string[], max = 3): string => {
   const head = items.slice(0, max).map((i) => `\`${i.length > 60 ? `${i.slice(0, 60)}…` : i}\``)
   return items.length > max ? `${head.join('、')} 等 ${items.length} 处` : head.join('、')
 }
 
-// 改写前后比一遍，列出「模型动了不该动的东西」。error = 会让线上出问题或悄悄改坏文章，warn = 确认一下。
-// `proseMustMatch` / `headingLevelsMayChange` 都给「格式修复」用：它只许改标记，但调标题层级正是它的活。
 export function checkMarkdownIntegrity(
   before: string,
   after: string,
@@ -127,7 +102,6 @@ export function checkMarkdownIntegrity(
 ): IntegrityIssue[] {
   const issues: IntegrityIssue[] = []
 
-  // ---- 图片地址：这个仓库里最脆弱的东西
   const images = diffMultiset(collectImageSrcs(before), collectImageSrcs(after))
   if (images.lost.length || images.gained.length) {
     const parts: string[] = []
@@ -140,8 +114,6 @@ export function checkMarkdownIntegrity(
     })
   }
 
-  // ---- 代码块：里面的代码一个字符都不该变。改写类动作连围栏语言名都不该动（比整块原文），
-  // 而「修复格式」的活里包括给围栏补语言名，所以只比围栏之间的内容
   const beforeBlocks = codeBlockList(before)
   const afterBlocks = codeBlockList(after)
   const codeOf = (block: { body: string; raw: string }) =>
@@ -167,7 +139,6 @@ export function checkMarkdownIntegrity(
     }
   }
 
-  // ---- 标题：改写类动作连层级都不该动；格式修复只查数量（调层级正是它的活）
   const beforeHeadings = headingLevels(beforeProse)
   const afterHeadings = headingLevels(afterProse)
 
@@ -190,7 +161,6 @@ export function checkMarkdownIntegrity(
     })
   }
 
-  // ---- 正文文字：格式修复的头号红线 —— 模型最容易「顺手」润色一句
   if (options.proseMustMatch) {
     const beforeWords = proseText(before)
     const afterWords = proseText(after)
@@ -208,7 +178,6 @@ export function checkMarkdownIntegrity(
     }
   }
 
-  // ---- 链接：换了地址不一定是错，但得看一眼
   const links = diffMultiset(linkHrefs(beforeProse), linkHrefs(afterProse))
   if (links.lost.length || links.gained.length) {
     const parts: string[] = []
@@ -220,17 +189,14 @@ export function checkMarkdownIntegrity(
   return issues
 }
 
-/* ------------------------------------------------------------------ 行级差异 */
 
 export interface DiffRow {
   kind: 'same' | 'add' | 'del' | 'skip'
   text: string
 }
 
-/** 超过这个行数就不算差异：LCS 是 O(n·m)，而且这么长的差异人也看不过来 */
 const DIFF_LINE_LIMIT = 1500
 
-/** 行级 LCS 差异。太长时返回 null，调用方改成并排显示原文 */
 export function diffLines(before: string, after: string): DiffRow[] | null {
   const a = before.split('\n')
   const b = after.split('\n')
@@ -239,7 +205,6 @@ export function diffLines(before: string, after: string): DiffRow[] | null {
   const n = a.length
   const m = b.length
 
-  // 从后往前填的 LCS 长度表。Uint32Array 而不是嵌套数组：1500×1500 也只有 9MB
   const width = m + 1
   const lcs = new Uint32Array((n + 1) * width)
   for (let i = n - 1; i >= 0; i -= 1) {
@@ -261,7 +226,6 @@ export function diffLines(before: string, after: string): DiffRow[] | null {
       i += 1
       j += 1
     } else if (lcs[(i + 1) * width + j]! >= lcs[i * width + j + 1]!) {
-      // 删除排在新增前面，同一处改动读起来是「原来这样 → 现在这样」
       rows.push({ kind: 'del', text: a[i]! })
       i += 1
     } else {
@@ -275,7 +239,6 @@ export function diffLines(before: string, after: string): DiffRow[] | null {
   return rows
 }
 
-/** 把大段没变的内容折成一行「省略 N 行」，只在改动附近留几行上下文 */
 export function collapseDiff(rows: DiffRow[], context = 2): DiffRow[] {
   const keep = Array.from({ length: rows.length }, () => false)
 
@@ -311,10 +274,7 @@ export function collapseDiff(rows: DiffRow[], context = 2): DiffRow[] {
 export const changedRowCount = (rows: DiffRow[]): number =>
   rows.filter((r) => r.kind === 'add' || r.kind === 'del').length
 
-/* ---------------------------------------------------------------- 插回编辑器 */
 
-// 整份 HTML 恰好只有一个 `<p>` 时拆掉它，其余情况原样返回。
-// 行内选区带着 `<p>` 插回去会把那个段落劈成三段，正文结构就被改了。
 export function unwrapSingleParagraph(html: string): string {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
   const children = [...doc.body.children]
@@ -324,9 +284,7 @@ export function unwrapSingleParagraph(html: string): string {
   return only.innerHTML
 }
 
-/** 用新正文替换旧正文，但保留旧正文开头的空行和结尾的换行 */
 export function replaceBodyKeepEdges(oldBody: string, next: string): string {
-  // 文件里 frontmatter 之后通常空一行，那个空行属于「文件长什么样」，不该被 AI 顺手抹掉
   const lead = /^[\r\n]*/.exec(oldBody)?.[0] ?? '\n'
   return `${lead}${next.trim()}\n`
 }

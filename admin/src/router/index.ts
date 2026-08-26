@@ -14,13 +14,11 @@ const router = createRouter({
       component: () => import('@/views/PostEditorView.vue'),
     },
     {
-      // 文件路径带斜杠和中文，放 query 里比塞进 path 省事（`?file=blog/ai/xxx.md`）
       path: '/edit',
       name: 'post-edit',
       component: () => import('@/views/PostEditorView.vue'),
     },
 
-    // 固定页（content/pages/**.md）
     {
       path: '/pages',
       name: 'pages',
@@ -32,13 +30,11 @@ const router = createRouter({
       component: () => import('@/views/PageEditorView.vue'),
     },
     {
-      // 同上，`?file=pages/about.md`
       path: '/pages/edit',
       name: 'page-edit',
       component: () => import('@/views/PageEditorView.vue'),
     },
 
-    // 顶部菜单（content/data/nav.json）
     {
       path: '/menu',
       name: 'menu',

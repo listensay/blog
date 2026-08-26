@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// tiptap 富文本编辑器 + 工具条。只认 HTML，图片一律用 `/blog-public/…` 预览地址
-// 内容由父组件在切标签/保存时调 getHtml() 主动拉，期间只往上报 dirty
 import { computed, ref } from 'vue'
 import { EditorContent, getHTMLFromFragment, useEditor } from '@tiptap/vue-3'
 import { message } from 'ant-design-vue'
@@ -37,7 +35,6 @@ const editor = useEditor({
   editorProps: {
     attributes: { class: 'tiptap' },
 
-    // 粘贴：剪贴板里有图就走上传，其余交给 tiptap 默认处理
     handlePaste: (_view, event) => {
       const files = imageFilesOf(event.clipboardData?.files)
       if (!files.length) return false
@@ -45,7 +42,6 @@ const editor = useEditor({
       return true
     },
 
-    // 拖拽：插到鼠标落点，而不是当前光标处
     handleDrop: (view, event) => {
       const dragEvent = event as DragEvent
       const files = imageFilesOf(dragEvent.dataTransfer?.files)
@@ -58,23 +54,17 @@ const editor = useEditor({
   },
 })
 
-// 当前选区，给 AI 改写用。inline = 选区起止落在同一个文本块里
-// 只能在组件内算：出去只剩 HTML，分不出半个段落还是三个段落。别加 export，<script setup> 不许有 ES 导出
 interface EditorSelection {
   empty: boolean
-  /** ProseMirror 文档位置，替换时原样传回来 */
   from: number
   to: number
   inline: boolean
   html: string
-  /** 纯文本，只用来数字数给界面显示 */
   text: string
 }
 
 defineExpose({
-  /** 取当前 HTML。父组件在切标签和保存时调 */
   getHtml: () => editor.value?.getHTML() ?? '',
-  /** 外部（Markdown 源码标签）改完内容后灌回来。不触发 dirty */
   setHtml: (html: string) => editor.value?.commands.setContent(html, { emitUpdate: false }),
   focus: () => editor.value?.commands.focus(),
 
@@ -95,12 +85,10 @@ defineExpose({
     }
   },
 
-  /** 替换一段内容。用 insertContentAt 而不是 setContent，事务会进 undo 历史，⌘Z 能撤回 */
   replaceRange: (from: number, to: number, html: string) => {
     editor.value?.chain().focus().insertContentAt({ from, to }, html).run()
   },
 
-  /** 换掉整篇正文。同样走事务，可撤销 */
   replaceAll: (html: string) => {
     const instance = editor.value
     if (!instance) return
@@ -116,7 +104,6 @@ function imageFilesOf(list: FileList | null | undefined): File[] {
   return [...(list ?? [])].filter((file) => file.type.startsWith('image/'))
 }
 
-/** 截图粘贴过来的文件名常是空的或都叫 image.png，会全撞在一起，所以补个时间戳名字 */
 function nameFor(file: File): string {
   const generic = !file.name || /^(image|screenshot|clipboard)\.\w+$/i.test(file.name)
   if (!generic) return file.name
@@ -152,7 +139,6 @@ function insertImage(src: string, pos?: number) {
   else chain.insertContentAt(pos, { type: 'image', attrs: { src } }).run()
 }
 
-/** 工具条按钮：把 chain().focus() 这段样板收在一处 */
 const cmd = {
   bold: () => editor.value?.chain().focus().toggleBold().run(),
   italic: () => editor.value?.chain().focus().toggleItalic().run(),
@@ -175,7 +161,6 @@ const cmd = {
   delTable: () => editor.value?.chain().focus().deleteTable().run(),
 }
 
-/** 段落级别：正文 / H1–H4（blog 文章里 H5、H6 也有，所以给到 6） */
 const blockLevel = computed({
   get: () => {
     for (const level of [1, 2, 3, 4, 5, 6] as const) {
@@ -323,7 +308,6 @@ function applyLink() {
       </a-tooltip>
     </div>
 
-    <!-- 表格操作只在光标落在表格里时出现，平时不占地方 -->
     <div v-if="isActive('table')" class="toolbar table-toolbar">
       <span class="table-label">表格</span>
       <a-button size="small" type="text" @click="cmd.addRow">加一行</a-button>

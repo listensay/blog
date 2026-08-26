@@ -21,7 +21,6 @@ function hashSlug(value: string) {
   return (hash >>> 0).toString(36)
 }
 
-/** Return a stable, ASCII-only URL segment for a category or tag. */
 export function taxonomySlug(value: string, kind: 'category' | 'tag' = 'tag') {
   const name = value.trim()
   if (!name) return kind === 'category' ? 'uncategorized' : 'untagged'
