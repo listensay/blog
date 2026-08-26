@@ -447,17 +447,13 @@ onBeforeRouteLeave(async () => {
                 </template>
               </template>
             </a-alert>
-
-            <div v-else class="field-hint">
-              页面没有 slug 字段，网址就是文件名。改名等于换网址。
-            </div>
           </a-form-item>
 
           <a-form-item label="描述">
             <a-textarea
               v-model:value="form.description"
               :auto-size="{ minRows: 2, maxRows: 4 }"
-              placeholder="显示在标题下面，也进 SEO"
+              placeholder="SEO描述"
             />
           </a-form-item>
         </a-form>

@@ -725,7 +725,7 @@ function applyAiMeta(payload: {
             <a-textarea
               v-model:value="form.description"
               :auto-size="{ minRows: 2, maxRows: 4 }"
-              placeholder="列表页和 SEO 会用到"
+              placeholder="文章的描述"
             />
           </a-form-item>
 
@@ -743,7 +743,7 @@ function applyAiMeta(payload: {
           <a-form-item label="分类">
             <a-auto-complete
               v-model:value="form.category"
-              placeholder="选已有的或直接写新的"
+              placeholder="点击选择分类，或输入一个新分类"
               :options="categoryOptions"
               :filter-option="filterOption"
               allow-clear
@@ -769,11 +769,10 @@ function applyAiMeta(payload: {
             />
           </a-form-item>
 
-          <a-form-item label="文件名">
+          <a-form-item label="文件名称">
             <a-input
               v-model:value="form.name"
               addon-after=".md"
-              placeholder="可以用中文"
               @change="nameTouched = true"
             />
             <div class="field-hint mono">
