@@ -225,10 +225,6 @@ const iconLabel = (value: string) =>
         </span>
         <span v-if="!items.length" class="muted">一项都没有，顶栏会是空的。</span>
       </nav>
-      <p class="card-hint">
-        颜色是这一项的主题色：图标常驻这个色，选中当前页时文字和底色也用它。
-        手机上导航是一条横向滑动的轨道，项数多了会滑动而不是挤在一起。
-      </p>
     </div>
 
     <div class="card">
@@ -313,15 +309,6 @@ const iconLabel = (value: string) =>
         <template #icon><PlusOutlined /></template>
         加一项
       </a-button>
-
-      <p class="card-hint">
-        路径只收站内地址（以 / 开头）：顶栏的「当前页高亮」是拿当前路径去比的，
-        外链永远比不中，而且点一下就把人带出站了。想放外链就写在页脚或者友链页。
-      </p>
-      <p class="card-hint">
-        图标名要是站点认识的那几个（下拉里列的就是全部）。真填了个不认识的名字，
-        站点会显示成一个通用图标，不会让菜单少一项 —— 但那说明两边的列表走散了。
-      </p>
     </div>
   </a-spin>
 </template>

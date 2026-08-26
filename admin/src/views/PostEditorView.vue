@@ -808,9 +808,6 @@ function applyAiMeta(payload: {
               placeholder="选择日期和时间"
               style="width: 100%"
             />
-            <div class="field-hint">
-              只写了日期的老文章按 00:00 显示；不动它就不会改写原来那一行
-            </div>
           </a-form-item>
 
           <a-form-item label="分类">
@@ -840,7 +837,6 @@ function applyAiMeta(payload: {
               :filter-option="filterOption"
               allow-clear
             />
-            <div class="field-hint">目录只影响文件放在哪，也会出现在文章 URL 里</div>
           </a-form-item>
 
           <a-form-item label="文件名">
@@ -869,9 +865,6 @@ function applyAiMeta(payload: {
             <div class="draft-row">
               <a-switch v-model:checked="form.draft" />
               <span>草稿</span>
-            </div>
-            <div class="field-hint">
-              草稿不会出现在列表页和 RSS 里；线上直接访问 URL 也是 404，本地 dev 能预览
             </div>
           </a-form-item>
         </a-form>

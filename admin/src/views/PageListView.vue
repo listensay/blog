@@ -73,11 +73,6 @@ const total = computed(() => pages.value.length)
 
 <template>
   <div class="toolbar">
-    <span class="hint">
-      页面的网址就是文件名（<span class="mono">pages/about.md</span> →
-      <span class="mono">/about</span>）。新建的页面站点上自动就有路由，不用写 .vue。
-    </span>
-
     <span class="spacer" />
 
     <a-button :loading="loading" @click="load">
