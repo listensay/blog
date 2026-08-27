@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { cp, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -29,6 +29,13 @@ console.log(`\n临时仓库：${sandbox}（真仓库不会被改）`)
 
 await cp(path.join(realBlogRoot, 'content'), path.join(sandbox, 'content'), { recursive: true })
 await cp(path.join(realBlogRoot, 'public'), path.join(sandbox, 'public'), { recursive: true })
+
+// 设置接口要算「首页隐藏分类」的候选项，它是把站点侧的 taxonomy.ts import 进来算的。
+await mkdir(path.join(sandbox, 'app', 'utils'), { recursive: true })
+await cp(
+  path.join(realBlogRoot, 'app', 'utils', 'taxonomy.ts'),
+  path.join(sandbox, 'app', 'utils', 'taxonomy.ts'),
+)
 
 process.env.ADMIN_BLOG_ROOT = sandbox
 
@@ -682,6 +689,231 @@ try {
     const { data } = await call('GET', '/api/nav')
     const adminIcons = (data.icons as Array<Json>).map((i) => String(i.value))
     assert.deepEqual(adminIcons, siteIcons)
+  })
+
+  console.log('\n站点设置（content/data/site.json）')
+
+  const siteFile = path.join(sandbox, 'content', 'data', 'site.json')
+
+  const goodSettings = {
+    profile: {
+      name: 'Immki',
+      bio: '一句简介。',
+      avatar: '/images/avatar.jpg',
+      socials: [
+        { icon: 'github', label: 'GitHub', url: 'https://github.com/x', color: '#24292f' },
+        { icon: 'email', label: '邮箱', url: 'mailto:a@b.com', color: '#ea4335' },
+        { icon: 'rss', label: 'RSS', url: '/feed.xml', color: '#ee802f' },
+      ],
+    },
+    site: {
+      title: '测试博客',
+      description: '网站描述。',
+      url: 'https://example.com',
+      ogImage: '/images/avatar.jpg',
+      utcOffset: '+08:00',
+      home: { postLimit: 5, hiddenCategories: ['docs'] },
+    },
+  }
+
+  await check('GET /api/settings 返回设置、图标候选和分类候选', async () => {
+    const { status, data } = await call('GET', '/api/settings')
+    assert.equal(status, 200)
+    assert.equal(data.file, 'content/data/site.json')
+
+    const settings = data.settings as Json
+    const profile = settings.profile as Json
+    const site = settings.site as Json
+    assert.equal(typeof profile.name, 'string')
+    assert.ok(Array.isArray(profile.socials))
+    assert.equal(typeof site.title, 'string')
+    assert.match(String(site.url), /^https?:\/\//)
+
+    const icons = data.icons as Array<Json>
+    assert.ok(icons.length >= 10, `图标候选只有 ${icons.length} 个`)
+    assert.ok(icons.every((i) => typeof i.value === 'string' && typeof i.label === 'string'))
+
+    // 分类候选靠 import 站点侧的 taxonomy.ts 算 slug，中文分类要被算成英文。
+    const categories = data.categories as Array<Json>
+    assert.ok(categories.length >= 1, '一个分类候选都没有')
+    assert.ok(
+      categories.every((c) => /^[a-z0-9-]+$/.test(String(c.value))),
+      `候选里有不是 slug 的：${JSON.stringify(categories.slice(0, 3))}`,
+    )
+  })
+
+  await check('PUT /api/settings 存成 2 空格缩进的 JSON', async () => {
+    const { status, data } = await call('PUT', '/api/settings', { settings: goodSettings })
+    assert.equal(status, 200)
+    assert.deepEqual(data.settings, goodSettings)
+
+    const raw = await readFile(siteFile, 'utf8')
+    assert.deepEqual(JSON.parse(raw), goodSettings)
+    assert.ok(
+      raw.startsWith('{\n  "profile": {\n'),
+      `落盘开头是 ${JSON.stringify(raw.slice(0, 30))}`,
+    )
+    assert.ok(raw.endsWith('}\n'), '结尾没有换行')
+  })
+
+  await check('站点地址结尾的斜杠会被去掉（各处都写 ${url}/xxx）', async () => {
+    const { status, data } = await call('PUT', '/api/settings', {
+      settings: { ...goodSettings, site: { ...goodSettings.site, url: 'https://example.com///' } },
+    })
+    assert.equal(status, 200)
+    assert.equal((data.settings as { site: { url: string } }).site.url, 'https://example.com')
+  })
+
+  await check('整条都空着的社交链接被忽略，不算错', async () => {
+    const { status, data } = await call('PUT', '/api/settings', {
+      settings: {
+        ...goodSettings,
+        profile: {
+          ...goodSettings.profile,
+          socials: [
+            ...goodSettings.profile.socials,
+            { icon: 'website', label: '', url: '', color: '' },
+          ],
+        },
+      },
+    })
+    assert.equal(status, 200)
+    const socials = (data.settings as { profile: { socials: unknown[] } }).profile.socials
+    assert.equal(socials.length, 3)
+  })
+
+  await check('隐藏分类去重并转小写', async () => {
+    const { status, data } = await call('PUT', '/api/settings', {
+      settings: {
+        ...goodSettings,
+        site: { ...goodSettings.site, home: { postLimit: 5, hiddenCategories: ['Docs', 'docs'] } },
+      },
+    })
+    assert.equal(status, 200)
+    const home = (data.settings as { site: { home: { hiddenCategories: string[] } } }).site.home
+    assert.deepEqual(home.hiddenCategories, ['docs'])
+  })
+
+  const badSettings: Array<[string, Record<string, unknown>]> = [
+    ['名字为空', { profile: { ...goodSettings.profile, name: '  ' } }],
+    ['网站标题为空', { site: { ...goodSettings.site, title: '' } }],
+    ['站点地址为空', { site: { ...goodSettings.site, url: '' } }],
+    ['站点地址不带协议', { site: { ...goodSettings.site, url: 'example.com' } }],
+    ['头像写相对路径（线上会 404）', { profile: { ...goodSettings.profile, avatar: '../x.png' } }],
+    ['分享图写相对路径', { site: { ...goodSettings.site, ogImage: 'images/x.png' } }],
+    ['时区格式不对', { site: { ...goodSettings.site, utcOffset: '+8' } }],
+    [
+      '首页条数是 0',
+      { site: { ...goodSettings.site, home: { postLimit: 0, hiddenCategories: [] } } },
+    ],
+    [
+      '首页条数不是整数',
+      { site: { ...goodSettings.site, home: { postLimit: 2.5, hiddenCategories: [] } } },
+    ],
+    [
+      '隐藏分类写了中文（该填英文 slug）',
+      { site: { ...goodSettings.site, home: { postLimit: 5, hiddenCategories: ['文档'] } } },
+    ],
+    [
+      '社交图标不认识',
+      {
+        profile: {
+          ...goodSettings.profile,
+          socials: [{ icon: '飞机', label: 'x', url: 'https://a.com', color: '#000000' }],
+        },
+      },
+    ],
+    [
+      '社交链接没写名称',
+      {
+        profile: {
+          ...goodSettings.profile,
+          socials: [{ icon: 'github', label: '', url: 'https://a.com', color: '#000000' }],
+        },
+      },
+    ],
+    [
+      '社交链接的地址不带协议',
+      {
+        profile: {
+          ...goodSettings.profile,
+          socials: [{ icon: 'github', label: 'x', url: 'a.com', color: '#000000' }],
+        },
+      },
+    ],
+    [
+      '社交链接颜色不是 #rrggbb',
+      {
+        profile: {
+          ...goodSettings.profile,
+          socials: [{ icon: 'github', label: 'x', url: 'https://a.com', color: 'red' }],
+        },
+      },
+    ],
+    [
+      '两个社交链接指向同一个地址',
+      {
+        profile: {
+          ...goodSettings.profile,
+          socials: [
+            { icon: 'github', label: 'a', url: 'https://a.com', color: '#000000' },
+            { icon: 'website', label: 'b', url: 'https://a.com', color: '#000000' },
+          ],
+        },
+      },
+    ],
+  ]
+
+  for (const [label, patch] of badSettings) {
+    await check(`${label} → 400`, async () => {
+      const { status } = await call('PUT', '/api/settings', {
+        settings: { ...goodSettings, ...patch },
+      })
+      assert.equal(status, 400)
+    })
+  }
+
+  await check('校验不过时一个字都不落盘', async () => {
+    const before = await readFile(siteFile, 'utf8')
+    await call('PUT', '/api/settings', {
+      settings: { ...goodSettings, site: { ...goodSettings.site, url: '不是地址' } },
+    })
+    assert.equal(await readFile(siteFile, 'utf8'), before)
+  })
+
+  await check('site.json 被手改坏时不报 500，界面还能打开', async () => {
+    const before = await readFile(siteFile, 'utf8')
+    await writeFile(siteFile, '{ 这不是 json', 'utf8')
+    const { status, data } = await call('GET', '/api/settings')
+    assert.equal(status, 200)
+    assert.ok(String(data.error).length > 0, '没把出错原因带回来')
+    await writeFile(siteFile, before, 'utf8')
+  })
+
+  await check('图标候选和站点侧的 SOCIAL_ICONS 一字不差', async () => {
+    const source = await readFile(path.join(realBlogRoot, 'app', 'utils', 'site.ts'), 'utf8')
+    const block = /export const SOCIAL_ICONS = \[([\s\S]*?)\] as const/.exec(source)
+    assert.ok(block, '在 app/utils/site.ts 里找不到 SOCIAL_ICONS')
+    const siteIcons = [...block[1]!.matchAll(/'([a-z0-9-]+)'/g)].map((m) => m[1])
+
+    const { data } = await call('GET', '/api/settings')
+    const adminIcons = (data.icons as Array<Json>).map((i) => String(i.value))
+    assert.deepEqual(adminIcons, siteIcons)
+  })
+
+  await check('站点侧的 SocialIcon.vue 每个图标都画得出来', async () => {
+    const source = await readFile(path.join(realBlogRoot, 'app', 'utils', 'site.ts'), 'utf8')
+    const block = /export const SOCIAL_ICONS = \[([\s\S]*?)\] as const/.exec(source)
+    const siteIcons = [...block![1]!.matchAll(/'([a-z0-9-]+)'/g)].map((m) => String(m[1]))
+
+    // 后台自己那份 SVG 路径表（admin 不依赖 @tabler/icons-vue）也要一个不少。
+    const { SOCIAL_ICON_PATHS } = await import('../src/utils/social-icons.ts')
+    for (const icon of siteIcons) {
+      assert.ok(
+        Array.isArray(SOCIAL_ICON_PATHS[icon]) && SOCIAL_ICON_PATHS[icon]!.length > 0,
+        `admin 的 social-icons.ts 里缺 ${icon}`,
+      )
+    }
   })
 
   console.log('\nAI')

@@ -46,6 +46,17 @@ const router = createRouter({
       name: 'links',
       component: () => import('@/views/LinkView.vue'),
     },
+
+    {
+      path: '/settings/social',
+      name: 'settings-social',
+      component: () => import('@/views/SocialSettingsView.vue'),
+    },
+    {
+      path: '/settings/system',
+      name: 'settings-system',
+      component: () => import('@/views/SystemSettingsView.vue'),
+    },
   ],
 })
 

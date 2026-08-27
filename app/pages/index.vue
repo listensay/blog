@@ -54,7 +54,7 @@ useJsonLd({
     '@type': 'Person',
     'name': siteConfig.author,
     'url': siteConfig.url,
-    'image': `${siteConfig.url}${siteConfig.ogImage}`,
+    'image': `${siteConfig.url}${siteConfig.profile.avatar}`,
     'sameAs': siteConfig.socials
       .filter(s => s.url.startsWith('http'))
       .map(s => s.url),
@@ -67,10 +67,10 @@ useJsonLd({
     <section v-reveal class="mt-2 flex items-center gap-4 py-8 sm:mt-4 sm:gap-6 sm:px-6 sm:py-20">
       <img
         ref="avatar"
-        src="/images/avatar.jpg"
+        :src="siteConfig.profile.avatar"
         class="home-avatar soft-shadow size-20 shrink-0 rounded-full object-cover sm:size-42"
         :class="{ 'home-avatar-jelly': animateAvatar }"
-        alt="user avatar"
+        :alt="`${siteConfig.profile.name} 的头像`"
         @load="startAvatarAnimation"
         @animationend="finishAvatarAnimation"
       >
@@ -87,12 +87,12 @@ useJsonLd({
           >{{ char }}</span>
         </h1>
         <p class="max-w-2xl leading-relaxed text-slate-600 sm:text-lg">
-          {{ siteConfig.description }}
+          {{ siteConfig.profile.bio }}
         </p>
         <div v-if="socialLinks.length" class="mt-3 flex flex-wrap items-center gap-2 sm:mt-5 sm:gap-2.5">
           <AppActionIcon
-            v-for="link in socialLinks"
-            :key="link.icon"
+            v-for="(link, index) in socialLinks"
+            :key="`${link.icon}-${index}`"
             :label="link.label"
             :href="link.url"
             :color="link.color"

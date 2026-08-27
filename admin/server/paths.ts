@@ -9,6 +9,7 @@ export interface Workspace {
   postsDir: string
   pagesDir: string
   navFile: string
+  siteFile: string
   publicDir: string
   imagesDir: string
   trashDir: string
@@ -28,6 +29,7 @@ export function resolveWorkspace(adminRoot: string): Workspace {
     postsDir: path.join(blogRoot, 'content', 'blog'),
     pagesDir: path.join(blogRoot, 'content', 'pages'),
     navFile: path.join(blogRoot, 'content', 'data', 'nav.json'),
+    siteFile: path.join(blogRoot, 'content', 'data', 'site.json'),
     publicDir: path.join(blogRoot, 'public'),
     imagesDir: path.join(blogRoot, 'public', 'images'),
     trashDir: path.join(adminRoot, '.trash'),

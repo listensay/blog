@@ -11,6 +11,8 @@ import type {
   PostDetail,
   PostInput,
   PostListResponse,
+  SettingsResponse,
+  SiteSettings,
   WorkspaceInfo,
 } from '@/types'
 
@@ -85,6 +87,11 @@ export const api = {
 
   saveNav: (items: NavItem[]) =>
     request<NavResponse>('/api/nav', { ...json({ items }), method: 'PUT' }),
+
+  getSettings: () => request<SettingsResponse>('/api/settings'),
+
+  saveSettings: (settings: SiteSettings) =>
+    request<SettingsResponse>('/api/settings', { ...json({ settings }), method: 'PUT' }),
 
   listImages: () => request<{ images: ImageItem[] }>('/api/images'),
 

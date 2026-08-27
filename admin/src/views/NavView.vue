@@ -20,7 +20,6 @@ const saving = ref(false)
 const loadError = ref('')
 const fileError = ref('')
 const fileMissing = ref(false)
-const filePath = ref('content/data/nav.json')
 
 const items = ref<NavItem[]>([])
 const icons = ref<NavIconOption[]>([])
@@ -46,7 +45,6 @@ async function load() {
     const nav = await api.getNav()
     items.value = nav.items.map((item) => ({ ...item }))
     icons.value = nav.icons
-    filePath.value = nav.file
     fileMissing.value = nav.missing === true
     fileError.value = nav.error ?? ''
     baseline.value = JSON.stringify(items.value)
@@ -149,7 +147,7 @@ async function save() {
     baseline.value = JSON.stringify(items.value)
     fileMissing.value = false
     fileError.value = ''
-    message.success(`已保存到 ${nav.file}`)
+    message.success('已保存')
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
   } finally {
@@ -164,14 +162,13 @@ async function save() {
 
     <div class="head">
       <span class="head-title">顶部菜单</span>
-      <span class="mono head-file">{{ filePath }}</span>
       <a-tag v-if="dirty" color="orange">未保存</a-tag>
 
       <span class="spacer" />
 
       <a-button :loading="loading" @click="load">
         <template #icon><ReloadOutlined /></template>
-        重新读取
+        刷新
       </a-button>
 
       <a-button type="primary" :loading="saving" @click="save">
@@ -186,7 +183,7 @@ async function save() {
       show-icon
       class="banner"
       message="文件不存在"
-      :description="`${filePath} 不存在，保存后自动创建。`"
+      description="保存后自动创建。"
     />
 
     <a-alert
@@ -316,10 +313,6 @@ async function save() {
 
 .head-title {
   font-weight: 600;
-}
-
-.head-file {
-  color: #bfbfbf;
 }
 
 .spacer {

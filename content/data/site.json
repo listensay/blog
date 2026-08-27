@@ -1,0 +1,24 @@
+{
+  "profile": {
+    "name": "Immki",
+    "bio": "了解真相才能获得真正的自由。",
+    "avatar": "/images/avatar.jpg",
+    "socials": [
+      { "icon": "qq", "label": "QQ 群", "url": "https://qm.qq.com/q/pa2mcYXCCc", "color": "#12B7F5" },
+      { "icon": "email", "label": "邮箱", "url": "mailto:odr233@gmail.com", "color": "#ea4335" },
+      { "icon": "github", "label": "GitHub", "url": "https://github.com/listensay", "color": "#24292f" },
+      { "icon": "rss", "label": "RSS 订阅", "url": "/feed.xml", "color": "#ee802f" }
+    ]
+  },
+  "site": {
+    "title": "Immki Blog",
+    "description": "了解真相才能获得真正的自由。",
+    "url": "https://blog.200205.net",
+    "ogImage": "/images/avatar.jpg",
+    "utcOffset": "+08:00",
+    "home": {
+      "postLimit": 5,
+      "hiddenCategories": ["docs"]
+    }
+  }
+}

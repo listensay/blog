@@ -19,6 +19,7 @@ import {
 import { readNav, writeNav } from './nav.ts'
 import { createPage, listPages, readPage, trashPage, updatePage } from './pages.ts'
 import { createPost, listPosts, readPost, trashPost, updatePost } from './posts.ts'
+import { readSettings, writeSettings } from './settings.ts'
 import { type Workspace, isInside, resolveWorkspace } from './paths.ts'
 
 const API_PREFIX = '/api'
@@ -109,6 +110,15 @@ const routes: Record<string, Handler> = {
   'PUT /nav': async (req, res, { ws }) => {
     const input = await readJson<{ items: unknown }>(req)
     sendJson(res, 200, await writeNav(ws, input.items))
+  },
+
+  'GET /settings': async (_req, res, { ws }) => {
+    sendJson(res, 200, await readSettings(ws))
+  },
+
+  'PUT /settings': async (req, res, { ws }) => {
+    const input = await readJson<{ settings: unknown }>(req)
+    sendJson(res, 200, await writeSettings(ws, input.settings))
   },
 
   'GET /images': async (_req, res, { ws }) => {

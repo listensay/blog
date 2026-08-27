@@ -103,6 +103,56 @@ curl https://你的域名/api/admin/session
 应返回 `{"enabled":true,"authed":false}`。如果线上由 GitHub 自动部署，务必先把
 评论/点赞相关提交推送到部署所使用的分支。
 
+## 站点设置
+
+站点名字、描述、头像、社交链接这些都在 `content/data/site.json`，`app/utils/site.ts`
+把它静态 import 进来当 `siteConfig`（和菜单同一套路子）：
+
+```json
+{
+  "profile": {
+    "name": "Immki",
+    "bio": "了解真相才能获得真正的自由。",
+    "avatar": "/images/avatar.jpg",
+    "socials": [
+      { "icon": "github", "label": "GitHub", "url": "https://github.com/x", "color": "#24292f" }
+    ]
+  },
+  "site": {
+    "title": "Immki Blog",
+    "description": "了解真相才能获得真正的自由。",
+    "url": "https://blog.200205.net",
+    "ogImage": "/images/avatar.jpg",
+    "utcOffset": "+08:00",
+    "home": { "postLimit": 5, "hiddenCategories": ["docs"] }
+  }
+}
+```
+
+`profile` 是首页头像旁「我是谁」那块，`site` 是 SEO / RSS / sitemap 读的站点元信息。
+所以 **`profile.name`（首页那个大名字）和 `site.title`（浏览器标签页）是两个字段**，
+`profile.bio` 和 `site.description` 也是 —— 简介留空时会自动退回用网站描述。
+
+不用手改这个文件，后台有「社交设置」和「系统设置」两页，校验比手写严得多
+（详见 [admin/README.md](admin/README.md#站点设置)）。改完**要重启 dev server**：
+静态 import 的东西，已经跑起来的进程不一定重新读。
+
+`socials[].icon` 的取值列在 `app/utils/site.ts` 的 `SOCIAL_ICONS` 里（20 个，
+邮箱、QQ、微信、GitHub、B 站、知乎、掘金、X、Telegram……），每一个都要在
+`SocialIcon.vue` 的映射表里有对应的 Tabler 图标 —— 那张表的类型是
+`Record<SocialIconName, …>`，漏一个直接类型报错。
+
+`avatar` 和 `ogImage` 要写**站点上真实存在的地址**（`/images/x.jpg`）或 http 链接。
+和友链头像同一个坑：frontmatter 里只有 `cover` 会被 `image-src` transformer 改写成站点 URL，
+这两个字段不会 —— 写相对路径的话本地编辑器里看得见、线上是 404。
+
+`home.hiddenCategories` 填分类的**英文 slug**（`docs`、`python`），这些分类的文章不出现在
+首页，分类页和 RSS 仍然有。
+
+**这个 JSON 是站点的硬依赖，别删** —— 和 `nav.json` 一样，解析不到连 `npm run dev` 都起不来。
+里面的坏数据不会把站点带崩：认不出的图标名、颜色、时区、条数都会换成兜底值，
+没写地址的社交条目会被整条丢掉（见 `site.ts` 里的 `toSocialLink` 和那组 `DEFAULTS`）。
+
 ## SEO
 
 页面元信息统一走 `app/composables/useSeo.ts`，各页面只需要给「不含站点名的标题」和描述，
@@ -112,7 +162,8 @@ canonical、`og:*`、`twitter:*` 由它补齐。标题的站点名后缀来自 `
 
 结构化数据用同一个文件里的 `useJsonLd`：首页输出 WebSite + Person，文章页输出 BlogPosting +
 面包屑。`/sitemap.xml` 和 `/robots.txt` 是服务端路由（和 `feed.xml` 同一套写法），域名只有
-`app/utils/site.ts` 一个来源。上线后记得去 Google Search Console 提交一次 sitemap。
+`content/data/site.json` 的 `site.url` 一个来源（经 `app/utils/site.ts` 读出来）。
+上线后记得去 Google Search Console 提交一次 sitemap。
 
 `noindex` 的页面（`/admin`、错误页）不输出 canonical —— 既说别收录又指一个规范地址是矛盾信号。
 
@@ -169,8 +220,9 @@ tags:
 常用中文名称到英文 slug 的映射集中在 `app/utils/taxonomy.ts`，新增中文分类或标签时可在
 `TAXONOMY_ALIASES` 中补一个可读的英文名称。
 
-首页默认不显示 `Docs` 分类。需要调整时修改 `app/utils/site.ts` 中的
-`home.hiddenCategories`；这里填写分类的英文 slug，例如 `docs`、`python`。
+首页默认不显示 `Docs` 分类。需要调整时改后台「系统设置」里的「首页隐藏的分类」
+（存到 `content/data/site.json` 的 `site.home.hiddenCategories`）；这里填分类的英文 slug，
+例如 `docs`、`python`。
 
 ## 固定页
 
@@ -229,5 +281,5 @@ friends:
 
 ## 本机管理后台
 
-`admin/` 是一个独立的 Vue + Vite 应用，用来管文章、固定页、菜单和图片，**只在本机跑、
-不部署**。详见 [admin/README.md](admin/README.md)。
+`admin/` 是一个独立的 Vue + Vite 应用，用来管文章、固定页、友链、菜单、图片和站点设置，
+**只在本机跑、不部署**。详见 [admin/README.md](admin/README.md)。

@@ -116,6 +116,59 @@ export interface NavResponse {
   error?: string
 }
 
+export interface SocialLink {
+  icon: string
+  label: string
+  url: string
+  color: string
+}
+
+export interface SocialIconOption {
+  value: string
+  label: string
+}
+
+/** 首页隐藏分类的候选项：value 是英文 slug，name 是文章里写的中文分类名 */
+export interface CategoryOption {
+  value: string
+  name: string
+}
+
+/** 首页头像旁那块「我是谁」 */
+export interface ProfileSettings {
+  name: string
+  bio: string
+  avatar: string
+  socials: SocialLink[]
+}
+
+/** 站点级设置：标题、描述、地址这些，SEO / RSS / sitemap 都读它 */
+export interface SystemSettings {
+  title: string
+  description: string
+  url: string
+  ogImage: string
+  utcOffset: string
+  home: {
+    postLimit: number
+    hiddenCategories: string[]
+  }
+}
+
+export interface SiteSettings {
+  profile: ProfileSettings
+  site: SystemSettings
+}
+
+export interface SettingsResponse {
+  settings: SiteSettings
+  icons: SocialIconOption[]
+  categories: CategoryOption[]
+  file: string
+  missing?: boolean
+  error?: string
+}
+
 export type AiAction = 'fix' | 'polish' | 'condense' | 'expand' | 'meta'
 
 export type AiScope = 'selection' | 'all'

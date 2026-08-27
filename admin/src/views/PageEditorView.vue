@@ -15,8 +15,6 @@ import {
   retargetImagePaths,
 } from '@/utils/markdown'
 
-const LINKS_FILE = 'pages/links.md'
-
 const route = useRoute()
 const router = useRouter()
 
@@ -37,7 +35,7 @@ const preservedFriends = ref<FriendLink[]>([])
 
 const raw = ref<Record<string, unknown>>({})
 
-const original = reactive({ body: '', name: '', file: '', path: '' })
+const original = reactive({ body: '', name: '', file: '', path: '', customRoute: false })
 
 const bodyMarkdown = ref('')
 const bodyHtml = ref('')
@@ -85,10 +83,13 @@ const navPointingHere = computed(() => (renaming.value ? navPointingToPage.value
 const navNames = (items: NavItem[]) => items.map((item) => `「${item.label}」`).join('、')
 
 const removeHint = computed(() => {
+  const gone = original.customRoute
+    ? `${original.path} 由站点渲染，删除后页面内容为空。`
+    : `${original.path} 将返回 404。`
   const nav = navPointingToPage.value.length
     ? `顶部菜单中 ${navNames(navPointingToPage.value)} 指向该页面。`
     : ''
-  return `将这个页面移到回收站？${original.path} 将返回 404。${nav}`
+  return `将这个页面移到回收站？${gone}${nav}`
 })
 
 const risks = computed(() => detectRichTextRisks(bodyMarkdown.value))
@@ -102,11 +103,6 @@ const stats = computed(() => {
 })
 
 onMounted(async () => {
-  if (!isNew.value && file.value === LINKS_FILE) {
-    await router.replace({ name: 'links' })
-    return
-  }
-
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('beforeunload', onBeforeUnload)
 
@@ -151,6 +147,7 @@ function fill(detail: PageDetail) {
   original.name = detail.name
   original.file = detail.file
   original.path = detail.path
+  original.customRoute = detail.customRoute
 
   setBody(detail.body)
 
@@ -242,10 +239,14 @@ function confirmRename(): Promise<boolean> {
     ? `顶部菜单中 ${navNames(navPointingHere.value)} 指向 ${original.path}，改名后需在「菜单」中更新。`
     : ''
 
+  const customNote = original.customRoute
+    ? `${original.path} 由站点单独渲染，且写死读取 ${original.file}，改名后该页面内容将为空。`
+    : ''
+
   return new Promise((resolve) => {
     Modal.confirm({
       title: '页面网址将改变',
-      content: `${original.path} → ${path.value}。原网址将返回 404。${navNote}`,
+      content: `${original.path} → ${path.value}。原网址将返回 404。${navNote}${customNote}`,
       okText: '确定',
       okType: 'danger',
       cancelText: '取消',

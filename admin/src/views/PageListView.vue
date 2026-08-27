@@ -9,16 +9,13 @@ import type { PageSummary } from '@/types'
 
 const router = useRouter()
 
-const LINKS_FILE = 'pages/links.md'
-
 const loading = ref(false)
 const pages = ref<PageSummary[]>([])
 
 async function load() {
   loading.value = true
   try {
-    const list = await api.listPages()
-    pages.value = list.pages.filter((page) => page.file !== LINKS_FILE)
+    pages.value = (await api.listPages()).pages
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
   } finally {
@@ -50,8 +47,13 @@ function formatSize(bytes: number): string {
   return bytes < 1024 ? `${bytes} B` : `${Math.round(bytes / 1024)} KB`
 }
 
+const friendCount = (page: PageSummary) => page.friends.length
+
 function removeHint(page: PageSummary): string {
-  return `将《${page.title || page.name}》移到回收站？${page.path} 将返回 404。`
+  const gone = page.customRoute
+    ? `${page.path} 由站点渲染，删除后页面内容为空。`
+    : `${page.path} 将返回 404。`
+  return `将《${page.title || page.name}》移到回收站？${gone}`
 }
 
 const columns = [
@@ -100,6 +102,9 @@ const total = computed(() => pages.value.length)
         <a class="title-link" @click="openEditor(record as PageSummary)">
           {{ (record as PageSummary).title || '未命名' }}
         </a>
+        <a-tag v-if="friendCount(record as PageSummary)" color="blue" class="friend-tag">
+          {{ friendCount(record as PageSummary) }} 条友链
+        </a-tag>
         <div v-if="(record as PageSummary).description" class="sub">
           {{ (record as PageSummary).description }}
         </div>
@@ -164,6 +169,10 @@ const total = computed(() => pages.value.length)
 
 .title-link {
   font-weight: 500;
+}
+
+.friend-tag {
+  margin-left: 6px;
 }
 
 .sub {
