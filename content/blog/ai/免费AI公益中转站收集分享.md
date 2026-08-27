@@ -15,21 +15,19 @@ tags:
 
 ## 公益中转站
 
-
->公益中转站的安全性无法保证，请注意数据或隐私安全。
+> 公益中转站的安全性无法保证，请注意数据或隐私安全。
 > 
->使用中转站前请先阅读这篇文章 👇。
+> 使用中转站前请先阅读这篇文章 👇。
 > 
->【AI供应链威胁】API 中转站投毒的攻击链深入分析
+> 【AI供应链威胁】API 中转站投毒的攻击链深入分析
 > 
->文章转载自
+> 文章转载自
 > 
->先知社区 作者：Fausto
- [https://xz.aliyun.com/news/92154](https://xz.aliyun.com/news/92154)
+> 先知社区 作者：Fausto [https://xz.aliyun.com/news/92154](https://xz.aliyun.com/news/92154)
 
 ### AgentRouter
 
-评价：**夯** 
+评价：**夯**
 
 站长还会根据用户使用量增送余额，越活越的用户送的额度越多。
 
@@ -81,7 +79,6 @@ https://seekai.cc/sign-up?aff=fjxq
 
 ![](../../../public/images/Pasted%20image%2020260819192425.png)
 
-
 ### 哈吉米AI
 
 评价：**无**
@@ -106,8 +103,17 @@ https://tabitoken.com/sign-up?aff=6boQ
 
 ![](../../../public/images/Pasted%20image%2020260819193750.png)
 
+### JustDoWork
 
+评价：无
 
+这也是一个没有测试过的站点，模型价格有点还好。
+
+新用户使用邀请码注册可以获得200余额，每日签到随机5-9余额，邀请一人可获得40余额。
+
+[https://api.justwoker.icu/register?aff=Qk1K](https://api.justwoker.icu/register?aff=Qk1K)
+
+![](../../../public/images/Pasted-image-20260827194008.png)
 
 ## 一些大牌AI
 
@@ -131,7 +137,6 @@ https://build.nvidia.com/models
 
 当前日期2026-8-19。近期香港无法使用，需要换到美国节点。
 
-
 https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&referrer=Listensay
 
 ![](../../../public/images/Pasted%20image%2020260819194913.png)
@@ -151,7 +156,6 @@ https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&re
 需要注意的是这些免费模型不太建议接入agent，如果上下文内容长起来了就会出现文字混乱的问题。
 
 但是其实影响结论不是很大，你让他执行任务都还是OK的，只是任务执行完成后结果有点看不懂，你可以纠正他的行为下次回复他就正常了。
-
 
 https://www.tokenrouter.com/
 
