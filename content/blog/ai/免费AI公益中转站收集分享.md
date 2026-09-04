@@ -9,6 +9,10 @@ tags:
   - AI
   - 白嫖
 ---
+> ### 近期新增
+> 
+> 2026-9-3: OrcaRouter、Conduit、kktoken
+
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
 
 站点的评价内容纯主观个人体验，仅供参考。
@@ -25,7 +29,8 @@ tags:
 > 
 > 先知社区 作者：Fausto [https://xz.aliyun.com/news/92154](https://xz.aliyun.com/news/92154)
 
-### AgentRouter
+<details>
+<summary><h3>AgentRouter</h3></summary>
 
 评价：**夯**
 
@@ -35,13 +40,12 @@ tags:
 
 使用以下链接注册可获170额度。
 
-https://agentrouter.org/register?aff=QieS
+[https://agentrouter.org/register?aff=QieS](https://agentrouter.org/register?aff=QieS)
 
-![](../../../public/images/Pasted%20image%2020260819182328.png)
+</details>
 
-![](../../../public/images/Pasted%20image%2020260819182346.png)
-
-### AnyRouter
+<details>
+<summary><h3>AnyRouter</h3></summary>
 
 评价：**顶级**
 
@@ -53,9 +57,12 @@ https://agentrouter.org/register?aff=QieS
 
 使用以下链接注册可获50额度。
 
-https://anyrouter.top/register?aff=78Jy
+[https://anyrouter.top/register?aff=78Jy](https://anyrouter.top/register?aff=78Jy)
 
-### GoRouter
+</details>
+
+<details>
+<summary><h3>GoRouter</h3></summary>
 
 评价：**NPC**
 
@@ -63,11 +70,12 @@ https://anyrouter.top/register?aff=78Jy
 
 每天签到可获得6-9余额。
 
-https://gorouter.app/sign-up?aff=C58L
+[https://gorouter.app/sign-up?aff=C58L](https://gorouter.app/sign-up?aff=C58L)
 
-![](../../../public/images/Pasted%20image%2020260819191931.png)
+</details>
 
-### SeekAI
+<details>
+<summary><h3>SeekAI</h3></summary>
 
 评价：**无**
 
@@ -75,11 +83,12 @@ https://gorouter.app/sign-up?aff=C58L
 
 新用户使用邀请码注册可以获得200余额，每日签到可获得20余额，邀请一人可获得20余额（拉人就这点拉完了）。
 
-https://seekai.cc/sign-up?aff=fjxq
+[https://seekai.cc/sign-up?aff=fjxq](https://seekai.cc/sign-up?aff=fjxq)
 
-![](../../../public/images/Pasted%20image%2020260819192425.png)
+</details>
 
-### 哈吉米AI
+<details>
+<summary><h3>哈吉米AI</h3></summary>
 
 评价：**无**
 
@@ -87,11 +96,12 @@ https://seekai.cc/sign-up?aff=fjxq
 
 新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额。
 
-https://api.gemai.cc/sign-up?aff=GmYKJSLl
+[https://api.gemai.cc/sign-up?aff=GmYKJSLl](https://api.gemai.cc/sign-up?aff=GmYKJSLl)
 
-![](../../../public/images/Pasted%20image%2020260819201700.png)
+</details>
 
-### TabToken
+<details>
+<summary><h3>TabToken</h3></summary>
 
 评价：**无**
 
@@ -99,11 +109,12 @@ https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
 新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额，邀请一人可获得20余额（拉人就这点拉完了）。
 
-https://tabitoken.com/sign-up?aff=6boQ
+[https://tabitoken.com/sign-up?aff=6boQ](https://tabitoken.com/sign-up?aff=6boQ)
 
-![](../../../public/images/Pasted%20image%2020260819193750.png)
+</details>
 
-### JustDoWork
+<details>
+<summary><h3>JustDoWork</h3></summary>
 
 评价：无
 
@@ -113,11 +124,36 @@ https://tabitoken.com/sign-up?aff=6boQ
 
 [https://api.justwoker.icu/register?aff=Qk1K](https://api.justwoker.icu/register?aff=Qk1K)
 
-![](../../../public/images/Pasted-image-20260827194008.png)
+</details>
+
+<details>
+<summary><h3>Conduit</h3></summary>
+
+评价：无
+
+Gpt速度快可以用。
+
+新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
+
+[https://t.me/conduitoff_bot?start=ref_6406492700](https://t.me/conduitoff_bot?start=ref_6406492700)
+
+</details>
+
+<details>
+<summary><h3>kktoken AI</h3></summary>
+
+评价：无
+
+新用户使用邀请码注册可以获得200余额，每日签到20余额。
+
+[https://kktoken.cc/sign-up?aff=GGv5](https://kktoken.cc/sign-up?aff=GGv5)
+
+</details>
 
 ## 一些大牌AI
 
-### Nvidia
+<details>
+<summary><h3>Nvidia</h3></summary>
 
 评价：**顶级**
 
@@ -125,64 +161,85 @@ https://tabitoken.com/sign-up?aff=6boQ
 
 目前免费的有智普
 
-https://build.nvidia.com/models
+[https://build.nvidia.com/models](https://build.nvidia.com/models)
 
 ![](../../../public/images/Pasted%20image%2020260819201306.png)
 
-### FreeBuff
+</details>
+
+<details>
+<summary><h3>FreeBuff</h3></summary>
 
 评价：**顶级**
 
-每天免费无限使用DeepSeek V4 Flash 三个小时（似乎），如果没有那就是这个区域停掉了换个美国，印度什么的就可以继续用了，DeepSeek V4 Pro就需要邀请。
+每天免费无限使用DeepSeek V4 Flash 三个小时（似乎），如果没有那就是这个区域停掉了，换个美国、印度什么的就可以继续用了。
 
 当前日期2026-8-19。近期香港无法使用，需要换到美国节点。
 
-https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&referrer=Listensay
+[https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&referrer=Listensay](https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&referrer=Listensay)
 
-![](../../../public/images/Pasted%20image%2020260819194913.png)
+</details>
 
-![](../../../public/images/Pasted%20image%2020260819194600.png)
-
-![](../../../public/images/Pasted%20image%2020260819195329.png)
-
-### TokenRouter
+<details>
+<summary><h3>TokenRouter</h3></summary>
 
 评价：**顶级**
 
 真正意义的无限免费使用。
 
-有时免费kimi v3、deepseek v4 pro、qwen3.8 max。
+有时免费kimi v3、deepseek v4 pro、qwen3.8 max、Glm等。
 
 需要注意的是这些免费模型不太建议接入agent，如果上下文内容长起来了就会出现文字混乱的问题。
 
 但是其实影响结论不是很大，你让他执行任务都还是OK的，只是任务执行完成后结果有点看不懂，你可以纠正他的行为下次回复他就正常了。
 
-https://www.tokenrouter.com/
+[https://www.tokenrouter.com/](https://www.tokenrouter.com/)
 
 ![](../../../public/images/Pasted%20image%2020260819195509.png)
 
-这里我推荐Hermas agent去使用这个API，你可以在前面让Agent，如果模型输出文字错乱的话就重新输出。
+这里我推荐Hermas agent去使用这个API，你可以在前面让Agent记忆一下（直接打字让他记住），如果模型输出文字错乱的话就重新输出。
 
 ![](../../../public/images/a0df35509d5985a1c0b053a3ebe141b3.png)
 
-这是cherry studio 使用模型上下问过长的情况。
-
-![](../../../public/images/5140e27e83bf476475440c97815b2628.png)
-
 总而言之这个网站的免费模型输出阅读性不好，工作是没有问题的。
+
+</details>
+
+<details>
+<summary><h3>OrcaRouter</h3></summary>
+
+评价：**夯**
+
+虽然有点限制，但是可以忽略，免费模型不多，整体体验下来速度非常快。
+
+[https://www.orcarouter.ai/](https://www.orcarouter.ai/)
+
+![](../../../public/images/Pasted-image-20260904090157.png)
+
+</details>
 
 ## 一些不明来历的AI，但是能用
 
 这些AI都不建议使用。
 
-http://20.115.208.7:4000/v1
+<details>
+<summary><h3>http://20.115.208.7:4000/v1</h3></summary>
 
 不需要输入密钥使用这些模型
 
+[http://20.115.208.7:4000/v1](http://20.115.208.7:4000/v1)
+
 ![](../../../public/images/Pasted%20image%2020260819201423.png)
 
-http://130.210.35.157:4000/v1
+</details>
+
+<details>
+<summary><h3>http://130.210.35.157:4000/v1</h3></summary>
 
 同样不需要输入密钥使用这些模型
 
+[http://130.210.35.157:4000/v1](http://130.210.35.157:4000/v1)
+
 ![](../../../public/images/Pasted%20image%2020260819201507.png)
+
+</details>
