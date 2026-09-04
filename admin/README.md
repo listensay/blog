@@ -1,417 +1,345 @@
 # blog 管理后台
 
-`blog` 仓库的本地管理界面，五块：
+`blog` 仓库的本地管理界面，维护文章、固定页、友情链接、顶部菜单、站点设置与图片。
 
-- **文章** —— 列出、新建、编辑、删除 `content/blog/**.md`，顺手管 `public/images/` 里的图片
-- **页面** —— `content/pages/**.md`，也就是关于、友情链接这类固定页
-- **链接** —— `content/pages/links.md` 里的友链条目
-- **菜单** —— 站点顶栏那一排导航（`content/data/nav.json`）
-- **设置** —— 社交设置和系统设置，都落在 `content/data/site.json`
+Vue 3 + Vite + ant-design-vue。文件读写接口以 Vite 插件形式挂在 dev server 上，无独立后端进程。
 
-**只在本机跑，不部署。** 接口没有任何鉴权 —— 谁能访问这个端口，谁就能改仓库里的文件。
-dev server 只监听 `127.0.0.1`，而且读写文件的那套接口用 `apply: 'serve'` 挂在 Vite 插件里，
-`vite build` 出来的 `dist/` 根本不包含它，所以就算误传到线上也只是一个点不动的空壳。
+> **仅限本机运行，不部署。** 接口无鉴权。dev server 只监听 `127.0.0.1`，接口以 `apply: 'serve'`
+> 注册，`vite build` 产出的 `dist/` 不含该接口。
 
-## 跑起来
+## 运行
 
 ```sh
 npm install
 npm run dev          # http://127.0.0.1:5173
 ```
 
-admin 默认把**上一级目录**当作 blog 仓库根（也就是 `blog/admin` → `blog`）。
-放到别处的话用环境变量指过去：
+仓库根目录默认取 admin 的上一级，可用 `ADMIN_BLOG_ROOT` 覆盖：
 
 ```sh
 ADMIN_BLOG_ROOT=~/Desktop/工作台/blog npm run dev
 ```
 
-左边是固定侧边栏，一列分区（文章 / 页面 / 链接 / 菜单 / 社交设置 / 系统设置）；
-右上角一直显示当前在改哪个仓库，以及文章数、页面数和图片数。
+界面为左侧固定侧边栏加右侧内容区。侧边栏分区：文章、页面、链接、菜单、社交设置、系统设置。
+右上角显示仓库路径与文章、页面、图片数量。
 
-## 配 AI 润色（可选）
+## 环境变量
 
-```sh
-cp .env.example .env.local   # 填上 ADMIN_AI_API_KEY，然后重启 dev server
-```
+置于 `.env.local`。修改后需重启 dev server。
 
-用 `.env.local` 而不是 `.env`：`.gitignore` 已经把它挡住了，密钥不会进 git。
-不配也能用，只是编辑页的「AI」按钮是禁用状态，鼠标悬停会告诉你该设哪个变量。
-启动时控制台会打一行当前用的模型，改了 env 忘了重启一眼就能看出来。
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `ADMIN_BLOG_ROOT` | `..` | blog 仓库根目录 |
+| `ADMIN_AI_API_KEY` | — | 未设置时 AI 功能禁用 |
+| `ADMIN_AI_BASE_URL` | 见 `.env.example` | OpenAI 兼容的 API 地址 |
+| `ADMIN_AI_MODEL` | 见 `.env.example` | 模型名 |
+| `ADMIN_AI_TIMEOUT_MS` | `300000` | 单次请求超时 |
+| `ADMIN_AI_MAX_TOKENS` | 不传 | 不传时由供应商决定 |
 
-走的是 **OpenAI 兼容**的 `/chat/completions`，所以 DeepSeek、智谱、Kimi、通义、
-各种中转站都能用，换供应商只改 `ADMIN_AI_BASE_URL` 和 `ADMIN_AI_MODEL`
-（各家的地址写在 `.env.example` 里）。密钥只在 Node 侧读，不会打进浏览器的代码。
+AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。启动时控制台输出当前模型。
 
-## 它怎么工作
-
-没有独立的后端进程。读写文件的接口是一个 Vite 插件（`server/blog-api.ts`），
-挂在 dev server 的中间件链上，所以 `npm run dev` 一条命令就够了，也完全不用改 blog 项目的代码。
+## 架构
 
 ```
 浏览器 ── /api/*         ──→ server/  ──→ ../content/blog/**.md      文章
        │                                 ../content/pages/**.md     固定页
        │                                 ../content/data/nav.json   顶部菜单
        │                                 ../content/data/site.json  站点设置
-       └─ /blog-public/* ──→            ../public/           （编辑器里的图片预览）
+       └─ /blog-public/* ──→            ../public/           （编辑器内的图片预览）
 ```
 
-| 接口 | 作用 |
+| 管理对象 | 数据位置 | 写入粒度 |
+| --- | --- | --- |
+| 文章 | `content/blog/**.md` | 单文件 |
+| 固定页 | `content/pages/**.md` | 单文件 |
+| 友情链接 | `content/pages/links.md` 的 `friends` | 整个数组 |
+| 顶部菜单 | `content/data/nav.json` | 整份文件 |
+| 站点设置 | `content/data/site.json` | 整份文件 |
+| 图片 | `public/images/` | 单文件 |
+
+`content/data/*.json` 由站点侧 `app/utils/site.ts` 静态 import，为站点的硬依赖，修改后需重启
+站点 dev server。
+
+## 接口
+
+| 方法与路径 | 作用 |
 | --- | --- |
 | `GET /api/workspace` | 仓库路径、文章数、页面数、图片数 |
-| `GET /api/posts` | 文章列表，附带分类 / 标签 / 子目录候选 |
-| `GET /api/post?file=` | 读一篇（含正文和整份 frontmatter） |
+| `GET /api/posts` | 文章列表，附分类 / 标签 / 子目录候选 |
+| `GET /api/post?file=` | 读一篇，含正文与整份 frontmatter |
 | `POST /api/post` | 新建 |
-| `PUT /api/post?file=` | 保存（可同时改名、换目录） |
-| `DELETE /api/post?file=` | 移到 `admin/.trash/` |
-| `GET /api/pages` | 页面列表，附带不能用的文件名 |
-| `GET /api/page?file=` | 读一个页面（含正文、friends、整份 frontmatter） |
-| `POST /api/page` · `PUT /api/page?file=` · `DELETE /api/page?file=` | 同文章那三个 |
-| `GET /api/nav` · `PUT /api/nav` | 顶部菜单（整份数组一起存） |
-| `GET /api/settings` · `PUT /api/settings` | 站点设置（整份对象一起存，附带图标和分类候选） |
+| `PUT /api/post?file=` | 保存，可同时改名与换目录 |
+| `DELETE /api/post?file=` | 移入 `admin/.trash/` |
+| `GET /api/pages` | 页面列表，附保留文件名 |
+| `GET /api/page?file=` | 读一个页面，含正文、`friends`、整份 frontmatter |
+| `POST /api/page` · `PUT /api/page?file=` · `DELETE /api/page?file=` | 同文章 |
+| `GET /api/nav` · `PUT /api/nav` | 顶部菜单 |
+| `GET /api/settings` · `PUT /api/settings` | 站点设置，附图标与分类候选 |
 | `GET /api/images` · `POST /api/images?name=` | 列图 / 存图 |
-| `GET /api/ai` | AI 配没配（模型名、base URL；**不回传密钥**） |
-| `POST /api/ai` | 跑一个 AI 动作 |
+| `GET /api/ai` | AI 配置状态，不含密钥 |
+| `POST /api/ai` | 执行一个 AI 动作 |
 
-`file` 一律是相对 `content/` 的路径，如 `blog/ai/免费AI公益中转站收集分享.md`、`pages/about.md`。
-文章接口只认 `blog/` 开头的，页面接口只认 `pages/` 开头的，互相都进不去。
+`file` 为相对 `content/` 的路径。文章接口只接受 `blog/` 开头，页面接口只接受 `pages/` 开头，
+拒绝 `..`、绝对路径与非 `.md` 文件。
 
-## 几个刻意的设计
+## 写入规则
 
-**删除不是真删。** 文章和页面会被移到 `admin/.trash/`，文件名前面加时间戳（`.trash` 已进 gitignore）。
-误点一下能捞回来。页面会多一个 `pages__` 前缀，一眼能分出是页面还是文章。
+适用于文章与固定页。
 
-**正文没动过就一个字节都不改。** 只改分类、标签、日期的时候，后台原样写回原正文。
-富文本往返虽然渲染结果一样，但会把表格空格、列表符号规范化，git diff 会很难看。
+| 规则 |
+| --- |
+| 删除为软删除，移入 `admin/.trash/` 并在文件名前加时间戳，页面另加 `pages__` 前缀 |
+| 仅修改 frontmatter 时，正文原样写回，字节不变 |
+| 整份原始 frontmatter 回传服务端，未识别的键写回原位置，包含空值键 |
+| 换目录时重算正文图片的 `../` 层数 |
+| 校验通过后才落盘，失败时不写入任何内容 |
 
-**frontmatter 里不认识的字段会留着。** 保存时整份原始 frontmatter 都带回服务端，
-后台不认识的键原样写回原位。连「文件里本来写着一个空的 `tags:`」这种细节也保住 ——
-仓库里确实有这样的文章，不能一保存就给人删一行。
+## 文章
 
-**换目录时图片路径会跟着改。** 正文里的图片写的是相对路径，`../` 的层数跟文章所在目录绑定。
-一篇 `blog/ai/x.md` 里的 `../../../public/images/a.png` 挪到顶层就指错地方了 ——
-blog 构建时只会打一行 warn，本地预览照样有图，线上一片空白。所以保存时会重算层数。
+### 日期
 
-**发布时间精确到分钟，格式固定 `YYYY-MM-DD HH:mm`。**
-不带秒是刻意的：这个写法在 YAML 1.1（js-yaml 的时间戳正则要求带秒）和
-YAML 1.2（core schema 压根没有时间戳类型）里**都是纯字符串**，所以没有哪一层解析会把它
-变成 Date、也就没有任何时区能把日期挪走。带秒的 `09:30:00` 反而会被 YAML 1.1 当成 UTC 时间戳。
+格式固定 `YYYY-MM-DD HH:mm`。
 
-只写了日期的老文章按当天 `00:00` 显示，而且**不动时间就不会改写原来那一行** ——
-判断依据是「归一化后和原文是否真的不同」，跟下面 frontmatter 空键那条是同一个原则。
-
-站点侧已经跟着改好了（2026-08-21）：`content.config.ts` 的 `date` 从 `z.date()` 换成
-`z.string()`，列类型由 `DATE` 变成 `VARCHAR`，frontmatter 里的字符串原样入库，
-所以 `.order('date','DESC')` 按字典序排正好等于按时间排，**同一天的文章能按时刻排序**，
-页面上也显示到分钟。原因见 content.config.ts 里的注释：@nuxt/content 把
-`dateStrategy: 'format:date'` 写死了，`z.date()` 永远会被截成 `YYYY-MM-DD`。
-
-页面显示时 `00:00` 会被当成「只知道日期」而不显示时刻（老文章迁移过来补的就是它），
-格式化逻辑在 `app/utils/date.ts`，那里刻意**一步都不经过 `Date`** ——
-`new Date('2026-08-19')` 按 UTC 解析、`new Date('2026-08-19 09:30')` 按本地解析，
-而站点 SSR 跑在 Workers（UTC）、浏览器在 +08，一经过 Date 就既 hydration 不一致、
-显示的时刻也是错的。
-
-**slug 撞车会被拦住。** blog 的 `slug-path` transformer 用 slug 决定 URL，
-同目录两篇同 slug 会直接互相覆盖，而且构建期一声不响。
-
-## 正文编辑：富文本 + Markdown 源码两个标签
-
-文章存的是 Markdown，tiptap 编辑的是富文本文档，中间隔着一层转换
-（`markdown-it` 去、`turndown` 回，都在 `src/utils/markdown.ts`）。
-保存时以**当前所在标签**为准。
-
-转换会规范化一些写法，渲染结果不变但源码会动：
-
-- `>引用` → `> 引用`（补一个空格）
-- `|a|b|` → `| a | b |`（表格单元格补空格）
-- 松散列表变紧凑列表（`<p>` 包裹这层信息在 tiptap 里就没了，无法还原）
-- 行尾硬换行写成 CommonMark 的反斜杠（`\`），而不是两个看不见的尾随空格
-
-**富文本撑不住的语法**（原始 HTML、`<details>` 折叠块、任务列表、脚注……）会在打开时被识别出来，
-界面上给一条提示，并且默认停在「Markdown 源码」标签 —— 富文本会把这些结构拍平成纯文字。
-
-图片可以直接粘贴或拖进编辑器，存到 `blog/public/images/`，正文里按仓库约定写相对路径。
-文件名里的空格会换成 `-`：blog 的 image-src transformer 有个坑 ——
-**文件名带裸空格的图片 markdown 根本解析不出来**，连 `<img>` 都不生成，也不告警。
-同一张图重复上传会复用已有文件，不会堆一堆 `-1`、`-2`。
-
-## 修复格式
-
-标签栏右端的「修复格式」按钮，专治从 AI 对话、网页、Word 里粘过来的正文 ——
-文字是对的，Markdown 一团糟。走 AI（`fix` 动作），**永远作用于整篇**，
-因为标题层级是全局属性：只看选中的一段根本判断不出「整篇最浅的标题是几级」。
-
-提示词里让它修这些：
-
-| 要修的 | 例子 |
+| 情况 | 行为 |
 | --- | --- |
-| 标题层级 | 整体归一到**从 `##` 起**，保持相对层级，跳级（`##` 直接到 `####`）接上 |
-| 多余的转义 | `**1\. 更新软件源**` → `**1. 更新软件源**` |
-| 语言标签合进围栏 | 代码块上面孤零零一行 `Bash` → ```` ```bash ````，那行删掉 |
-| 垃圾行 | 单独一行的 `\`、行尾空格、围栏旁边多出来的空引用行、三行以上的连续空行 |
-| 列表 / 表格 | 缩进和标记规范化（`|a|b|` → `| a | b |`） |
-| 中英文间距 | 只在明显缺失时补一个空格 |
+| 仅含日期的文件 | 按当天 `00:00` 显示；未修改时间则不改写原行 |
+| 时刻为 `00:00` | 视为仅知日期，页面不显示时刻 |
 
-**为什么正文从 `##` 开始而不是 `#`：** 文章页已经把 frontmatter 的 `title` 渲染成
-`<h1>` 了（`app/pages/blog/[...slug].vue`），正文里再出现 `#` 就是第二个 h1。
-所以正文的「大标题」就是 `##`。这条规则两个方向都管：从 `###` 开始的上提，
-从 `#` 开始的下压。
+站点侧 `content.config.ts` 中 `date` 为 `z.string()`，列类型 `VARCHAR`。格式化逻辑在
+`app/utils/date.ts`，不经过 `Date` 对象。
 
-### 「一个字都不许改」是靠校验保证的，不是靠提示词
+### slug
 
-这个动作和三个改写动作的**性质完全不同**：它只许动 Markdown 标记。
-但模型天生爱顺手润色一句，所以除了提示词写死，拿到结果后还会多跑一条校验 ——
-`proseText()` 把两边的 Markdown 标记全剥掉、空白全去掉，只留「读者真正读到的字」，
-两边必须**完全相同**。差一个字就报 error，并指出第一处不同在哪。
+决定文章 URL，由 `slug-path` transformer 处理。同目录下 slug 重复时保存返回 409。
 
-去掉空白是刻意的：补中英文空格、重排缩进、换行位置都属于格式改动，不该算「文字变了」；
-而增删一个词一定会让这个值变。整行只有一个语言名（`Bash`）的行也排除掉 ——
-把它合进围栏正是这个动作的活，不排除的话它干对了反而报错。
+## 固定页
 
-另外两条校验对这个动作**放宽**了，否则它干对了也会报错：
+文件名即网址：`pages/about.md` → `/about`。pages 集合的 `prefix` 为 `/`，无 slug 字段。
 
-- 标题只查**数量**不查层级（调层级正是它的活），数量变了才报错 —— 那意味着它把段落
-  变成了标题，或者吃掉了一个标题。
-- 代码块只比围栏**之间**的内容，不比围栏那一行（给围栏补 `bash` 是它该做的）。
-  改写动作那边仍然连围栏上的语言名都不许动。
+| 项 | 规则 |
+| --- | --- |
+| 文件名字符集 | 小写字母、数字、连字符 |
+| 保留文件名 | `blog`、`categories`、`tags`、`admin`、`index` |
+| 改名或删除 | 更换网址，确认框列出指向旧网址的菜单项 |
+| frontmatter `slug` | 不生效 |
+| 路由 | `app/pages/[...page].vue` 覆盖全部 `content/pages/**` |
 
-实测这三条一起工作得很好：修一篇真实文章（2146 字）报 0 个问题、文字一字不差、
-只有 3 行有改动。
+保留名单由 `GET /api/pages` 的 `reserved` 提供。
 
-### 它很慢，这是模型的问题
+站点侧有专属 .vue 的页面为例外，名单见 `server/pages.ts` 的 `CUSTOM_ROUTE_FILES`：删除或改名后
+渲染为标题回退、内容为空的页面，不返回 404。`/links` 属于此类，不在保留名单中。
 
-推理模型会先想很久再输出。实测 `deepseek-v4-flash-free`：
+## 友情链接
 
-| 输入 | 耗时 | completion tokens |
-| --- | --- | --- |
-| 370 字的粘贴 | 104 秒 | 11104 |
-| 2146 字的真实文章 | 126 秒 | 15774 |
+条目存于 `pages/links.md` 的 `friends`，仅 `/links` 页面显示该编辑器。支持增删与上下移动，
+顺序即页面卡片顺序。
 
-绝大部分 token 花在思考上。所以 `ADMIN_AI_TIMEOUT_MS` 默认给到 **5 分钟**；
-文章特别长还超时就再往上调。想要快就换个非推理模型。
+| 字段 | 规则 |
+| --- | --- |
+| `name` | 必填 |
+| `url` | 必填，须带协议或以 `/` 开头 |
+| `description` | 可选 |
+| `avatar` | 可选，站内绝对路径或 http 链接，不接受相对路径 |
 
-## AI 改写
+空白条目在保存时忽略。`friends` 由后台独占维护，是唯一不保留未识别键的位置，键序、引号与空值
+写法会被归一化。
 
+## 顶部菜单
 
-标签栏右端的「AI」按钮，两个标签下都能用。四个动作：**润色**（改通顺、修错别字）、
-**精简**（压到六七成）、**扩写**（补解释和坑）、**生成标题 / slug / 摘要 / 标签**。
-（第五个动作「修复格式」有自己的按钮，见上一节。）
+数据在 `content/data/nav.json`，站点侧 import 为 `siteConfig.nav`。整份数组一起保存。
 
-**选中就改那一段，没选就改全文。** 不用切模式 —— 打开菜单时会把当时的选区记下来，
-菜单标题上直接写着「改写选中的 128 字」还是「改写全文 3240 字」，点之前就知道范围。
-选区在富文本里是 ProseMirror 位置、在源码标签里是字符下标，两边都在**发请求之前**
-就固定住：请求要跑十几秒，这期间人完全可能点走光标或者切标签。
+| 字段 | 规则 |
+| --- | --- |
+| `label` | 必填 |
+| `to` | 必填，须以 `/` 开头，只接受站内地址 |
+| `icon` | 须在图标白名单内 |
+| `color` | `#rrggbb` |
+| — | 两项不可指向同一地址 |
 
-**结果先看再用。** 弹窗里是行级对比 + 可以直接编辑的结果，点「替换原文」才会动正文，
-而且替换走的是一次普通编辑事务，不满意 ⌘Z 就回去了。
+图标白名单存在两份：
 
-### 生成标题 / slug / 摘要 / 标签
+| 位置 | 用途 |
+| --- | --- |
+| `server/nav.ts` | 带中文说明，供后台下拉使用 |
+| `app/utils/site.ts` 的 `NAV_ICONS` | `SiteHeader.vue` 构建 `Record<NavIcon, 组件>` |
 
-一次调用产出四个 frontmatter 字段，**一个字段一个勾**，各自独立决定要不要用 ——
-摘要写得好但标题不合意太常见了。默认规则是「**空着的帮你填，已经有值的默认不动**」：
+`npm run check` 对两份列表执行 `deepEqual`。站点侧 `toNavItem` 对坏数据兜底：图标名或颜色无效
+时替换为兜底值，`label` 或 `to` 为空时丢弃整条。
 
-- **slug 最要紧**，它直接进 URL。已经有 slug 时默认不勾，勾上会明确警告
-  「这会换掉文章的网址，老链接会 404」。
-- **标题**是作者的表达，AI 只是提建议，已经写了就默认不动。
-  （标题已经够好时提示词让模型原样返回，界面会说「AI 认为现在的标题已经够好」。）
-- 描述和标签是派生信息，默认勾上。标签是**加到**现有标签后面，不覆盖。
-
-四个输入框一直可编辑而且**不灰掉** —— 你得先看清建议才能决定勾不勾。动手改了就说明
-你要用它，勾会自动打上。
-
-正文还没写、只有标题时也能用，这正是「把中文标题意译成英文 slug」那个用法。
-
-slug 有两道额外保护：
-
-1. **服务端归一化**（`normalizeSlug`）。只做不丢信息的修整：转小写、空白/下划线当词
-   分隔符、收连续连字符、剥两端的引号反引号。剩下任何非法字符（中文、中间的点或斜杠）
-   **一律判失败并清空**，界面说「AI 没给出可用的 slug」，另外三个字段照常能用。
-   刻意**不**删非法字符、也不做拼音兜底 —— 早先的实现会把 `免费AI中转站` 变成 `ai`，
-   一个看起来完全能用、其实把标题主体丢光的 slug 比空着危险得多。
-2. **撞车提前告警**。同目录下 slug 撞了会在弹窗和右边表单里直接说「和哪篇文章撞了」。
-   以前这个只有保存时才会被服务端拦下来（409）。列表是打开文章时的快照、可能过期，
-   所以这个提示**不拦保存**，真正说话的还是服务端那道检查。
-
-### 为什么要校验，而不是只写好提示词
-
-模型爱干四件事：把整段结果包进 ``` 围栏、顺手「修正」`../../../public/images/x.png`
-这种相对路径、把 `##` 改成 `###`、开头加一句「好的，以下是润色后的内容」。
-在这个仓库里对应的后果是：正文变成一个代码块、**线上图片 404 而本地一切正常**、
-文章目录层级乱掉、正文多一句废话。
-
-提示词里那组「铁律」（`server/ai.ts`）是第一道防线，`src/utils/ai.ts` 的
-`checkMarkdownIntegrity` 是第二道 —— 逐项比对图片地址、代码块内容、标题层级、链接，
-图片/代码/标题出问题算 `error`（弹窗里会拦一下，要多点一次才能替换），链接变动算 `warn`。
-第三道是人眼看对比：标题、代码、图片都独占一行，行级差异里会显示成「没变」，
-一眼就能看出模型守没守规矩。
-
-还有一种情况会被截断：模型因为输出长度上限停下来（`finish_reason: 'length'`）。
-弹窗里会明确说「结果被截断了」并让你去调 `ADMIN_AI_MAX_TOKENS` ——
-默认**不传** `max_tokens`，因为各家对「不传」的默认值不一样，而传一个超过模型上限的值
-有些供应商直接 400，猜不如报错。
-
-### 改 server/ 会重启 dev server，浏览器里可能还是旧代码
-
-`server/**` 是 `vite.config.ts` 的依赖，改它们会让 Vite **重启整个 dev server**。
-重启后服务端是新代码，但已经打开的那个页面可能还跑着旧的前端模块 —— 于是出现
-「服务端不认识前端发来的东西」这种怪事。刷新页面就好。
-
-所以**接口的入参名字一旦发出去过就别硬改**。`meta` 这个动作原来叫 `summarize`，
-改名之后就撞上了上面这个情况，报了一句莫名其妙的「不认识的 AI 动作：summarize」。
-现在 `server/ai.ts` 里留了一张 `LEGACY_ACTIONS` 映射表把旧名字继续认下来 ——
-两行代码，换来「旧页面也不会炸」。要加新动作就加新名字，别改旧的。
-
-## 页面管理
-
-`content/pages/**.md` —— 关于、友情链接，以及以后随手加的任何一页。正文用的是和文章
-完全同一套编辑器（富文本 + Markdown 源码两个标签），「正文没动过就一个字节都不改」
-这条也一样管。
-
-**文件名就是网址。** 页面没有 slug 字段（`content.config.ts` 里 pages 集合的 `prefix` 是 `/`），
-所以 `pages/about.md` 就是 `/about`。这带来两件事：
-
-- 文件名只收小写字母、数字和连字符。中文文件名会变成 `/%E5%85%B3%E4%BA%8E` 那种网址，
-  能用但没人想要。
-- **改名 = 换网址 = 老链接 404。** 改之前会弹一次确认，而且会去顶部菜单里找有没有哪一项
-  正指着旧网址，有就在确认框里点名说出来（这是最容易忘的一处）。删除同理。
-- **frontmatter 里别写 `slug`**：页面的网址就是文件名。写了不会生效，
-  因为 `slug-path` transformer 只管 blog 集合 —— 早先它对所有 `.md` 都生效，
-  于是页面上手写一个 slug 会把网址静默改成 `/pages/<slug>`。
-
-`/links` 这种**站点上有专属 .vue** 的页面是个例外：删了或改名**不会 404**，
-那个 .vue 还在、只是查不到内容，会渲染成一个标题回退、正文和卡片全空的页面而且不报错。
-确认框会照实说这一点（名单在 `server/pages.ts` 的 `CUSTOM_ROUTE_FILES`）。
-
-**新建的页面站点上自动就有路由**：`app/pages/[...page].vue` 兜住了所有
-`content/pages/**` 的路径，加一个 md 文件不用写任何 .vue。
-
-**有些文件名建了也白建**，后台会直接拦下来：`blog`、`categories`、`tags`、`admin`、`index`。
-站点在这些路径上有自己手写的页面，静态路由优先级更高，md 文件永远不会被渲染 ——
-而且不会有任何报错，是那种能白折腾半小时的坑。这份名单由服务端给前端
-（`GET /api/pages` 的 `reserved`），所以只有一处需要维护。
-
-`/links` **不在**这份名单里：`app/pages/links.vue` 恰恰是去读 `pages/links.md` 的
-（标题、说明文字、友链列表都从它来），那个页面必须能编辑。
-
-### 友情链接
-
-`/links` 这一个页面在编辑器下方多一栏友链编辑器：一条一行，可增删、可上下挪
-（顺序就是页面上卡片的顺序）。别的页面不显示这一栏 —— 站点侧只有 `links.vue` 会渲染
-`friends`，给个编辑框只会让人白填。
-
-数据存在 `pages/links.md` 的 frontmatter 里，和说明文字同一个文件、同一个 commit。
-
-**friends 这个数组由后台独占维护**，这是它和 frontmatter 顶层唯一不一样的地方：
-顶层不认识的字段一律原样留着，而 friends 里某一条上的陌生键会被丢掉，键序、引号、
-空值写法也会被归一化。所以「打开不改再保存逐字节不变」对 friends 只在**规范形状**下成立
-（后台自己写出来的那种）。之所以敢这样，是因为这些条目全部来自界面上那个编辑器，
-不是人会手写的地方。
-
-两条校验值得说一下，都是「写进去不会报错、但线上是坏的」那类：
-
-- **网址必须带协议或以 `/` 开头。** `example.com` 会被浏览器当成相对地址，
-  点下去跳到 `/links/example.com`。
-- **头像必须写站点上真实存在的地址**（`/images/x.png`，点按钮能直接从图片库选）
-  或者 http 链接。frontmatter 里只有 `cover` 会被 `image-src` transformer 改写成站点 URL，
-  `avatar` **不会** —— 写成 `../../public/images/x.png` 的话后台预览得到、线上 404。
-
-空着的条目（点了「加一条」又没写）保存时直接忽略，不当成错误。
-
-## 菜单管理
-
-站点顶栏那一排导航，数据在 `content/data/nav.json`，站点侧由 `app/utils/site.ts`
-import 成 `siteConfig.nav`。
-
-站点侧是静态 import 这个 JSON 的（菜单每个页面都要渲染，运行时查一次不值得），
-本地 `npm run dev` 保存后会立刻热更新。
-
-**整份数组一起存**，没有单条增删的接口 —— 顺序本身就是数据，逐条改反而要额外处理
-「第几项」，而且会出现「存了一半」的中间状态。
-
-校验比文章那边严，因为这份数据**每一页都会渲染**：一条坏数据就是整站顶栏出问题，
-而不是某一篇文章打不开。保存时会拦住：文字为空、路径不以 `/` 开头、图标不认识、
-颜色不是 `#rrggbb`、两项指向同一个地址（那样当前页会同时高亮两项，看着像 bug）。
-**校验不过一个字都不落盘。**
-
-**路径只收站内地址。** 顶栏的「当前页高亮」是拿当前路径去比的，外链永远比不中，
-而且点一下就把人带出站了。想放外链就写在页脚或者友链页。
-
-**图标列表有两份，这是没办法的事。** admin 和 blog 是两个独立应用，admin 的 Vite 里
-import 不到 blog 的源码。所以 `server/nav.ts` 存一份（带中文说明，给下拉用），
-`app/utils/site.ts` 的 `NAV_ICONS` 存一份（`SiteHeader.vue` 拿它做 `Record<NavIcon, 组件>`
-映射表，漏一个直接类型报错）。两道保险：
-
-1. `npm run check` 里有一条用例把两份列表 `deepEqual` 比一遍，走散了会报出来。
-2. 站点侧对不认识的图标名**兜底**成一个通用图标，而不是让 `<component :is>` 拿到
-   `undefined` —— 那会让整个菜单项渲染不出来，而且控制台只有一句模糊的告警。
-
-菜单文件被手改坏（JSON 语法错之类）时接口**不报 500**：界面会显示「这个文件读不动」
-并让你重新保存一份正确的。否则唯一的修复途径变成去文本编辑器里改 JSON，
-那这个后台就没用了。
-
-`nav.json` 不存在时后台不报错（比如刚 clone 下来还没建过），保存一次就会创建。
-但**站点那边是硬依赖**：`app/utils/site.ts` 是静态 import 它的，文件不在的话
-连 `npm run dev` 都起不来。别把它删了。
-
-站点侧对坏数据有兜底（见 `site.ts` 的 `toNavItem`）：图标名或颜色不认识 → 换成兜底值；
-文字或路径空着 → 整条丢掉。**后者是必要的**，`<NuxtLink :to="undefined">` 会在
-vue-router 里直接抛错，而顶栏在布局里 —— 那是整站白屏，比少一项严重得多。
+`nav.json` 不存在时保存一次即创建；解析失败时接口返回 200 并附错误原因。
 
 ## 站点设置
 
-侧边栏最后两项，改的是同一个文件 `content/data/site.json`：
+社交设置与系统设置修改同一个文件 `content/data/site.json`。
 
-| 页面 | 管什么 | 落在哪 |
+| 页面 | 字段 | 键 |
 | --- | --- | --- |
-| **社交设置** | 名字、个人简介、头像、社交链接 | `profile.*` |
-| **系统设置** | 网站标题、网站描述、站点地址、分享图、时区、首页条数与隐藏分类 | `site.*` |
+| 社交设置 | 名字、个人简介、头像、社交链接 | `profile.*` |
+| 系统设置 | 网站标题、网站描述、站点地址、分享图、时区、首页条数与隐藏分类 | `site.*` |
 
-站点侧由 `app/utils/site.ts` 静态 import 成 `siteConfig`，和 `nav.json` 同一套路子。
+`profile` 用于首页个人信息，`site` 用于 SEO、RSS 与 sitemap。`profile.bio` 为空时取
+`site.description`。两页整份读取、整份写入，读取失败时保存按钮禁用（`useSettings.ts` 的
+`canSave`）。
 
-**为什么分两页而不是一页。** 这两组东西的读者不一样：`profile` 是首页头像旁「我是谁」那块，
-`site` 是 SEO / RSS / sitemap 读的站点元信息。混在一页里最常见的困惑是
-「我改了标题为什么首页那个大名字没变」。
+| 字段 | 规则 |
+| --- | --- |
+| `profile.name` | 必填，≤ 40 字符 |
+| `profile.bio` | 可选，≤ 300 字符 |
+| `profile.avatar` | 站内绝对路径或 http 链接 |
+| `profile.socials[].icon` | 须在社交图标白名单内 |
+| `profile.socials[].label` | 必填，≤ 24 字符 |
+| `profile.socials[].url` | 必填，须以 `http(s)://`、`mailto:`、`tel:` 或 `/` 开头，不可重复 |
+| `profile.socials[].color` | `#rrggbb` |
+| `site.title` | 必填，≤ 60 字符 |
+| `site.description` | 可选，≤ 300 字符 |
+| `site.url` | 必填，完整 http(s) 地址，保存时去除结尾斜杠 |
+| `site.ogImage` | 站内绝对路径或 http 链接 |
+| `site.utcOffset` | `+08:00` 形式 |
+| `site.home.postLimit` | 1–50 的整数 |
+| `site.home.hiddenCategories` | 英文 slug 数组，小写字母、数字、连字符 |
 
-**「名字」和「网站标题」是两个字段，别合并。** 首页显示的是名字（`Immki`），
-浏览器标签页显示的是标题（`Immki Blog`），内页会拼成「文章标题 - 网站标题」。
-同理「个人简介」和「网站描述」也分开：前者是给人看的一句话，后者进 `meta description`
-和 RSS。简介留空时**站点侧会退回用网站描述**（`site.ts` 里做的），所以只想填一处也行。
+空白社交条目在保存时忽略。`site.json` 解析失败时接口返回 200，界面显示默认值并附错误原因。
 
-**两个页面都是整份读、整份写。** 从任何一页保存都会把另一页的内容一起写回去，
-所以不会互相覆盖 —— 代价是打开页面必须先读成功，读失败时保存按钮是禁用的
-（`useSettings.ts` 的 `canSave`）。否则会拿一份空设置盖掉真数据。
+隐藏分类的候选项由 `server/settings.ts` 的 `loadSlugFn` 动态 import 站点侧
+`app/utils/taxonomy.ts` 计算。取不到时不提供候选项，该字段改为手动填写。
 
-校验思路和菜单那边一样，严在「写进去不报错、但线上是坏的」这类：
+社交图标白名单存在三份：
 
-- **站点地址**必须是完整的 http(s) 地址。它是 canonical、sitemap、RSS 里绝对地址的唯一来源，
-  填错等于让搜索引擎收录到别人的域名。结尾的斜杠保存时统一去掉，因为各处都写 `${url}/xxx`。
-- **头像和分享图**必须是站内绝对路径（`/images/x.jpg`）或 http 链接。和友链头像同一个坑：
-  只有 `cover` 会被 `image-src` transformer 改写，这两个不会，写相对路径的话后台预览得到、线上 404。
-  点按钮能直接从图片库选，也能顺手上传。
-- **社交链接**收 `http(s)://`、`mailto:`、`tel:` 和 `/` 开头的地址 —— 邮箱要写
-  `mailto:`（不带协议的话点下去会跳到 `/mailto...`），RSS 写 `/feed.xml` 这种站内路径。
-  两条指向同一个地址会被拦（首页会渲染出两个一样的图标）。
-- **首页隐藏分类**填的是**英文 slug**，不是中文分类名。下拉里列的候选项是现有文章真实用到的
-  分类，括号里给出中文名对照。
+| 位置 | 用途 |
+| --- | --- |
+| `app/utils/site.ts` 的 `SOCIAL_ICONS` | 唯一来源 |
+| `server/settings.ts` 的 `SOCIAL_ICONS` | 带中文说明，供后台下拉使用 |
+| `src/utils/social-icons.ts` | SVG 路径表，后台自行绘制图标 |
 
-**隐藏分类的候选项是把站点侧的 `taxonomy.ts` import 进来算的**（`server/settings.ts` 的
-`loadSlugFn`）。中文分类名到 slug 的规则是一张别名表加一个兜底哈希，抄一份到后台迟早和站点侧
-跑偏，那种偏差的症状是「后台选了 docs，首页照样显示」。Node 22.18+ 能直接 import `.ts`，
-拿不到就不给候选项、字段退化成手填 —— 这个功能是锦上添花，不该拖垮整个设置页。
+`npm run check` 中两条用例分别比对列表与路径表。站点侧 `SocialIcon.vue` 的映射表类型为
+`Record<SocialIconName, …>`，未识别的图标名兜底为「个人主页」。
 
-空着的社交条目（点了「加一项」又没填）保存时直接忽略，不当成错误。
-**校验不过一个字都不落盘**，`site.json` 被手改坏时接口也不报 500，界面显示默认值并说明原因。
+## 编辑器
 
-**社交图标列表有三份**，比菜单那边还多一份，原因同样是 admin 和 blog 互相 import 不到：
-`app/utils/site.ts` 的 `SOCIAL_ICONS`（唯一来源）、`server/settings.ts` 的同名常量（带中文说明，
-给下拉用）、`src/utils/social-icons.ts` 的 SVG 路径表（后台自己画图标，不依赖
-`@tabler/icons-vue`）。三道保险：`npm run check` 里两条用例分别比对列表和路径表，
-站点侧 `SocialIcon.vue` 的映射表类型是 `Record<SocialIconName, …>`（漏一个直接类型报错），
-`site.ts` 对不认识的图标名兜底成通用的「个人主页」图标。
+文章与固定页共用，提供「富文本」与「Markdown 源码」两个标签，保存时以当前标签为准。转换在
+`src/utils/markdown.ts`，去程 `markdown-it`、回程 `turndown`。
 
-改完要**重启站点的 dev server**：`site.json` 是被静态 import 进去的，已经跑起来的 Nuxt
-进程不一定会重新读它。设置页顶部常驻一条提示说这件事。
+转换会规范化以下写法：
+
+| 输入 | 输出 |
+| --- | --- |
+| `>引用` | `> 引用` |
+| `|a|b|` | `| a | b |` |
+| 松散列表 | 紧凑列表 |
+| 行尾两个尾随空格 | CommonMark 反斜杠 `\` |
+| 词中间的 `\_` | `_`（代码块与行内代码不受影响） |
+
+富文本不支持原始 HTML、任务列表与脚注，`<details>` 折叠块除外。打开含这些语法的文件时给出提示并
+默认停在「Markdown 源码」标签。
+
+图片支持粘贴与拖入，存至 `public/images/`，正文写相对路径。文件名中的空格替换为 `-`。相同内容
+重复上传复用已有文件。
+
+### 折叠块
+
+节点定义在 `src/editor/details.ts`，工具栏「折叠块」插入。回程固定输出下列格式：
+
+```html
+<details>
+<summary><h3>标题</h3></summary>
+
+正文
+
+</details>
+```
+
+| 项 | 规定 |
+| --- | --- |
+| 标题层级 | `h3`，位于 `<summary>` 内 |
+| `<summary>` 内容 | 纯文本，不接受图片、链接、加粗与 markdown |
+| `<summary>` 与正文之间 | 一个空行 |
+| 标题中的 `&`、`<`、`>` | 转为 HTML 实体 |
+| 编辑器内的展开状态 | 始终展开，`open` 不写入文件 |
+| 标题内按回车 | 光标移至正文 |
+| 标题内的块级按钮 | 禁用（标题层级、列表、引用、代码块、分割线、折叠块、表格、图片） |
+| 站点侧样式 | `app/assets/css/main.css` 的 `.prose-cn :where(details…)`，原生 `<details>` 行为 |
+
+只有「`<details>` 与 `</details>` 成对、且每个 `<summary>` 的内容是纯文本或纯文本 `hN`」的写法算富文本支持。
+其余写法（`<summary>` 内夹其他标签、`<summary>` 未闭合、`<details>` 带属性、缺 `<summary>`）按原始 HTML
+处理，给出提示并默认停在「Markdown 源码」标签。
+
+## AI 功能
+
+| 动作 | 入口 | 作用范围 |
+| --- | --- | --- |
+| `polish` 润色 | AI 按钮 | 选中部分，无选中则全文 |
+| `condense` 精简 | AI 按钮 | 同上 |
+| `expand` 扩写 | AI 按钮 | 同上 |
+| `meta` 生成标题 / slug / 摘要 / 标签 | AI 按钮 | 全文 |
+| `fix` 修复格式 | 独立按钮 | 全文 |
+
+选区在打开菜单时记录，并在发起请求前固定。结果在弹窗中提供行级对比与可编辑文本，确认后写入
+正文，写入为一次可撤销的编辑事务。
+
+### 修复格式的处理项
+
+| 项 | 说明 |
+| --- | --- |
+| 标题层级 | 归一到从 `##` 起，保持相对层级，跳级接上 |
+| 多余转义 | `**1\. 更新软件源**` → `**1. 更新软件源**` |
+| 语言标签 | 代码块上方单独一行 `Bash` 合入围栏为 ```` ```bash ```` |
+| 垃圾行 | 单独的 `\`、行尾空格、围栏旁的空引用行、三行以上连续空行 |
+| 列表与表格 | 缩进与标记规范化 |
+| 中英文间距 | 仅在明显缺失时补一个空格 |
+
+正文最高级标题为 `##`，文章页已将 frontmatter 的 `title` 渲染为 `<h1>`。
+
+### 结果校验
+
+提示词约束在 `server/ai.ts`，结果校验在 `src/utils/ai.ts` 的 `checkMarkdownIntegrity`。
+
+| 校验项 | 改写动作 | `fix` 动作 |
+| --- | --- | --- |
+| 图片地址 | 须一致，否则 `error` | 同 |
+| 代码块 | 含围栏行须一致 | 只比较围栏之间的内容 |
+| 标题 | 层级与数量须一致 | 只比较数量 |
+| 链接 | 变动记 `warn` | 同 |
+| 正文文字 | 不校验 | `proseText()` 比对，须完全一致 |
+
+`error` 在弹窗中拦截一次，需再次确认才能替换。`proseText()` 剥离 Markdown 标记与全部空白，
+仅含语言名的行被排除。
+
+输出因长度上限截断时（`finish_reason: 'length'`）弹窗提示并指向 `ADMIN_AI_MAX_TOKENS`。
+
+### 生成 frontmatter 字段
+
+一次调用产出标题、slug、描述、标签，各自独立勾选。默认空值填充、已有值不动。
+
+| 字段 | 默认勾选 | 说明 |
+| --- | --- | --- |
+| slug | 已有值时不勾选 | 勾选时提示将更换网址 |
+| 标题 | 已有值时不勾选 | 已足够好时模型原样返回 |
+| 描述 | 勾选 | — |
+| 标签 | 勾选 | 追加到现有标签之后 |
+
+输入框始终可编辑，手动修改后自动勾选。正文为空、仅有标题时可用。
+
+slug 经 `normalizeSlug` 归一化：转小写、空白与下划线视为分隔符、合并连续连字符、剥除两端引号。
+残留非法字符时判失败并清空，其余三个字段仍可用。同目录 slug 冲突时在弹窗与表单中提示，不拦截
+保存。
+
+### 性能
+
+实测 `deepseek-v4-flash-free`：
+
+| 输入 | 耗时 | completion tokens |
+| --- | --- | --- |
+| 370 字 | 104 秒 | 11104 |
+| 2146 字 | 126 秒 | 15774 |
+
+`ADMIN_AI_TIMEOUT_MS` 默认 5 分钟。
+
+## 开发注意
+
+- 修改 `server/**` 会触发 Vite 重启 dev server，已打开的页面需刷新。
+- 接口入参名称发布后不改名。`server/ai.ts` 的 `LEGACY_ACTIONS` 保留旧动作名 `summarize`。
+- `src/types.ts` 被前后端同时引用，只放纯类型，不 import 运行时代码。
+- `utils/markdown.ts` 各函数的 `contentDir` 是文件相对 `content/` 的目录，如 `blog/ai`、`pages`。
 
 ## 自检
 
@@ -419,58 +347,44 @@ vue-router 里直接抛错，而顶栏在布局里 —— 那是整站白屏，�
 npm run check
 ```
 
-跑三样：类型检查、正文往返检查、接口端到端检查。
+| 子项 | 内容 |
+| --- | --- |
+| `type-check` | `vue-tsc`。`env.d.ts` 引入 `ant-design-vue/typings/global`，覆盖模板中的 `a-*` 组件名与 props |
+| `check:roundtrip` | 取真实文章执行 Markdown → 富文本 → Markdown，断言图片路径一致、标题 / 围栏 / 表格 / 列表数量不变 |
+| `check:api` | 启动 dev server 执行完整增删改，并逐个请求 `src/` 下每个模块 |
 
-- `check:roundtrip` 拿仓库里**真实的文章**过一遍 Markdown → 富文本 → Markdown，
-  断言图片路径一字不差、标题/围栏/表格/列表的数量不变，另外跑一组语法定向用例。
-  改动 `src/utils/markdown.ts` 或 tiptap 扩展之后一定要跑这个。
-- `check:api` 真的起一个 dev server 打全套增删改（文章、页面、菜单、设置都有），顺带把 `src/`
-  下每个模块都请求一遍（Vite 是按请求编译的，所以模板语法错误、解析不到的 import
-  都会在这一步暴露）。它会先把 `content/`、`public/` 和 `app/utils/taxonomy.ts` 复制到临时目录
-  再指过去，**不碰真仓库**。
-  AI 那几条只测接口形状和入参校验，**不会真的调模型** —— 要花钱、要网络、结果还不确定，
-  放进自检等于每次跑 check 都赌一次。「配没配 AI」是问 `GET /api/ai` 拿的，
-  不是看 `process.env`（密钥在 `.env.local` 里，压根不在 process.env）。
+改动 `src/utils/markdown.ts` 或 tiptap 扩展后须运行 `check:roundtrip`。
 
-`env.d.ts` 里引了 `ant-design-vue/typings/global`，所以模板里的 `a-*` 组件名和它们的 props
-也在 `type-check` 的覆盖范围内 —— 写错组件名会直接报类型错误，而不是运行时一片空白。
+`check:api` 将 `content/`、`public/` 与 `app/utils/taxonomy.ts` 复制到临时目录后指向该目录，
+不改动真实仓库。AI 用例只测接口形状与入参校验，不调用模型；配置状态通过 `GET /api/ai` 获取。
 
-## 目录
+## 目录结构
 
 ```
-server/           跑在 Node 侧的本地接口（Vite 插件）
-  blog-api.ts     路由表 + blog/public 静态伺服 + 插件入口
+server/           Node 侧的本地接口（Vite 插件）
+  blog-api.ts     路由表 + public 静态伺服 + 插件入口
   posts.ts        文章增删改查
-  pages.ts        固定页增删改查（文件名就是网址，所以校验严得多）
-  nav.ts          顶部菜单的读写 + 图标白名单
-  settings.ts     站点设置的读写 + 社交图标白名单 + 分类候选
-  frontmatter.ts  frontmatter 切分与拼回（正文逐字节保留），文章和页面共用
-  trash.ts        删除 = 挪进 admin/.trash/，文章和页面共用
+  pages.ts        固定页增删改查
+  nav.ts          顶部菜单读写 + 图标白名单
+  settings.ts     站点设置读写 + 社交图标白名单 + 分类候选
+  frontmatter.ts  frontmatter 切分与拼回，文章与页面共用
+  trash.ts        软删除，文章与页面共用
   images.ts       图片存取与命名
-  ai.ts           AI 改写：配置、提示词、调 OpenAI 兼容接口
+  ai.ts           AI 配置、提示词、调用 OpenAI 兼容接口
   paths.ts        目录定位与路径安全校验
-  http.ts         一点点 HTTP 胶水
+  http.ts         HTTP 胶水
 src/
-  types.ts        前后端共用的数据契约（只放类型）
-  api.ts          调接口
-  utils/markdown.ts  Markdown ⇄ HTML、图片路径换算、风险语法识别
-  utils/fences.ts    逐行围栏扫描（「这行在不在代码块里」只在这儿判一次）
-  utils/ai.ts     AI 结果的完整性校验、行级差异、插回编辑器的形状处理
-  utils/nav-icons.ts     菜单图标的 SVG 路径表
-  utils/social-icons.ts  社交图标的 SVG 路径表
-  composables/useSettings.ts  两个设置页共用的读写、脏标记、⌘S、离开确认
+  types.ts        前后端共用类型
+  api.ts          接口调用
+  utils/markdown.ts     Markdown ⇄ HTML、图片路径换算、风险语法识别
+  utils/fences.ts       逐行围栏扫描
+  utils/ai.ts           结果完整性校验、行级差异、插回编辑器
+  utils/nav-icons.ts    菜单图标 SVG 路径表
+  utils/social-icons.ts 社交图标 SVG 路径表
+  composables/useSettings.ts  设置页共用的读写、脏标记、⌘S、离开确认
   editor/extensions.ts  tiptap 扩展配置
-  views/          文章列表/编辑、页面列表/编辑、链接、菜单、社交设置、系统设置
-  components/     富文本编辑器、图片选择器、封面缩略图、友链编辑器、差异视图、
-                  两个 AI 弹窗、设置页外壳、两套图标
+  editor/details.ts     折叠块的 tiptap 节点
+  views/          各分区页面
+  components/     编辑器、图片选择器、缩略图、友链编辑器、差异视图、AI 弹窗、设置页外壳、图标
 scripts/          自检脚本
 ```
-
-`src/types.ts` 被两边同时引用，所以里面只放纯类型，不要 import 任何运行时代码。
-
-`utils/markdown.ts` 里那些函数收的 `contentDir` 是**文件相对 `content/` 的目录**
-（一篇 `content/blog/ai/x.md` 传 `blog/ai`，一个页面 `content/pages/about.md` 传 `pages`）。
-早先这个参数是「content/blog 下的子目录」，加页面管理时改成了现在这样 ——
-页面不在 content/blog 下面，用旧的口径压根表达不出来。虽然 `content/pages/` 和顶层文章
-深度相同、算出来的 `../` 层数碰巧一样，但依赖这种巧合的代码下次挪一层目录就会静默出错，
-而这类错误的症状是「本地有图、线上一片空白」。
