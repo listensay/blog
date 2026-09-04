@@ -165,7 +165,35 @@ function createTurndown(contentDir: string): TurndownService {
     },
   })
 
+  service.addRule('adminDetailsSummary', {
+    filter: 'summary',
+    replacement: () => '',
+  })
+
+  service.addRule('adminDetails', {
+    filter: 'details',
+    replacement: (content, node) => {
+      const element = node as unknown as HTMLElement
+      const first = element.firstElementChild
+      const title =
+        first?.tagName === 'SUMMARY' ? escapeHtmlText((first.textContent ?? '').trim()) : ''
+      const body = content.replace(/^\n+/, '').replace(/\n+$/, '')
+      const inner = body ? `\n\n${body}\n\n` : '\n\n'
+      return `\n\n<details>\n<summary><h3>${title}</h3></summary>${inner}</details>\n\n`
+    },
+  })
+
+  // 词中间的下划线按 CommonMark 不构成强调，turndown 仍会转义，这里还原。
+  // 挂在 escape 上而不是事后正则整篇替换，代码块与行内代码不经过 escape，因此不受影响。
+  const escapeMarkdown = TurndownService.prototype.escape
+  service.escape = (text: string) =>
+    escapeMarkdown.call(service, text).replace(/([\p{L}\p{N}])\\_(?=[\p{L}\p{N}])/gu, '$1_')
+
   return service
+}
+
+function escapeHtmlText(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function tidyHeadingEscapes(markdown: string): string {
@@ -252,8 +280,25 @@ const RISK_RULES: Array<{ label: string; re: RegExp }> = [
   { label: '定义列表', re: /^: {2,}\S/m },
 ]
 
+const SUPPORTED_SUMMARY = /<summary>(?:<h[1-6]>)?[^<>]*(?:<\/h[1-6]>)?<\/summary>/gi
+const PLAIN_DETAILS = /<\/?details>/gi
+const ANY_DETAILS = /<\/?details\b[^>]*>/gi
+
+/**
+ * 把富文本支持的折叠块从待检文本里摘掉，其余原始 HTML 照旧算风险。
+ * 只有「conforming 的 summary 数量 == details 开合标签数量」时才摘，
+ * 于是缺 summary、summary 没闭合、details 带属性这些情况都会落回风险提示。
+ */
+function stripSupportedHtml(markdown: string): string {
+  const summaries = markdown.match(SUPPORTED_SUMMARY)?.length ?? 0
+  const tags = markdown.match(ANY_DETAILS)?.length ?? 0
+  if (tags !== summaries * 2) return markdown
+
+  return markdown.replace(SUPPORTED_SUMMARY, '').replace(PLAIN_DETAILS, '')
+}
+
 export function detectRichTextRisks(markdown: string): RichTextRisk[] {
-  const text = stripCode(markdown)
+  const text = stripSupportedHtml(stripCode(markdown))
   const risks: RichTextRisk[] = []
 
   for (const { label, re } of RISK_RULES) {

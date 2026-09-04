@@ -103,6 +103,48 @@ console.log('\n各种 markdown 语法的往返')
     ['表格', '| a | b |\n| --- | --- |\n| 1 | 2 |\n'],
     ['分割线', '前\n\n---\n\n后\n'],
     ['中文标点和 emoji', '注意！这是「测试」👇 —— 破折号\n'],
+    ['折叠块', '<details>\n<summary><h3>标题</h3></summary>\n\n内容\n\n</details>\n'],
+    [
+      '折叠块带加粗与链接',
+      '<details>\n<summary><h3>AnyRouter</h3></summary>\n\n评价：**顶级**\n\n[注册](https://anyrouter.top)\n\n</details>\n',
+    ],
+    [
+      '折叠块带图片',
+      '<details>\n<summary><h3>GoRouter</h3></summary>\n\n速度可以。\n\n![](../../../public/images/x.png)\n\n</details>\n',
+    ],
+    [
+      '折叠块标题是裸网址',
+      '<details>\n<summary><h3>http://20.115.208.7:4000/v1</h3></summary>\n\n不需要密钥\n\n</details>\n',
+    ],
+    [
+      '折叠块正文多段',
+      '<details>\n<summary><h3>甲</h3></summary>\n\n一段\n\n二段\n\n</details>\n',
+    ],
+    [
+      '连续两个折叠块',
+      '<details>\n<summary><h3>甲</h3></summary>\n\n甲\n\n</details>\n\n<details>\n<summary><h3>乙</h3></summary>\n\n乙\n\n</details>\n',
+    ],
+    [
+      '折叠块前后有普通段落',
+      '开头\n\n<details>\n<summary><h3>甲</h3></summary>\n\n甲的内容\n\n</details>\n\n结尾\n',
+    ],
+    ['词中间的下划线', '变量 foo_bar 和 [t.me/x_bot](https://t.me/x_bot)\n'],
+    ['中文词中间的下划线', '文件名_备份_最终版\n'],
+    ['代码块里的 \\_ 不动', '```c\nchar *s = "foo\\_bar";\n```\n'],
+    ['行内代码里的 \\_ 不动', '用 `foo\\_bar` 表示\n'],
+    [
+      '嵌套折叠块',
+      '<details>\n<summary><h3>外</h3></summary>\n\n<details>\n<summary><h3>内</h3></summary>\n\n里\n\n</details>\n\n</details>\n',
+    ],
+    [
+      '折叠块带表格',
+      '<details>\n<summary><h3>甲</h3></summary>\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\n</details>\n',
+    ],
+    [
+      '折叠块带代码块',
+      '<details>\n<summary><h3>甲</h3></summary>\n\n```c\nint a;\n```\n\n</details>\n',
+    ],
+    ['折叠块标题为空', '<details>\n<summary><h3></h3></summary>\n\n内容\n\n</details>\n'],
   ]
 
   for (const [label, markdown] of cases) {
@@ -115,17 +157,44 @@ console.log('\n各种 markdown 语法的往返')
 console.log('\n富文本撑不住的语法要能被识别（界面上据此提示改用源码标签）')
 {
   const shouldWarn: Array<[string, string]> = [
-    ['折叠块', '<details>\n<summary>点开</summary>\n内容\n</details>\n'],
     ['下划线', '这是<u>下划线</u>文字\n'],
     ['居中 div', '<div align="center">居中</div>\n'],
     ['任务列表', '- [ ] 待办\n- [x] 完成\n'],
     ['脚注', '正文[^1]\n\n[^1]: 注解\n'],
+    [
+      'summary 里夹了别的内容',
+      '<details>\n<summary><h3>标题</h3>补充</summary>\n\n正文\n\n</details>\n',
+    ],
+    [
+      'summary 里有图片',
+      '<details>\n<summary><h3><img src="../../../public/images/x.png"></h3></summary>\n\n正文\n\n</details>\n',
+    ],
+    [
+      'summary 没闭合',
+      '<details>\n<summary><h3>甲</h3>\n\n<div align="center">重要内容</div>\n\n<summary><h3>乙</h3></summary>\n\nx\n\n</details>\n',
+    ],
+    [
+      'details 带属性',
+      '<details onclick="alert(1)">\n<summary><h3>标题</h3></summary>\n\n正文\n\n</details>\n',
+    ],
+    ['没有 summary 的 details', '<details>\n\n只有正文\n\n</details>\n'],
+    [
+      '折叠块正文里的 div',
+      '<details>\n<summary><h3>标题</h3></summary>\n\n<div>x</div>\n\n</details>\n',
+    ],
   ]
 
   for (const [label, markdown] of shouldWarn) {
     if (detectRichTextRisks(markdown).length) pass(`识别出 ${label}`)
     else fail(`没识别出 ${label}`)
   }
+
+  const collapse = '<details>\n<summary><h3>标题</h3></summary>\n\n内容\n\n</details>\n'
+  if (!detectRichTextRisks(collapse).length) pass('折叠块不算风险（富文本支持）')
+  else fail(`折叠块被误判：${JSON.stringify(detectRichTextRisks(collapse))}`)
+
+  if (detectRichTextRisks(`${collapse}\n<div>x</div>\n`).length) pass('折叠块与其他 HTML 混排时仍能识别')
+  else fail('折叠块之外的 HTML 漏判')
 
   const codeOnly = '```c\n#include <stdio.h>\nprintf("%d\\n", a < b);\n```\n'
   if (!detectRichTextRisks(codeOnly).length) pass('代码块里的尖括号不误报')

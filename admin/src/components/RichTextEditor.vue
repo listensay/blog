@@ -145,6 +145,18 @@ const cmd = {
   blockquote: () => editor.value?.chain().focus().toggleBlockquote().run(),
   codeBlock: () => editor.value?.chain().focus().toggleCodeBlock().run(),
   hr: () => editor.value?.chain().focus().setHorizontalRule().run(),
+  details: () =>
+    editor.value
+      ?.chain()
+      .focus()
+      .insertContent({
+        type: 'details',
+        content: [
+          { type: 'detailsSummary', content: [{ type: 'text', text: '标题' }] },
+          { type: 'paragraph' },
+        ],
+      })
+      .run(),
   undo: () => editor.value?.chain().focus().undo().run(),
   redo: () => editor.value?.chain().focus().redo().run(),
   clear: () => editor.value?.chain().focus().unsetAllMarks().clearNodes().run(),
@@ -185,6 +197,9 @@ const blockOptions = [
 const isActive = (name: string, attrs?: Record<string, unknown>) =>
   editor.value?.isActive(name, attrs) ?? false
 
+// 折叠块的标题只放纯文本，块级操作会把它劈开，因此在标题里一律禁用
+const inSummary = computed(() => isActive('detailsSummary'))
+
 function openLink() {
   linkHref.value = (editor.value?.getAttributes('link').href as string) ?? ''
   linkOpen.value = true
@@ -209,6 +224,7 @@ function applyLink() {
         v-model:value="blockLevel"
         class="block-select"
         size="small"
+        :disabled="inSummary"
         :options="blockOptions"
       />
 
@@ -245,6 +261,7 @@ function applyLink() {
       <a-tooltip title="无序列表">
         <a-button
           size="small"
+          :disabled="inSummary"
           :type="isActive('bulletList') ? 'primary' : 'text'"
           @click="cmd.bulletList"
         >
@@ -254,6 +271,7 @@ function applyLink() {
       <a-tooltip title="有序列表">
         <a-button
           size="small"
+          :disabled="inSummary"
           :type="isActive('orderedList') ? 'primary' : 'text'"
           @click="cmd.orderedList"
         >
@@ -262,6 +280,7 @@ function applyLink() {
       </a-tooltip>
       <a-button
         size="small"
+        :disabled="inSummary"
         :type="isActive('blockquote') ? 'primary' : 'text'"
         @click="cmd.blockquote"
       >
@@ -269,22 +288,39 @@ function applyLink() {
       </a-button>
       <a-button
         size="small"
+        :disabled="inSummary"
         :type="isActive('codeBlock') ? 'primary' : 'text'"
         @click="cmd.codeBlock"
       >
         代码块
       </a-button>
-      <a-button size="small" type="text" @click="cmd.hr">分割线</a-button>
+      <a-button size="small" type="text" :disabled="inSummary" @click="cmd.hr">分割线</a-button>
+      <a-tooltip title="折叠块：标题一行，正文放在下面">
+        <a-button
+          size="small"
+          :disabled="inSummary"
+          :type="isActive('details') ? 'primary' : 'text'"
+          @click="cmd.details"
+        >
+          折叠块
+        </a-button>
+      </a-tooltip>
 
       <a-divider type="vertical" />
 
       <a-tooltip title="插入表格（带表头）">
-        <a-button size="small" type="text" @click="cmd.table">
+        <a-button size="small" type="text" :disabled="inSummary" @click="cmd.table">
           <template #icon><TableOutlined /></template>
         </a-button>
       </a-tooltip>
       <a-tooltip title="插入图片">
-        <a-button size="small" type="text" :loading="uploading" @click="pickerOpen = true">
+        <a-button
+          size="small"
+          type="text"
+          :disabled="inSummary"
+          :loading="uploading"
+          @click="pickerOpen = true"
+        >
           <template #icon><PictureOutlined /></template>
         </a-button>
       </a-tooltip>

@@ -117,6 +117,34 @@ body {
   border-top: 1px solid #e8e8e8;
 }
 
+.tiptap details {
+  padding: 0 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.tiptap details > * + * {
+  margin-top: 0.9em;
+}
+
+.tiptap summary {
+  margin: 0 -12px 0.9em;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8e8e8;
+  border-radius: 6px 6px 0 0;
+  background: #fff;
+  font-size: 1.22em;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: text;
+  list-style: none;
+}
+
+.tiptap summary::-webkit-details-marker {
+  display: none;
+}
+
 .tiptap table {
   width: 100%;
   border-collapse: collapse;
