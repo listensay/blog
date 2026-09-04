@@ -142,6 +142,112 @@
     content: none;
   }
 
+  .prose-cn :where(details) {
+    @apply my-3 rounded-xl border border-slate-200 bg-slate-50;
+    padding-inline: 1rem;
+    transition: border-color var(--anim-fast) var(--anim-ease);
+  }
+
+  .prose-cn :where(details:has(> summary:hover)) {
+    @apply border-brand-300;
+  }
+
+  .prose-cn :where(details > summary) {
+    @apply flex cursor-pointer flex-wrap items-center border-b border-transparent bg-white py-3 text-lg font-semibold text-slate-900;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    border-radius: calc(0.75rem - 1px);
+    list-style: none;
+    transition:
+      color var(--anim-fast) var(--anim-ease),
+      background-color var(--anim-fast) var(--anim-ease),
+      border-color var(--anim-fast) var(--anim-ease);
+  }
+
+  .prose-cn :where(details > summary)::-webkit-details-marker {
+    display: none;
+  }
+
+  .prose-cn :where(details > summary > :is(h2, h3, h4)) {
+    margin: 0;
+    min-width: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: inherit;
+  }
+
+  .prose-cn :where(details > summary:hover) {
+    @apply bg-brand-50 text-brand-700;
+  }
+
+  .prose-cn :where(details[open] > summary) {
+    @apply border-slate-200;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  .prose-cn :where(details > summary)::before {
+    content: "";
+    @apply border-slate-400;
+    flex: none;
+    width: 0.45em;
+    height: 0.45em;
+    margin-inline: 0.15em 0.625rem;
+    border-style: solid;
+    border-width: 0 2px 2px 0;
+    transform: rotate(-45deg);
+    transition:
+      transform var(--anim-base) var(--anim-ease),
+      border-color var(--anim-fast) var(--anim-ease);
+  }
+
+  .prose-cn :where(details[open] > summary)::before {
+    transform: rotate(45deg);
+  }
+
+  .prose-cn :where(details > summary:hover)::before {
+    @apply border-brand-500;
+  }
+
+  .prose-cn :where(details > summary + *) {
+    margin-top: 1rem;
+  }
+
+  .prose-cn :where(details pre) {
+    @apply bg-white;
+  }
+
+  .prose-cn :where(details > :last-child:not(summary)) {
+    margin-bottom: 1rem;
+  }
+
+  .prose-cn :where(details > summary + * > :first-child) {
+    margin-top: 0;
+  }
+
+  .prose-cn :where(details > :last-child:not(summary) > :last-child) {
+    margin-bottom: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .prose-cn :where(details) {
+      interpolate-size: allow-keywords;
+    }
+
+    .prose-cn :where(details)::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition:
+        block-size var(--anim-base) var(--anim-ease),
+        content-visibility var(--anim-base) var(--anim-ease) allow-discrete;
+    }
+
+    .prose-cn :where(details[open])::details-content {
+      block-size: auto;
+    }
+  }
+
   .prose-cn :where(img) {
     @apply rounded-xl border border-slate-200;
   }
