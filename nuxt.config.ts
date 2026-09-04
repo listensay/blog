@@ -74,6 +74,7 @@ export default defineNuxtConfig({
       transformers: [
         '~~/transformers/slug-path.ts',
         '~~/transformers/image-src.ts',
+        '~~/transformers/external-links.ts',
         '~~/transformers/taxonomy.ts',
       ],
       markdown: {
