@@ -67,6 +67,7 @@ export interface FriendLink {
 export interface PageFrontmatter {
   title: string
   description: string
+  comments: boolean
   friends: FriendLink[]
 }
 

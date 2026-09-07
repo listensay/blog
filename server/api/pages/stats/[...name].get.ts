@@ -1,8 +1,8 @@
 export default defineEventHandler(async (event) => {
   noStore(event)
 
-  const slug = requireSlug(event)
+  const name = requirePageName(event)
   const visitor = await visitorId(event)
 
-  return readStats(slug, visitor)
+  return readStats(pageTargetId(name), visitor)
 })

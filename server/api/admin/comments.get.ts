@@ -1,3 +1,55 @@
+import type { H3Event } from 'h3'
+import { queryCollection } from '@nuxt/content/server'
+
+interface Row {
+  id: string
+  slug: string
+  parent_id: string | null
+  author: string
+  website: string | null
+  body: string
+  visitor: string
+  hidden: number
+  created_at: number
+}
+
+// 评论表里存的是目标标识，不是站内地址。文章的地址由 slug-path transformer 决定
+// （可能带目录，如 /blog/ai/free-ai），页面的地址是 /<文件名>。
+// 来源已删除时该条没有地址。
+async function resolvePaths(event: H3Event, targets: string[]) {
+  const paths = new Map<string, string>()
+  const slugs: string[] = []
+  const pagePaths: string[] = []
+
+  for (const target of new Set(targets)) {
+    const name = pageNameOf(target)
+    if (name === null) slugs.push(target)
+    else pagePaths.push(`/${name}`)
+  }
+
+  if (slugs.length) {
+    const posts = await queryCollection(event, 'blog')
+      .where('slug', 'IN', slugs)
+      .select('slug', 'path')
+      .all()
+    for (const post of posts) {
+      if (post.slug) paths.set(post.slug, post.path)
+    }
+  }
+
+  if (pagePaths.length) {
+    const pages = await queryCollection(event, 'pages')
+      .where('path', 'IN', pagePaths)
+      .select('path')
+      .all()
+    for (const page of pages) {
+      paths.set(pageTargetId(pathToPageName(page.path)), page.path)
+    }
+  }
+
+  return paths
+}
+
 export default defineEventHandler(async (event) => {
   noStore(event)
   await requireAdmin(event)
@@ -28,17 +80,8 @@ export default defineEventHandler(async (event) => {
   `
   const summary = (counts.rows ?? [])[0] as { total: number, visible: number, hidden: number } | undefined
 
-  const rows = (result.rows ?? []) as unknown as Array<{
-    id: string
-    slug: string
-    parent_id: string | null
-    author: string
-    website: string | null
-    body: string
-    visitor: string
-    hidden: number
-    created_at: number
-  }>
+  const rows = (result.rows ?? []) as unknown as Row[]
+  const paths = await resolvePaths(event, rows.map(row => row.slug))
 
   return {
     summary: {
@@ -48,7 +91,9 @@ export default defineEventHandler(async (event) => {
     },
     comments: rows.map(row => ({
       id: row.id,
-      slug: row.slug,
+      target: row.slug,
+      kind: pageNameOf(row.slug) === null ? ('post' as const) : ('page' as const),
+      path: paths.get(row.slug) ?? null,
       parentId: row.parent_id,
       author: row.author,
       website: row.website || null,

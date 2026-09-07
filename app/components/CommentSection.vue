@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { CommentListResponse, CommentNode, PostStats } from '~/types/blog'
+import type { CommentListResponse, CommentNode, EngagementTarget, PostStats } from '~/types/blog'
 
-const props = defineProps<{ slug: string }>()
+const props = defineProps<{ target: EngagementTarget }>()
 
 const { data, refresh, status } = await useFetch<CommentListResponse>(
-  () => `/api/posts/${props.slug}/comments`,
+  () => commentsUrl(props.target),
   {
-    key: () => `comments-${props.slug}`,
+    key: () => commentsKey(props.target),
     default: () => ({ total: 0, comments: [] }),
     lazy: true,
   },
@@ -15,7 +15,7 @@ const { data, refresh, status } = await useFetch<CommentListResponse>(
 const { loading } = useQueryState(status)
 
 const replyTo = ref<CommentNode | null>(null)
-const { data: sharedStats } = useNuxtData<PostStats>(`stats-${props.slug}`)
+const { data: sharedStats } = useNuxtData<PostStats>(statsKey(props.target))
 
 watch(() => data.value.total, total => {
   if (sharedStats.value) sharedStats.value.comments = total
@@ -49,7 +49,7 @@ function onSubmitted(result: CommentListResponse) {
     </div>
 
     <div class="mt-5">
-      <CommentForm v-if="!replyTo" :slug="slug" @submitted="onSubmitted" />
+      <CommentForm v-if="!replyTo" :target="target" @submitted="onSubmitted" />
     </div>
 
     <CommentsSkeleton v-if="loading" class="mt-8" :count="2" />
@@ -68,7 +68,7 @@ function onSubmitted(result: CommentListResponse) {
           <template #form>
             <CommentForm
               v-if="replyTo?.id === comment.id"
-              :slug="slug"
+              :target="target"
               :parent="comment"
               @submitted="onSubmitted"
               @cancel="replyTo = null"
@@ -86,7 +86,7 @@ function onSubmitted(result: CommentListResponse) {
               <template #form>
                 <CommentForm
                   v-if="replyTo?.id === reply.id"
-                  :slug="slug"
+                  :target="target"
                   :parent="reply"
                   @submitted="onSubmitted"
                   @cancel="replyTo = null"

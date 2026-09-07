@@ -81,14 +81,6 @@ export async function assertNotFlooding(visitor: string) {
   }
 }
 
-export function requireSlug(event: H3Event) {
-  const slug = String(getRouterParam(event, 'slug') ?? '').trim()
-  if (!slug || slug.length > 120 || !/^[\w-]+$/.test(slug)) {
-    throw httpError(400, '文章标识不合法')
-  }
-  return slug
-}
-
 export function requireCommentId(event: H3Event) {
   const id = String(getRouterParam(event, 'id') ?? '')
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {

@@ -28,6 +28,8 @@ else {
   watch(status, s => s === 'success' && assertFound(), { immediate: true })
 }
 
+const target = computed(() => pageTarget(path.value))
+
 const proseEl = ref<HTMLElement>()
 useProseLightbox(proseEl)
 
@@ -57,8 +59,12 @@ useSeo({
     <div v-if="loading" class="prose-cn mt-6 sm:mt-10">
       <ProseSkeleton :paragraphs="3" />
     </div>
-    <div v-else-if="page" ref="proseEl" class="prose-cn mt-6 sm:mt-10">
-      <ContentRenderer :value="page" />
-    </div>
+    <template v-else-if="page">
+      <div ref="proseEl" class="prose-cn mt-6 sm:mt-10">
+        <ContentRenderer :value="page" />
+      </div>
+      <PostReactions :target="target" />
+      <CommentSection v-if="page.comments" :target="target" />
+    </template>
   </div>
 </template>

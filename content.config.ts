@@ -30,6 +30,7 @@ export default defineContentConfig({
       schema: z.object({
         title: z.string(),
         description: z.string().default(''),
+        comments: z.boolean().default(false),
         friends: z
           .array(
             z.object({

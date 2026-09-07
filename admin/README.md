@@ -122,12 +122,28 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | 保留文件名 | `blog`、`categories`、`tags`、`admin`、`index` |
 | 改名或删除 | 更换网址，确认框列出指向旧网址的菜单项 |
 | frontmatter `slug` | 不生效 |
+| frontmatter `comments` | `true` 时页面显示评论区，缺省与 `false` 时不显示 |
 | 路由 | `app/pages/[...page].vue` 覆盖全部 `content/pages/**` |
 
 保留名单由 `GET /api/pages` 的 `reserved` 提供。
 
 站点侧有专属 .vue 的页面为例外，名单见 `server/pages.ts` 的 `CUSTOM_ROUTE_FILES`：删除或改名后
 渲染为标题回退、内容为空的页面，不返回 404。`/links` 属于此类，不在保留名单中。
+
+### 评论与点赞
+
+| 项 | 文章 | 固定页 |
+| --- | --- | --- |
+| 评论区 | 始终显示 | 由 `comments` 决定 |
+| 点赞 | 显示 | 显示 |
+| 阅读量 | 统计并显示 | 不统计 |
+
+`comments` 为 `false` 或缺省时，站点侧不渲染评论区，页面评论接口返回 403。开关在页面编辑器右栏，
+列表页对已开启的页面显示标签。`/links` 的开关同样在页面编辑器中，链接页面只维护 `friends`。
+
+评论与统计存于站点侧的 D1，与后台无关。数据按目标标识区分：文章为 `slug`，页面为
+`page:<站内路径去掉开头的 />`，改名或删除页面后原有数据不再显示。站点的 `/admin` 为评论管理界面，
+需 `NUXT_ADMIN_PASSWORD`。
 
 ## 友情链接
 

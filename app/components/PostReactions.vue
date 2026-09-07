@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { PostStats } from '~/types/blog'
+import type { EngagementTarget, PostStats } from '~/types/blog'
 
-const props = defineProps<{ slug: string }>()
+const props = defineProps<{ target: EngagementTarget }>()
 
-const { data: stats, status } = await useFetch<PostStats>(() => `/api/posts/${props.slug}/stats`, {
-  key: () => `stats-${props.slug}`,
+const { data: stats, status } = await useFetch<PostStats>(() => statsUrl(props.target), {
+  key: () => statsKey(props.target),
   default: () => ({ views: 0, likes: 0, comments: 0, liked: false }),
   immediate: import.meta.server,
 })
@@ -16,9 +16,21 @@ const showPlaceholder = useLoadingHold(computed(() => !ready.value))
 const pending = ref(false)
 const error = ref('')
 
+const countsViews = computed(() => props.target.kind === 'post')
+
 onMounted(async () => {
+  const view = viewUrl(props.target)
+
+  // 文章每次进来都要记一次浏览；页面没这一步，服务端渲染取过就不再重取。
+  if (!view && status.value === 'success') {
+    ready.value = true
+    return
+  }
+
   try {
-    stats.value = await $fetch<PostStats>(`/api/posts/${props.slug}/view`, { method: 'POST' })
+    stats.value = view
+      ? await $fetch<PostStats>(view, { method: 'POST' })
+      : await $fetch<PostStats>(statsUrl(props.target))
   }
   catch {
   }
@@ -41,7 +53,7 @@ async function toggleLike() {
   }
 
   try {
-    stats.value = await $fetch<PostStats>(`/api/posts/${props.slug}/like`, { method: 'POST' })
+    stats.value = await $fetch<PostStats>(likeUrl(props.target), { method: 'POST' })
   }
   catch (e) {
     stats.value = snapshot
@@ -57,7 +69,7 @@ async function toggleLike() {
   <div class="mt-12 flex flex-col items-center gap-3 border-t border-slate-200 pt-8">
     <template v-if="showPlaceholder">
       <div class="skeleton h-11 w-28 rounded-full" aria-hidden="true" />
-      <div class="skeleton h-4 w-20" aria-hidden="true" />
+      <div v-if="countsViews" class="skeleton h-4 w-20" aria-hidden="true" />
     </template>
 
     <template v-else>
@@ -88,7 +100,7 @@ async function toggleLike() {
         <span class="tabular-nums">{{ stats.likes }}</span>
       </button>
 
-      <p class="flex items-center gap-1.5 text-xs text-slate-400">
+      <p v-if="countsViews" class="flex items-center gap-1.5 text-xs text-slate-400">
         <svg
           class="size-3.5"
           viewBox="0 0 24 24"

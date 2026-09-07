@@ -14,7 +14,7 @@ export const POST_KEY_ORDER = [
   'cover',
 ] as const
 
-export const PAGE_KEY_ORDER = ['title', 'description', 'friends'] as const
+export const PAGE_KEY_ORDER = ['title', 'description', 'comments', 'friends'] as const
 
 const MD_IMAGE_RE = /!\[[^\]]*\]\([^)]+\)/g
 const HTML_IMAGE_RE = /<img\b/gi
@@ -227,6 +227,7 @@ export function normalizePageFrontmatter(data: Record<string, unknown>): PageFro
   return {
     title: asString(data.title),
     description: asString(data.description),
+    comments: data.comments === true,
     friends: asFriendList(data.friends),
   }
 }
@@ -240,6 +241,32 @@ function toStoredFriend(item: FriendLink): Record<string, unknown> {
   }
 }
 
+const PAGE_OMITTABLE = ['description', 'comments', 'friends'] as const
+
+type PageOmittable = (typeof PAGE_OMITTABLE)[number]
+
+function isEmptyPageValue(fm: PageFrontmatter, key: PageOmittable): boolean {
+  switch (key) {
+    case 'friends':
+      return fm.friends.length === 0
+    case 'comments':
+      return fm.comments === false
+    default:
+      return fm.description === ''
+  }
+}
+
+function storedPageValue(fm: PageFrontmatter, key: PageOmittable): unknown {
+  switch (key) {
+    case 'friends':
+      return fm.friends.map(toStoredFriend)
+    case 'comments':
+      return true
+    default:
+      return fm.description
+  }
+}
+
 export function buildPageFrontmatter(
   fm: PageFrontmatter,
   raw: Record<string, unknown> = {},
@@ -247,15 +274,13 @@ export function buildPageFrontmatter(
   const data: Record<string, unknown> = { title: fm.title }
 
   const originalFm = normalizePageFrontmatter(raw)
-  const isEmpty = (value: PageFrontmatter, key: 'description' | 'friends') =>
-    key === 'friends' ? value.friends.length === 0 : value.description === ''
 
-  for (const key of ['description', 'friends'] as const) {
-    if (!isEmpty(fm, key)) {
-      data[key] = key === 'friends' ? fm.friends.map(toStoredFriend) : fm.description
+  for (const key of PAGE_OMITTABLE) {
+    if (!isEmptyPageValue(fm, key)) {
+      data[key] = storedPageValue(fm, key)
       continue
     }
-    if (key in raw && isEmpty(originalFm, key)) data[key] = raw[key]
+    if (key in raw && isEmptyPageValue(originalFm, key)) data[key] = raw[key]
   }
 
   const known = new Set<string>(PAGE_KEY_ORDER)

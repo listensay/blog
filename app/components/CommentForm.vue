@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { CommentListResponse, CommentNode } from '~/types/blog'
+import type { CommentListResponse, CommentNode, EngagementTarget } from '~/types/blog'
 
 const props = defineProps<{
-  slug: string
+  target: EngagementTarget
   parent?: CommentNode | null
 }>()
 
@@ -34,7 +34,7 @@ async function submit() {
 
   try {
     const result = await $fetch<CommentListResponse & { id: string }>(
-      `/api/posts/${props.slug}/comments`,
+      commentsUrl(props.target),
       {
         method: 'POST',
         body: {

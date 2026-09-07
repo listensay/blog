@@ -8,6 +8,8 @@ const pathSegments = computed(() => Array.isArray(route.params.slug)
 const slug = computed(() => pathSegments.value.at(-1) ?? '')
 const path = computed(() => `/blog/${pathSegments.value.join('/')}`)
 
+const target = computed(() => postTarget(slug.value))
+
 const headerColors = [
   '#e11d48',
   '#a21caf',
@@ -143,11 +145,11 @@ useJsonLd(() => ({
               class="mr-2 align-middle rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700"
             >草稿</span>{{ post.title }}
           </h1>
-          <ArticleStats :slug="slug" />
+          <ArticleStats :target="target" />
         </header>
         <ContentRenderer :value="post" />
       </div>
-      <PostReactions :slug="slug" />
+      <PostReactions :target="target" />
 
       <nav
         v-if="surround?.some(Boolean)"
@@ -176,7 +178,7 @@ useJsonLd(() => ({
         </NuxtLink>
       </nav>
 
-      <CommentSection :slug="slug" />
+      <CommentSection :target="target" />
     </template>
   </article>
 </template>

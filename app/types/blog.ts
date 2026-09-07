@@ -5,6 +5,12 @@ export interface PostStats {
   liked: boolean
 }
 
+// 统计与评论的目标：文章用 slug，页面用站内路径去掉开头的 /。
+export interface EngagementTarget {
+  kind: 'post' | 'page'
+  id: string
+}
+
 export interface CommentNode {
   id: string
   author: string
@@ -23,7 +29,9 @@ export interface CommentListResponse {
 
 export interface AdminComment {
   id: string
-  slug: string
+  target: string
+  kind: 'post' | 'page'
+  path: string | null
   parentId: string | null
   author: string
   website: string | null

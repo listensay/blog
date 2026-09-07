@@ -3,6 +3,8 @@
 --   npx wrangler d1 execute blog-content --remote --file migrations/0001_init.sql
 --
 -- 注意：这些表不带 _content_ 前缀，@nuxt/content 重建内容索引时不会碰它们。
+--
+-- slug 列存的是目标标识：文章为 frontmatter 里的 slug，固定页为 page:<文件名>。
 
 CREATE TABLE IF NOT EXISTS post_stats (slug TEXT PRIMARY KEY, views INTEGER NOT NULL DEFAULT 0, likes INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS visitor_views (slug TEXT NOT NULL, visitor TEXT NOT NULL, seen_at INTEGER NOT NULL, PRIMARY KEY (slug, visitor));

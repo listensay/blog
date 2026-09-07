@@ -11,6 +11,8 @@ const { loading } = useQueryState(status, error)
 
 const friends = computed(() => page.value?.friends ?? [])
 
+const target = pageTarget('/links')
+
 const hasBody = computed(() => {
   const value = page.value?.body?.value
   return Array.isArray(value) && value.length > 0
@@ -89,5 +91,10 @@ useSeo({
         还没有友情链接。
       </p>
     </div>
+
+    <template v-if="!loading && page">
+      <PostReactions :target="target" />
+      <CommentSection v-if="page.comments" :target="target" />
+    </template>
   </div>
 </template>

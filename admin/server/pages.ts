@@ -152,6 +152,7 @@ function validate(input: PageInput): PageInput {
     name,
     title,
     description: input.description?.trim() ?? '',
+    comments: input.comments === true,
     friends: validateFriends(input.friends),
     body: input.body ?? '',
   }

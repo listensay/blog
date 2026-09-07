@@ -441,6 +441,7 @@ try {
     name: 'api-check-page',
     title: '接口自测页面',
     description: '这是 npm run check 造出来的',
+    comments: false,
     friends: [],
     body: '\n一段说明。\n\n![](../../public/images/x.png)\n',
   }
@@ -461,7 +462,70 @@ try {
       `文件开头是 ${JSON.stringify(raw.slice(0, 40))}`,
     )
     assert.ok(!raw.includes('friends:'), '空 friends 不该写进文件')
+    assert.ok(!raw.includes('comments:'), '关闭评论时不该写 comments')
     assert.ok(raw.endsWith('![](../../public/images/x.png)\n'), '正文没原样写进去')
+  })
+
+  await check('POST /api/page 开启评论写入 comments: true', async () => {
+    const { status, data } = await call('POST', '/api/page', {
+      ...pageDraft,
+      name: 'comments-on',
+      comments: true,
+    })
+    assert.equal(status, 201)
+    assert.equal(data.comments, true)
+
+    const raw = await readFile(path.join(sandbox, 'content', String(data.file)), 'utf8')
+    assert.match(raw, /\ncomments: true\n/)
+  })
+
+  await check('关掉评论后 comments 行被删掉', async () => {
+    const file = 'pages/comments-on.md'
+    const { status, data } = await call('PUT', `/api/page?file=${encodeURIComponent(file)}`, {
+      ...pageDraft,
+      name: 'comments-on',
+      comments: false,
+    })
+    assert.equal(status, 200)
+    assert.equal(data.comments, false)
+
+    const raw = await readFile(path.join(sandbox, 'content', file), 'utf8')
+    assert.ok(!raw.includes('comments:'), `落盘内容：${JSON.stringify(raw)}`)
+  })
+
+  for (const written of ['true', 'false']) {
+    await check(`手写 comments: ${written} 的页面保存后逐字节相同`, async () => {
+      const file = `pages/keep-comments-${written}.md`
+      const absolute = path.join(sandbox, 'content', file)
+      const before = `---\ntitle: 保留原样\ncomments: ${written}\n---\n\n正文。\n`
+      await writeFile(absolute, before, 'utf8')
+
+      const { data: detail } = await call('GET', `/api/page?file=${encodeURIComponent(file)}`)
+      assert.equal(detail.comments, written === 'true')
+
+      const { status } = await call('PUT', `/api/page?file=${encodeURIComponent(file)}`, detail)
+      assert.equal(status, 200)
+      assert.equal(await readFile(absolute, 'utf8'), before, '文件内容变了')
+    })
+  }
+
+  await check('友链编辑器的入参形状不会丢掉 comments', async () => {
+    const file = 'pages/keep-comments-true.md'
+    const absolute = path.join(sandbox, 'content', file)
+    const { data: detail } = await call('GET', `/api/page?file=${encodeURIComponent(file)}`)
+
+    // LinkView 只改 friends，其余字段照抄读回来的值。
+    const { status } = await call('PUT', `/api/page?file=${encodeURIComponent(file)}`, {
+      title: detail.title,
+      description: detail.description,
+      comments: detail.comments,
+      name: detail.name,
+      friends: [{ name: '某站', url: 'https://a.com', description: '' }],
+      body: detail.body,
+      raw: detail.raw,
+    })
+    assert.equal(status, 200)
+    assert.match(await readFile(absolute, 'utf8'), /\ncomments: true\n/)
   })
 
   await check('同名再建一次 → 409', async () => {

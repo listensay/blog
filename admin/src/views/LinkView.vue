@@ -21,6 +21,7 @@ const friends = ref<FriendLink[]>([])
 const page = reactive({
   title: '',
   description: '',
+  comments: false,
   body: '',
 })
 
@@ -68,6 +69,7 @@ function fill(detail: PageDetail) {
   friends.value = detail.friends.map((item) => ({ ...item }))
   page.title = detail.title
   page.description = detail.description
+  page.comments = detail.comments
   page.body = detail.body
   raw.value = detail.raw
   baseline.value = snapshot()
@@ -91,6 +93,7 @@ async function save() {
     title: page.title,
     description: page.description,
     name: LINKS_NAME,
+    comments: page.comments,
     friends: friends.value,
     body: page.body,
     raw: raw.value,

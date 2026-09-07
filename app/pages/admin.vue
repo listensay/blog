@@ -197,9 +197,11 @@ npx wrangler secret put NUXT_VISITOR_SALT</pre>
             <span class="text-sm font-medium text-slate-900">{{ comment.author }}</span>
             <span v-if="comment.hidden" class="rounded bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">已隐藏</span>
             <span v-if="comment.parentId" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px]">回复</span>
-            <NuxtLink :to="`/blog/${comment.slug}#comments`" class="hover:text-brand-600">
-              /blog/{{ comment.slug }}
+            <span v-if="comment.kind === 'page'" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px]">页面</span>
+            <NuxtLink v-if="comment.path" :to="`${comment.path}#comments`" class="hover:text-brand-600">
+              {{ comment.path }}
             </NuxtLink>
+            <span v-else class="font-mono">{{ comment.target }}</span>
             <time :datetime="isoDateTime(comment.createdAt)">{{ localDateTime(comment.createdAt) }}</time>
             <span class="font-mono">{{ comment.visitor }}</span>
             <a

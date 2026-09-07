@@ -1,10 +1,10 @@
 export default defineEventHandler(async (event) => {
-  const slug = requireSlug(event)
-  await assertPostExists(event, slug)
+  const name = requirePageName(event)
+  await assertPageComments(event, name)
 
   const input = validateComment(await readBody(event) ?? {})
   const visitor = await visitorId(event)
   await assertNotFlooding(visitor)
 
-  return createComment(slug, input, visitor)
+  return createComment(pageTargetId(name), input, visitor)
 })

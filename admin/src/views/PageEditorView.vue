@@ -29,6 +29,7 @@ const form = reactive({
   title: '',
   description: '',
   name: '',
+  comments: false,
 })
 
 const preservedFriends = ref<FriendLink[]>([])
@@ -49,7 +50,12 @@ const editorRef = useTemplateRef<InstanceType<typeof RichTextEditor>>('editor')
 
 function formSnapshot(): string {
   const text = (value: string | null | undefined) => value ?? ''
-  return JSON.stringify([text(form.title), text(form.description), text(form.name)])
+  return JSON.stringify([
+    text(form.title),
+    text(form.description),
+    text(form.name),
+    form.comments === true,
+  ])
 }
 
 const baseline = ref(formSnapshot())
@@ -140,6 +146,7 @@ function fill(detail: PageDetail) {
   form.title = detail.title
   form.description = detail.description
   form.name = detail.name
+  form.comments = detail.comments
   preservedFriends.value = detail.friends.map((item) => ({ ...item }))
 
   raw.value = detail.raw
@@ -208,6 +215,7 @@ async function save() {
     title: form.title,
     description: form.description,
     name: form.name,
+    comments: form.comments,
     friends: preservedFriends.value,
     body: currentBody(),
     raw: raw.value,
@@ -246,7 +254,7 @@ function confirmRename(): Promise<boolean> {
   return new Promise((resolve) => {
     Modal.confirm({
       title: '页面网址将改变',
-      content: `${original.path} → ${path.value}。原网址将返回 404。${navNote}${customNote}`,
+      content: `${original.path} → ${path.value}。原网址将返回 404。该页面的点赞与评论按网址存储，改名后不再显示。${navNote}${customNote}`,
       okText: '确定',
       okType: 'danger',
       cancelText: '取消',
@@ -425,6 +433,13 @@ onBeforeRouteLeave(async () => {
               placeholder="SEO描述"
             />
           </a-form-item>
+
+          <a-form-item>
+            <div class="switch-row">
+              <a-switch v-model:checked="form.comments" />
+              <span>开启评论</span>
+            </div>
+          </a-form-item>
         </a-form>
       </aside>
     </div>
@@ -519,6 +534,12 @@ onBeforeRouteLeave(async () => {
 
 .mono-input {
   font-family: var(--mono);
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 :deep(.ant-tabs-content-holder) {

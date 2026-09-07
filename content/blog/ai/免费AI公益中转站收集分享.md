@@ -62,7 +62,7 @@ tags:
 </details>
 
 <details>
-<summary><h3>GoRouter</h3></summary>
+<summary><h3>GoRouter（暂无模型可用）</h3></summary>
 
 评价：**NPC**
 
@@ -75,7 +75,7 @@ tags:
 </details>
 
 <details>
-<summary><h3>SeekAI</h3></summary>
+<summary><h3>SeekAI（暂无模型可用）</h3></summary>
 
 评价：**无**
 
@@ -101,7 +101,7 @@ tags:
 </details>
 
 <details>
-<summary><h3>TabToken</h3></summary>
+<summary><h3>TabToken（暂无模型可用）</h3></summary>
 
 评价：**无**
 
@@ -114,7 +114,7 @@ tags:
 </details>
 
 <details>
-<summary><h3>JustDoWork</h3></summary>
+<summary><h3>JustDoWork（暂无模型可用）</h3></summary>
 
 评价：无
 
@@ -140,7 +140,7 @@ Gpt速度快可以用。
 </details>
 
 <details>
-<summary><h3>kktoken AI</h3></summary>
+<summary><h3>kktoken AI（暂无模型可用）</h3></summary>
 
 评价：无
 

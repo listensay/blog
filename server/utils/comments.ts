@@ -78,3 +78,53 @@ export function buildTree(rows: CommentRow[]): PublicComment[] {
 
   return roots
 }
+
+export interface CommentListResult {
+  total: number
+  comments: PublicComment[]
+}
+
+export async function listComments(target: string): Promise<CommentListResult> {
+  const db = await useReadyDb()
+
+  const result = await db.sql`
+    SELECT id, slug, parent_id, author, email_hash, website, body, visitor, hidden, created_at
+    FROM comments
+    WHERE slug = ${target} AND hidden = 0
+    ORDER BY created_at ASC
+    LIMIT 500
+  `
+  const rows = (result.rows ?? []) as unknown as CommentRow[]
+
+  return { total: rows.length, comments: buildTree(rows) }
+}
+
+export async function createComment(
+  target: string,
+  input: CommentInput,
+  visitor: string,
+): Promise<CommentListResult & { id: string }> {
+  const db = await useReadyDb()
+
+  if (input.parentId) {
+    const parent = await db.sql`
+      SELECT id FROM comments
+      WHERE id = ${input.parentId} AND slug = ${target} AND hidden = 0
+    `
+    if ((parent.rows ?? []).length === 0) {
+      throw httpError(400, '要回复的评论不存在')
+    }
+  }
+
+  const id = crypto.randomUUID()
+
+  await db.sql`
+    INSERT INTO comments (id, slug, parent_id, author, email_hash, website, body, visitor, hidden, created_at)
+    VALUES (
+      ${id}, ${target}, ${input.parentId}, ${input.author}, ${await emailHash(input.email)},
+      ${input.website || null}, ${input.body}, ${visitor}, 0, ${Date.now()}
+    )
+  `
+
+  return { id, ...(await listComments(target)) }
+}

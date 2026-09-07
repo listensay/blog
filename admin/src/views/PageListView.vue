@@ -105,6 +105,9 @@ const total = computed(() => pages.value.length)
         <a-tag v-if="friendCount(record as PageSummary)" color="blue" class="friend-tag">
           {{ friendCount(record as PageSummary) }} 条友链
         </a-tag>
+        <a-tag v-if="(record as PageSummary).comments" color="green" class="friend-tag">
+          评论已开启
+        </a-tag>
         <div v-if="(record as PageSummary).description" class="sub">
           {{ (record as PageSummary).description }}
         </div>

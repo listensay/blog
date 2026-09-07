@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { IconEye, IconHeart, IconMessageCircle } from '@tabler/icons-vue'
-import type { PostStats } from '~/types/blog'
+import type { EngagementTarget, PostStats } from '~/types/blog'
 
-const props = defineProps<{ slug: string }>()
+const props = defineProps<{ target: EngagementTarget }>()
 
-const { data: stats, status } = await useFetch<PostStats>(() => `/api/posts/${props.slug}/stats`, {
-  key: () => `stats-${props.slug}`,
+const { data: stats, status } = await useFetch<PostStats>(() => statsUrl(props.target), {
+  key: () => statsKey(props.target),
   default: () => ({ views: 0, likes: 0, comments: 0, liked: false }),
   immediate: import.meta.server,
 })
