@@ -11,7 +11,9 @@ tags:
 ---
 > ### 近期新增
 > 
-> 2026-9-3: OrcaRouter、Conduit、kktoken
+> 2026-9-8：JustDoWork、SeekAi 部分模型恢复可用
+> 
+> 2026-9-3：OrcaRouter、Conduit、kktoken
 
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
 
@@ -75,7 +77,7 @@ tags:
 </details>
 
 <details>
-<summary><h3>SeekAI（暂无模型可用）</h3></summary>
+<summary><h3>SeekAI</h3></summary>
 
 评价：**无**
 
@@ -114,7 +116,7 @@ tags:
 </details>
 
 <details>
-<summary><h3>JustDoWork（暂无模型可用）</h3></summary>
+<summary><h3>JustDoWork</h3></summary>
 
 评价：无
 
