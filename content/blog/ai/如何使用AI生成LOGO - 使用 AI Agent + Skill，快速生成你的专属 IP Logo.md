@@ -81,4 +81,4 @@ Gemini 示例
 
 最终生成的效果如下：
 
-![](https://chatgpt.com/public/images/Pasted-image-20260908125509.png)![](../../../public/images/Pasted-image-20260908125949.png)
+![](https://chatgpt.com/public/images/Pasted-image-20260908125509.png)![](../../../public/images/macos_icon_test.png)
