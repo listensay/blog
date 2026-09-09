@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import {
+  DashboardOutlined,
   FileTextOutlined,
   LinkOutlined,
   MenuOutlined,
@@ -21,10 +22,17 @@ const loadError = ref('')
 
 const sections = [
   {
+    name: 'dashboard',
+    label: '概览',
+    icon: DashboardOutlined,
+    match: (path: string) => path === '/',
+  },
+  {
     name: 'posts',
     label: '文章',
     icon: FileTextOutlined,
-    match: (path: string) => path === '/' || path.startsWith('/new') || path.startsWith('/edit'),
+    match: (path: string) =>
+      path.startsWith('/posts') || path.startsWith('/new') || path.startsWith('/edit'),
   },
   {
     name: 'pages',

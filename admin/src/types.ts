@@ -46,6 +46,77 @@ export interface ImageItem {
   previewUrl: string
 }
 
+/** public/images 里没有被任何内容或源码引用的图片 */
+export interface UnusedImages {
+  images: ImageItem[]
+  /** public/images 下的图片总数 */
+  total: number
+  /** public/images 下的图片合计体积 */
+  totalBytes: number
+  /** 未被引用的图片合计体积 */
+  unusedBytes: number
+  /** 本次扫描读取的文件数 */
+  scanned: number
+  /** 扫描范围，相对 blog 根目录 */
+  roots: string[]
+}
+
+export interface CleanupResult {
+  deleted: string[]
+  bytes: number
+  remaining: UnusedImages
+}
+
+export interface DashboardCounts {
+  posts: number
+  published: number
+  drafts: number
+  pages: number
+  categories: number
+  tags: number
+  images: number
+  imageBytes: number
+  unusedImages: number
+  unusedBytes: number
+}
+
+/** 趋势图的一个月份，month 形如 2026-09 */
+export interface TrendPoint {
+  month: string
+  count: number
+}
+
+export interface RecentItem {
+  kind: 'post' | 'page'
+  title: string
+  file: string
+  mtime: number
+  draft: boolean
+}
+
+export interface TodoItem {
+  kind: 'post' | 'page'
+  title: string
+  file: string
+}
+
+export type TodoKey = 'draft' | 'path-mismatch' | 'no-description' | 'no-cover' | 'no-category'
+
+export interface TodoGroup {
+  key: TodoKey
+  label: string
+  /** 命中的总数，items 只是其中前几条 */
+  count: number
+  items: TodoItem[]
+}
+
+export interface DashboardStats {
+  counts: DashboardCounts
+  trend: TrendPoint[]
+  recent: RecentItem[]
+  todos: TodoGroup[]
+}
+
 export interface WorkspaceInfo {
   blogRoot: string
   postCount: number

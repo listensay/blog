@@ -2,6 +2,8 @@ import type {
   AiRequest,
   AiResult,
   AiStatus,
+  CleanupResult,
+  DashboardStats,
   ImageItem,
   NavItem,
   NavResponse,
@@ -13,6 +15,7 @@ import type {
   PostListResponse,
   SettingsResponse,
   SiteSettings,
+  UnusedImages,
   WorkspaceInfo,
 } from '@/types'
 
@@ -48,6 +51,8 @@ const json = (body: unknown): RequestInit => ({
 
 export const api = {
   workspace: () => request<WorkspaceInfo>('/api/workspace'),
+
+  dashboard: () => request<DashboardStats>('/api/dashboard'),
 
   listPosts: () => request<PostListResponse>('/api/posts'),
 
@@ -100,6 +105,11 @@ export const api = {
       method: 'POST',
       body: blob,
     }),
+
+  unusedImages: () => request<UnusedImages>('/api/images/unused'),
+
+  cleanupImages: (names: string[]) =>
+    request<CleanupResult>('/api/images/cleanup', json({ names })),
 
   aiStatus: () => request<AiStatus>('/api/ai'),
 

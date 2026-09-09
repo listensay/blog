@@ -20,8 +20,8 @@ npm run dev          # http://127.0.0.1:5173
 ADMIN_BLOG_ROOT=~/Desktop/工作台/blog npm run dev
 ```
 
-界面为左侧固定侧边栏加右侧内容区。侧边栏分区：文章、页面、链接、菜单、社交设置、系统设置。
-右上角显示仓库路径与文章、页面、图片数量。
+界面为左侧固定侧边栏加右侧内容区。侧边栏分区：概览、文章、页面、链接、菜单、社交设置、系统设置。
+`/` 为概览，`/posts` 为文章列表。右上角显示仓库路径与文章、页面、图片数量。
 
 ## 环境变量
 
@@ -65,6 +65,7 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | 方法与路径 | 作用 |
 | --- | --- |
 | `GET /api/workspace` | 仓库路径、文章数、页面数、图片数 |
+| `GET /api/dashboard` | 概览数字、发文趋势、最近修改、待办提示 |
 | `GET /api/posts` | 文章列表，附分类 / 标签 / 子目录候选 |
 | `GET /api/post?file=` | 读一篇，含正文与整份 frontmatter |
 | `POST /api/post` | 新建 |
@@ -76,11 +77,53 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | `GET /api/nav` · `PUT /api/nav` | 顶部菜单 |
 | `GET /api/settings` · `PUT /api/settings` | 站点设置，附图标与分类候选 |
 | `GET /api/images` · `POST /api/images?name=` | 列图 / 存图 |
+| `GET /api/images/unused` | 未被引用的图片清单，附扫描范围与体积合计 |
+| `POST /api/images/cleanup` | 删除指定图片，入参 `{ names: string[] }` |
 | `GET /api/ai` | AI 配置状态，不含密钥 |
 | `POST /api/ai` | 执行一个 AI 动作 |
 
 `file` 为相对 `content/` 的路径。文章接口只接受 `blog/` 开头，页面接口只接受 `pages/` 开头，
 拒绝 `..`、绝对路径与非 `.md` 文件。
+
+## 概览
+
+侧边栏第一项，路由 `/`。数据来自 `GET /api/dashboard`，进入页面与点击「刷新」时重新计算。
+
+| 区块 | 内容 |
+| --- | --- |
+| 数字卡片 | 文章数（已发布 / 草稿）、固定页数（分类 / 标签数）、图片数与合计体积、未被引用的图片数与可释放体积 |
+| 发文趋势 | 最近 12 个月每月文章数，月份取 frontmatter `date` 的前 7 位，含草稿 |
+| 最近修改 | 文章与固定页按 mtime 倒序前 8 条，点击进入对应编辑器 |
+| 待办提示 | 命中下表条件的文章与页面，每组给出前 6 条与总数 |
+
+| 待办分组 | 条件 |
+| --- | --- |
+| 草稿未发布 | 文章 `draft` 为 `true` |
+| `path` 与 slug 算出的地址不一致 | 文章 `path` 非空且不等于 `realPath` |
+| 缺 `description` | 文章或固定页的 `description` 为空 |
+| 缺封面 | 文章 `cover` 为空 |
+| 缺分类 | 文章 `category` 为空 |
+
+无命中的分组不出现。趋势图为 echarts，按需引入 `BarChart`、`GridComponent`、`TooltipComponent`
+与 `CanvasRenderer`。
+
+### 清理垃圾图片
+
+「清理垃圾」按钮弹出 `public/images` 中未被引用的图片，默认全选，勾选后删除。
+
+| 项 | 规则 |
+| --- | --- |
+| 扫描范围 | `content/`、`app/`、`server/` 三个目录，加根目录的 `nuxt.config.ts` 与 `content.config.ts` |
+| 读取的扩展名 | `.md` `.json` `.ts` `.js` `.mjs` `.vue` `.css` `.yml` `.yaml` |
+| 跳过 | 点号开头的文件与目录、`node_modules`、`dist`、`.output`、`.nuxt`、大于 4 MB 的文件 |
+| 命中来源 | 正文 markdown 与 HTML、frontmatter `cover`、`friends[].avatar`、`site.json` 的 `avatar` 与 `ogImage`，以及源码中出现的文件名 |
+| 大小写 | 不敏感 |
+| 转义写法 | `%20` 等按解码后比对，`Pasted%20image.png` 与 `Pasted image.png` 视为同一个文件 |
+| 边界 | 文件名前一个字符属于 `A-Za-z0-9_.-~%` 时不算命中，`封面用.png` 不被 `自测-封面用.png` 的引用带上 |
+| 删除方式 | 直接从 `public/images` 移除，不进 `admin/.trash/` |
+| 服务端复核 | 删除前重新扫描，请求中任一文件名不在未引用清单内则整批返回 400 |
+
+`public/` 下 `images/` 以外的文件不在清理范围内。
 
 ## 写入规则
 
@@ -383,9 +426,10 @@ server/           Node 侧的本地接口（Vite 插件）
   pages.ts        固定页增删改查
   nav.ts          顶部菜单读写 + 图标白名单
   settings.ts     站点设置读写 + 社交图标白名单 + 分类候选
+  dashboard.ts    概览的数字、趋势、最近修改与待办提示
   frontmatter.ts  frontmatter 切分与拼回，文章与页面共用
   trash.ts        软删除，文章与页面共用
-  images.ts       图片存取与命名
+  images.ts       图片存取与命名、未引用图片扫描与删除
   ai.ts           AI 配置、提示词、调用 OpenAI 兼容接口
   paths.ts        目录定位与路径安全校验
   http.ts         HTTP 胶水
@@ -395,12 +439,14 @@ src/
   utils/markdown.ts     Markdown ⇄ HTML、图片路径换算、风险语法识别
   utils/fences.ts       逐行围栏扫描
   utils/ai.ts           结果完整性校验、行级差异、插回编辑器
+  utils/bytes.ts        字节数格式化
   utils/nav-icons.ts    菜单图标 SVG 路径表
   utils/social-icons.ts 社交图标 SVG 路径表
   composables/useSettings.ts  设置页共用的读写、脏标记、⌘S、离开确认
   editor/extensions.ts  tiptap 扩展配置
   editor/details.ts     折叠块的 tiptap 节点
   views/          各分区页面
-  components/     编辑器、图片选择器、缩略图、友链编辑器、差异视图、AI 弹窗、设置页外壳、图标
+  components/     编辑器、图片选择器、缩略图、友链编辑器、差异视图、AI 弹窗、设置页外壳、图标、
+                  趋势图、清理垃圾图片弹窗
 scripts/          自检脚本
 ```

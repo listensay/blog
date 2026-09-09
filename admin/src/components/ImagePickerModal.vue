@@ -5,6 +5,7 @@ import { InboxOutlined } from '@ant-design/icons-vue'
 
 import { api } from '@/api'
 import type { ImageItem } from '@/types'
+import { sizeText } from '@/utils/bytes'
 
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ select: [ImageItem] }>()
@@ -53,9 +54,6 @@ async function handleUpload(file: File): Promise<boolean> {
   }
   return false
 }
-
-const sizeText = (bytes: number) =>
-  bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
 </script>
 
 <template>

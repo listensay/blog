@@ -6,7 +6,14 @@ import path from 'node:path'
 
 import type { AiRequest, PageInput, PostInput, WorkspaceInfo } from '../src/types.ts'
 import { type AiConfig, aiStatus, resolveAiConfig, runAi } from './ai.ts'
-import { PUBLIC_MOUNT, listImages, saveImage } from './images.ts'
+import { readDashboard } from './dashboard.ts'
+import {
+  PUBLIC_MOUNT,
+  deleteUnusedImages,
+  findUnusedImages,
+  listImages,
+  saveImage,
+} from './images.ts'
 import {
   HttpError,
   notFound,
@@ -51,6 +58,10 @@ const routes: Record<string, Handler> = {
       imageCount: images.length,
     }
     sendJson(res, 200, info)
+  },
+
+  'GET /dashboard': async (_req, res, { ws }) => {
+    sendJson(res, 200, await readDashboard(ws))
   },
 
   'GET /posts': async (_req, res, { ws }) => {
@@ -130,6 +141,15 @@ const routes: Record<string, Handler> = {
     const data = await readBody(req)
     const { item, reused } = await saveImage(ws, name, data)
     sendJson(res, reused ? 200 : 201, { image: item, reused })
+  },
+
+  'GET /images/unused': async (_req, res, { ws }) => {
+    sendJson(res, 200, await findUnusedImages(ws))
+  },
+
+  'POST /images/cleanup': async (req, res, { ws }) => {
+    const input = await readJson<{ names: unknown }>(req)
+    sendJson(res, 200, await deleteUnusedImages(ws, input.names))
   },
 
   'GET /ai': async (_req, res, { ai }) => {

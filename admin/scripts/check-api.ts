@@ -1047,6 +1047,178 @@ try {
     })
   }
 
+  console.log('\n未引用图片的扫描与清理')
+
+  {
+    const imagesDir = path.join(sandbox, 'public', 'images')
+    const namesIn = async () => (await readdir(imagesDir)).sort()
+    type Unused = {
+      images: Array<{ name: string }>
+      total: number
+      scanned: number
+      roots: string[]
+    }
+    const unused = async () => (await call('GET', '/api/images/unused')).data as unknown as Unused
+    const listed = async () => (await unused()).images.map((image) => image.name)
+
+    // 每张图内容不同，否则 saveImage 会判定重复而复用同一个文件。
+    const pngOf = (seed: number) => Buffer.concat([png, Buffer.from(` blog-admin-check-${seed}`)])
+
+    await writeFile(path.join(imagesDir, '自测 带空格.png'), pngOf(1))
+    await writeFile(path.join(imagesDir, '自测-封面用.png'), pngOf(2))
+    await writeFile(path.join(imagesDir, '自测-要被清理.png'), pngOf(3))
+    await writeFile(path.join(imagesDir, '自测-也要被清理.png'), pngOf(4))
+
+    await check('GET /api/images/unused 报告扫描范围和总数', async () => {
+      const data = await unused()
+      const { data: all } = await call('GET', '/api/images')
+      assert.equal(data.total, (all.images as Array<Json>).length)
+      assert.ok(data.scanned >= 1, `扫描到 ${data.scanned} 个文件`)
+      assert.deepEqual(data.roots, [
+        'content',
+        'app',
+        'server',
+        'nuxt.config.ts',
+        'content.config.ts',
+      ])
+    })
+
+    await check('没人引用的图片会被列出来', async () => {
+      const names = await listed()
+      for (const name of ['自测 带空格.png', '自测-封面用.png', '自测-要被清理.png']) {
+        assert.ok(names.includes(name), `${name} 不在未引用清单里`)
+      }
+    })
+
+    await check('正文里用 %20 转义引用的图片不算未引用', async () => {
+      const { status } = await call('POST', '/api/post', {
+        ...draft,
+        name: '引用了带空格图片',
+        slug: 'ref-encoded-image',
+        draft: false,
+        body: '\n![](../../../public/images/自测%20带空格.png)\n',
+      })
+      assert.equal(status, 201)
+      assert.ok(!(await listed()).includes('自测 带空格.png'), '带空格的图片被误判为未引用')
+    })
+
+    await check('frontmatter 的 cover 也算引用', async () => {
+      const { status } = await call('POST', '/api/post', {
+        ...draft,
+        name: '用了封面',
+        slug: 'ref-cover-image',
+        draft: false,
+        body: '\n没有正文图片。\n',
+        cover: '../../../public/images/自测-封面用.png',
+      })
+      assert.equal(status, 201)
+      assert.ok(!(await listed()).includes('自测-封面用.png'), 'cover 引用的图片被误判为未引用')
+    })
+
+    await check('文件名是另一个名字的后半段时不算引用', async () => {
+      await writeFile(path.join(imagesDir, '封面用.png'), pngOf(5))
+      assert.ok(
+        (await listed()).includes('封面用.png'),
+        '「封面用.png」被「自测-封面用.png」的引用带上了',
+      )
+    })
+
+    await check('POST /api/images/cleanup 删掉选中的图片', async () => {
+      const { status, data } = await call('POST', '/api/images/cleanup', {
+        names: ['自测-要被清理.png', '自测-也要被清理.png'],
+      })
+      assert.equal(status, 200)
+      assert.deepEqual(data.deleted, ['自测-要被清理.png', '自测-也要被清理.png'])
+      assert.ok((data.bytes as number) > 0, `释放了 ${String(data.bytes)} 字节`)
+
+      const onDisk = await namesIn()
+      assert.ok(!onDisk.includes('自测-要被清理.png'), '文件还在')
+      assert.ok(!onDisk.includes('自测-也要被清理.png'), '文件还在')
+
+      const remaining = (data.remaining as Unused).images.map((image) => image.name)
+      assert.ok(!remaining.includes('自测-要被清理.png'))
+    })
+
+    const rejected: Array<[string, unknown]> = [
+      ['正在被引用的图片', ['自测 带空格.png']],
+      ['不存在的图片', ['根本没有这张.png']],
+      ['names 不是数组', '自测-要被清理.png'],
+      ['空数组', []],
+      ['空字符串', ['']],
+      ['想跳出 images 目录', ['../../content/data/site.json']],
+    ]
+
+    for (const [label, names] of rejected) {
+      await check(`cleanup ${label} → 400`, async () => {
+        const before = await namesIn()
+        const { status } = await call('POST', '/api/images/cleanup', { names })
+        assert.equal(status, 400)
+        assert.deepEqual(await namesIn(), before, '被拒的请求动了文件')
+      })
+    }
+  }
+
+  console.log('\n概览（GET /api/dashboard）')
+
+  await check('数字与列表接口对得上', async () => {
+    const { status, data } = await call('GET', '/api/dashboard')
+    assert.equal(status, 200)
+
+    const counts = data.counts as Record<string, number>
+    const { data: postList } = await call('GET', '/api/posts')
+    const { data: pageList } = await call('GET', '/api/pages')
+    const posts = postList.posts as Array<Json>
+
+    assert.equal(counts.posts, posts.length)
+    assert.equal(counts.pages, (pageList.pages as Array<Json>).length)
+    assert.equal(counts.drafts, posts.filter((post) => post.draft === true).length)
+    assert.equal(counts.published, counts.posts! - counts.drafts!)
+    assert.equal(counts.categories, (postList.categories as string[]).length)
+    assert.equal(counts.tags, (postList.tags as string[]).length)
+
+    const { data: images } = await call('GET', '/api/images')
+    assert.equal(counts.images, (images.images as Array<Json>).length)
+
+    const { data: unusedNow } = await call('GET', '/api/images/unused')
+    assert.equal(counts.unusedImages, (unusedNow.images as Array<Json>).length)
+    assert.equal(counts.unusedBytes, unusedNow.unusedBytes)
+  })
+
+  await check('趋势是最近 12 个月，按月份升序且不缺月', async () => {
+    const { data } = await call('GET', '/api/dashboard')
+    const trend = data.trend as Array<{ month: string; count: number }>
+    assert.equal(trend.length, 12)
+
+    const months = trend.map((point) => point.month)
+    assert.deepEqual(months, [...months].sort(), '月份不是升序')
+    assert.ok(new Set(months).size === 12, '有重复月份')
+    for (const month of months) assert.match(month, /^\d{4}-\d{2}$/)
+
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    assert.equal(months.at(-1), `${now.getFullYear()}-${pad(now.getMonth() + 1)}`)
+  })
+
+  await check('最近修改按 mtime 倒序，待办的 count 不小于样本条数', async () => {
+    const { data } = await call('GET', '/api/dashboard')
+
+    const recent = data.recent as Array<{ mtime: number; kind: string; file: string }>
+    const times = recent.map((item) => item.mtime)
+    assert.deepEqual(
+      times,
+      [...times].sort((a, b) => b - a),
+      '最近修改没按时间倒序',
+    )
+    for (const item of recent) {
+      assert.ok(['post', 'page'].includes(item.kind), `kind 是 ${item.kind}`)
+    }
+
+    for (const todo of data.todos as Array<{ count: number; items: unknown[]; label: string }>) {
+      assert.ok(todo.count >= todo.items.length, `${todo.label} 的 count 比样本还少`)
+      assert.ok(todo.items.length > 0, `${todo.label} 没给样本`)
+    }
+  })
+
   console.log('\n前端模块（走 dev server 的真实转换管线）')
 
   await check('GET / 返回后台页面骨架', async () => {
