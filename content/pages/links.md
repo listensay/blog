@@ -1,10 +1,6 @@
 ---
 title: 友情链接
 description: 快来和我交换友情链接呀！
-friends:
-  - name: 静园 · 学习打卡
-    url: https://scc.200205.net/
-    avatar: /images/avatar.jpg
 ---
 # 申请须知
 

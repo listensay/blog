@@ -10,10 +10,10 @@ tags:
   - 白嫖
 ---
 > ### 近期新增
-> 
+
 > 2026-9-8：JustDoWork、SeekAi 部分模型恢复可用
 > 
-> 2026-9-3：OrcaRouter、Conduit、kktoken
+> 2026-9-3：新增站点OrcaRouter、Conduit、kktoken
 
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
 
@@ -49,7 +49,7 @@ tags:
 <details>
 <summary><h3>AnyRouter</h3></summary>
 
-评价：**顶级**
+评价：**夯**
 
 这是一家老牌的中转站，稳定性一般，速度较慢。
 
@@ -60,32 +60,6 @@ tags:
 使用以下链接注册可获50额度。
 
 [https://anyrouter.top/register?aff=78Jy](https://anyrouter.top/register?aff=78Jy)
-
-</details>
-
-<details>
-<summary><h3>GoRouter（暂无模型可用）</h3></summary>
-
-评价：**NPC**
-
-速度可以，消耗额度有点高。
-
-每天签到可获得6-9余额。
-
-[https://gorouter.app/sign-up?aff=C58L](https://gorouter.app/sign-up?aff=C58L)
-
-</details>
-
-<details>
-<summary><h3>SeekAI</h3></summary>
-
-评价：**无**
-
-还没有测试过，不过送的额度多。
-
-新用户使用邀请码注册可以获得200余额，每日签到可获得20余额，邀请一人可获得20余额（拉人就这点拉完了）。
-
-[https://seekai.cc/sign-up?aff=fjxq](https://seekai.cc/sign-up?aff=fjxq)
 
 </details>
 
@@ -103,15 +77,17 @@ tags:
 </details>
 
 <details>
-<summary><h3>TabToken（暂无模型可用）</h3></summary>
+<summary><h3>Conduit</h3></summary>
 
-评价：**无**
+评价：夯
 
-这也是一个没有测试过的站点，模型价格有点高。
+请求速度快，可用GPT5.6、Fable 5等高级模型。
 
-新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额，邀请一人可获得20余额（拉人就这点拉完了）。
+无限免费使用DeepSeek V4 Flash、MiniMax M3。
 
-[https://tabitoken.com/sign-up?aff=6boQ](https://tabitoken.com/sign-up?aff=6boQ)
+新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
+
+[https://t.me/conduitoff_bot?start=ref_6406492700](https://t.me/conduitoff_bot?start=ref_6406492700)
 
 </details>
 
@@ -129,26 +105,54 @@ tags:
 </details>
 
 <details>
-<summary><h3>Conduit</h3></summary>
+<summary><h3>SeekAI</h3></summary>
 
-评价：无
+评价：**无**
 
-Gpt速度快可以用。
+还没有测试过，不过送的额度多。
 
-新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
+新用户使用邀请码注册可以获得200余额，每日签到可获得20余额，邀请一人可获得20余额（拉人就这点拉完了）。
 
-[https://t.me/conduitoff_bot?start=ref_6406492700](https://t.me/conduitoff_bot?start=ref_6406492700)
+[https://seekai.cc/sign-up?aff=fjxq](https://seekai.cc/sign-up?aff=fjxq)
 
 </details>
 
+### 暂无模型可用的中转站
+
 <details>
-<summary><h3>kktoken AI（暂无模型可用）</h3></summary>
+<summary><h3>kktoken AI</h3></summary>
 
 评价：无
 
 新用户使用邀请码注册可以获得200余额，每日签到20余额。
 
 [https://kktoken.cc/sign-up?aff=GGv5](https://kktoken.cc/sign-up?aff=GGv5)
+
+</details>
+
+<details>
+<summary><h3>TabToken</h3></summary>
+
+评价：**无**
+
+这也是一个没有测试过的站点，模型价格有点高。
+
+新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额，邀请一人可获得20余额（拉人就这点拉完了）。
+
+[https://tabitoken.com/sign-up?aff=6boQ](https://tabitoken.com/sign-up?aff=6boQ)
+
+</details>
+
+<details>
+<summary><h3>GoRouter</h3></summary>
+
+评价：**NPC**
+
+速度可以，消耗额度有点高。
+
+每天签到可获得6-9余额。
+
+[https://gorouter.app/sign-up?aff=C58L](https://gorouter.app/sign-up?aff=C58L)
 
 </details>
 
