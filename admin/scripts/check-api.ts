@@ -406,17 +406,51 @@ try {
     assert.ok((data.reserved as string[]).includes('blog'), 'reserved 里没有 blog')
   })
 
+  // 用夹具而不是真实的 links.md：友链内容随时会被改空，用例不该跟着挂。
   await check('GET /api/page 读出正文和 friends', async () => {
+    const file = 'pages/friends-fixture.md'
+    await writeFile(
+      path.join(sandbox, 'content', file),
+      [
+        '---',
+        'title: 友链夹具',
+        'friends:',
+        '  - name: 甲站',
+        '    url: https://a.example',
+        '    description: 有描述',
+        '    avatar: /images/a.png',
+        '  - name: 乙站',
+        '    url: https://b.example',
+        '---',
+        '',
+        '正文。',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
+
+    const { status, data } = await call('GET', `/api/page?file=${encodeURIComponent(file)}`)
+    assert.equal(status, 200)
+    assert.equal(data.path, '/friends-fixture')
+    assert.equal(data.name, 'friends-fixture')
+    assert.equal(data.body, '\n正文。\n')
+    assert.deepEqual(data.friends, [
+      { name: '甲站', url: 'https://a.example', description: '有描述', avatar: '/images/a.png' },
+      { name: '乙站', url: 'https://b.example', description: '' },
+    ])
+  })
+
+  await check('没写 friends 的页面读出空数组', async () => {
+    const { status, data } = await call('GET', '/api/page?file=pages/about.md')
+    assert.equal(status, 200)
+    assert.deepEqual(data.friends, [])
+  })
+
+  await check('pages/links.md 标记为站点侧有专属路由', async () => {
     const { status, data } = await call('GET', '/api/page?file=pages/links.md')
     assert.equal(status, 200)
     assert.equal(data.path, '/links')
-    assert.equal(data.name, 'links')
-    assert.equal(typeof data.body, 'string')
-    const friends = data.friends as Array<Json>
-    assert.ok(friends.length >= 1, 'friends 是空的')
-    assert.equal(typeof friends[0]!.name, 'string')
-    assert.equal(typeof friends[0]!.url, 'string')
-    assert.equal(typeof friends[0]!.description, 'string')
+    assert.equal(data.customRoute, true)
   })
 
   {
