@@ -10,6 +10,7 @@ tags:
   - 白嫖
 ---
 > ### 近期新增
+> 
 > 2026-9-8：JustDoWork、SeekAi 部分模型恢复可用
 > 
 > 2026-9-3：新增站点OrcaRouter、Conduit、kktoken
@@ -100,6 +101,28 @@ tags:
 新用户使用邀请码注册可以获得200余额，每日签到随机5-9余额，邀请一人可获得40余额。
 
 [https://api.justwoker.icu/register?aff=Qk1K](https://api.justwoker.icu/register?aff=Qk1K)
+
+### 如果无法调用看这个教程
+
+![](../../../public/images/Pasted-image-20260911200243.png)
+
+baseUrl：https://api.justwoker.icu
+
+协议：Anthropic
+
+根据你的系统在终端中输入以下命令
+
+Windows：
+
+```
+setx NO_PROXY "127.0.0.1,localhost"
+```
+
+macOS
+
+```
+ echo 'export NO_PROXY=127.0.0.1,localhost' >> ~/.zshrc && source ~/.zshrc
+```
 
 </details>
 
