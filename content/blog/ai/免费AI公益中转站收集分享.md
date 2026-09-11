@@ -106,10 +106,6 @@ tags:
 
 ![](../../../public/images/Pasted-image-20260911200243.png)
 
-baseUrl：https://api.justwoker.icu
-
-协议：Anthropic
-
 根据你的系统在终端中输入以下命令
 
 Windows：
