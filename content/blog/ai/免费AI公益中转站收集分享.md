@@ -11,6 +11,8 @@ tags:
 ---
 > ### 近期新增
 > 
+> 2026-9-13: JustDoWork暂不可用
+> 
 > 2026-9-8：JustDoWork、SeekAi 部分模型恢复可用
 > 
 > 2026-9-3：新增站点OrcaRouter、Conduit、kktoken
@@ -66,9 +68,9 @@ tags:
 <details>
 <summary><h3>哈吉米AI</h3></summary>
 
-评价：**无**
+评价：**NPC**
 
-这也是一个没有测试过的站点，模型价格高。
+模型价格高，使用过程稳定。
 
 新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额。
 
@@ -79,7 +81,7 @@ tags:
 <details>
 <summary><h3>Conduit</h3></summary>
 
-评价：夯
+评价：**夯**
 
 请求速度快，可用GPT5.6、Fable 5等高级模型。
 
@@ -88,37 +90,6 @@ tags:
 新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
 
 [https://t.me/conduitoff_bot?start=ref_6406492700](https://t.me/conduitoff_bot?start=ref_6406492700)
-
-</details>
-
-<details>
-<summary><h3>JustDoWork</h3></summary>
-
-评价：无
-
-这也是一个没有测试过的站点，模型价格有点还好。
-
-新用户使用邀请码注册可以获得200余额，每日签到随机5-9余额，邀请一人可获得40余额。
-
-[https://api.justwoker.icu/register?aff=Qk1K](https://api.justwoker.icu/register?aff=Qk1K)
-
-### 如果无法调用看这个教程
-
-![](../../../public/images/Pasted-image-20260911200243.png)
-
-根据你的系统在终端中输入以下命令
-
-Windows：
-
-```
-setx NO_PROXY "127.0.0.1,localhost"
-```
-
-macOS
-
-```
- echo 'export NO_PROXY=127.0.0.1,localhost' >> ~/.zshrc && source ~/.zshrc
-```
 
 </details>
 
@@ -135,7 +106,7 @@ macOS
 
 </details>
 
-### 暂无模型可用的中转站
+### 暂不可用的中转站
 
 <details>
 <summary><h3>kktoken AI</h3></summary>
@@ -171,6 +142,37 @@ macOS
 每天签到可获得6-9余额。
 
 [https://gorouter.app/sign-up?aff=C58L](https://gorouter.app/sign-up?aff=C58L)
+
+</details>
+
+<details>
+<summary><h3>JustDoWork（暂无可用模型）</h3></summary>
+
+评价：无
+
+这也是一个没有测试过的站点，模型价格有点还好。
+
+新用户使用邀请码注册可以获得200余额，每日签到随机5-9余额，邀请一人可获得40余额。
+
+[https://api.justwoker.icu/register?aff=Qk1K](https://api.justwoker.icu/register?aff=Qk1K)
+
+### 如果无法调用看这个教程
+
+![](../../../public/images/Pasted-image-20260911200243.png)
+
+根据你的系统在终端中输入以下命令
+
+Windows：
+
+```
+setx NO_PROXY "127.0.0.1,localhost"
+```
+
+macOS
+
+```
+ echo 'export NO_PROXY=127.0.0.1,localhost' >> ~/.zshrc && source ~/.zshrc
+```
 
 </details>
 
