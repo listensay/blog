@@ -24,10 +24,17 @@ import {
 import type { NavIcon } from '~/utils/site'
 
 const route = useRoute()
+const { isEnglish, localPath, switchPath, switchLabel, publishedPaths, t } = useLocale()
+const navKeys: Record<string, string> = { '/': 'home', '/blog': 'articles', '/categories': 'categories', '/tags': 'tags', '/about': 'about', '/links': 'links' }
+const navigation = computed(() => siteConfig.nav.map(item => ({
+  ...item,
+  label: isEnglish.value && navKeys[item.to] ? t(`nav.${navKeys[item.to]}`) : item.label,
+  to: isEnglish.value && publishedPaths.value?.includes(localPath(item.to)) ? localPath(item.to) : item.to,
+})))
 const titleColors = ['#4285f4', '#ea4335', '#f9ab00', '#34a853', '#a855f7']
 
 const isActive = (to: string) => {
-  if (to === '/') return route.path === '/'
+  if (to === '/' || to === '/en') return route.path === to
   return route.path === to || route.path.startsWith(to + '/')
 }
 
@@ -90,11 +97,11 @@ onMounted(() => {
 <template>
   <header class="sticky top-0 z-40 border-b border-white/60 bg-white/55 shadow-sm shadow-slate-900/5 backdrop-blur-xl backdrop-saturate-150">
     <div
-      class="mx-auto flex max-w-5xl flex-col gap-1 px-4 py-2.5 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-0"
+      class="mx-auto grid max-w-5xl grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-2.5 lg:h-16 lg:grid-cols-[auto_1fr_auto] lg:gap-4 lg:px-6 lg:py-0"
     >
       <NuxtLink
-        to="/"
-        class="shrink-0 text-center text-xl font-semibold tracking-tight transition-opacity hover:opacity-80 sm:text-left"
+        :to="localPath('/')"
+        class="shrink-0 text-xl font-semibold tracking-tight transition-opacity hover:opacity-80"
         :aria-label="siteConfig.title"
       >
         <span
@@ -107,10 +114,10 @@ onMounted(() => {
 
       <nav
         ref="track"
-        class="no-scrollbar -mx-4 flex items-center gap-1 overflow-x-auto overscroll-x-contain px-4 text-sm sm:mx-0 sm:gap-2 sm:overflow-x-visible sm:px-0"
+        class="no-scrollbar col-span-2 row-start-2 -mx-4 flex items-center gap-1 overflow-x-auto overscroll-x-contain px-4 text-sm lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:mx-0 lg:justify-end lg:px-0"
       >
         <NuxtLink
-          v-for="item in siteConfig.nav"
+          v-for="item in navigation"
           :key="item.to"
           :to="item.to"
           :data-nav-active="isActive(item.to) ? '' : undefined"
@@ -128,6 +135,17 @@ onMounted(() => {
           {{ item.label }}
         </NuxtLink>
       </nav>
+      <NuxtLink
+        :to="switchPath"
+        :aria-label="switchLabel"
+        :title="switchLabel"
+        :hreflang="isEnglish ? 'zh-CN' : 'en'"
+        :lang="isEnglish ? 'zh-CN' : 'en'"
+        class="col-start-2 row-start-1 inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white/70 px-3 text-sm font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 lg:col-start-3"
+      >
+        <IconWorld :size="17" stroke="1.8" aria-hidden="true" />
+        {{ t(isEnglish ? 'languageChinese' : 'languageEnglish') }}
+      </NuxtLink>
     </div>
   </header>
 </template>

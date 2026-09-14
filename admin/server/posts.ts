@@ -14,6 +14,11 @@ import {
 import { badRequest, conflict, notFound } from './http.ts'
 import { POSTS_PREFIX, type Workspace, ensureDir, resolvePostFile, toPosix } from './paths.ts'
 import { moveToTrash } from './trash.ts'
+import {
+  prepareTranslationMove,
+  readTranslationFile,
+  withContentWrite,
+} from './translation-files.ts'
 
 const DIR_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/
 
@@ -237,6 +242,14 @@ export async function createPost(ws: Workspace, raw: PostInput): Promise<PostDet
 }
 
 export async function updatePost(ws: Workspace, file: string, raw: PostInput): Promise<PostDetail> {
+  return withContentWrite(() => updatePostUnlocked(ws, file, raw))
+}
+
+async function updatePostUnlocked(
+  ws: Workspace,
+  file: string,
+  raw: PostInput,
+): Promise<PostDetail> {
   const input = validate(raw)
   const from = resolvePostFile(ws, file)
   if (!(await exists(from))) throw notFound(`文章不存在：${file}`)
@@ -247,6 +260,7 @@ export async function updatePost(ws: Workspace, file: string, raw: PostInput): P
 
   if (moving && (await exists(to))) throw conflict(`目标文件已存在：${targetFile}`)
   await assertSlugFree(ws, input.dir, input.slug, file)
+  const synchronizeTranslation = await prepareTranslationMove(ws, await readPost(ws, file), input)
 
   ensureDir(path.dirname(to))
   await writeFile(
@@ -255,14 +269,22 @@ export async function updatePost(ws: Workspace, file: string, raw: PostInput): P
     'utf8',
   )
   if (moving) await unlink(from)
+  if (synchronizeTranslation) await synchronizeTranslation()
 
   return readPost(ws, targetFile)
 }
 
 export async function trashPost(ws: Workspace, file: string): Promise<{ trashed: string }> {
+  return withContentWrite(() => trashPostUnlocked(ws, file))
+}
+
+async function trashPostUnlocked(ws: Workspace, file: string): Promise<{ trashed: string }> {
   const absolute = resolvePostFile(ws, file)
   if (!(await exists(absolute))) throw notFound(`文章不存在：${file}`)
 
   const flat = file.slice(POSTS_PREFIX.length + 1).replace(/\//g, '__')
+  const translation = await readTranslationFile(ws, await readPost(ws, file))
+  if (translation)
+    await moveToTrash(ws, translation.absolute, translation.file.replaceAll('/', '__'))
   return { trashed: await moveToTrash(ws, absolute, flat) }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useLocale()
 const year = new Date().getFullYear()
 </script>
 
@@ -12,7 +13,7 @@ const year = new Date().getFullYear()
         href="/sitemap.xml"
         class="transition-colors hover:text-slate-900"
       >
-        网站地图
+        {{ t('sitemap') }}
       </a>
     </div>
   </footer>

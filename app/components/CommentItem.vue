@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { CommentNode } from '~/types/blog'
 
+const { locale, t } = useLocale()
+
 const props = defineProps<{
   comment: CommentNode
   nested?: boolean
@@ -14,7 +16,7 @@ onMounted(() => {
 })
 
 const timeLabel = computed(() =>
-  mounted.value ? relativeTime(props.comment.createdAt) : formatDate(props.comment.createdAt),
+  mounted.value ? relativeTime(props.comment.createdAt, Date.now(), locale.value) : formatDate(props.comment.createdAt, locale.value),
 )
 
 const initial = computed(() => [...props.comment.author][0] ?? '?')
@@ -42,12 +44,12 @@ const initial = computed(() => [...props.comment.author][0] ?? '?')
         <span v-else class="font-medium text-slate-900">{{ comment.author }}</span>
 
         <span v-if="comment.replyTo" class="text-xs text-slate-400">
-          回复 <span class="text-slate-500">@{{ comment.replyTo }}</span>
+          {{ t('replyingTo') }} <span class="text-slate-500">@{{ comment.replyTo }}</span>
         </span>
 
         <time
           :datetime="isoDateTime(comment.createdAt)"
-          :title="mounted ? localDateTime(comment.createdAt) : undefined"
+          :title="mounted ? localDateTime(comment.createdAt, locale) : undefined"
           class="text-xs text-slate-400"
         >{{ timeLabel }}</time>
       </div>
@@ -61,7 +63,7 @@ const initial = computed(() => [...props.comment.author][0] ?? '?')
         class="mt-1.5 text-xs text-slate-400 transition-colors hover:text-brand-600"
         @click="$emit('reply', comment)"
       >
-        回复
+        {{ t('reply') }}
       </button>
 
       <slot name="form" />

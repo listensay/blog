@@ -3,7 +3,18 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   modules: [
     '@nuxt/content',
+    '@nuxtjs/i18n',
   ],
+
+  i18n: {
+    defaultLocale: 'zh-CN',
+    strategy: 'prefix_except_default',
+    detectBrowserLanguage: false,
+    locales: [
+      { code: 'zh-CN', language: 'zh-CN', name: '中文', file: 'zh-CN.json' },
+      { code: 'en', language: 'en', name: 'English', file: 'en.json' },
+    ],
+  },
 
   devtools: { enabled: true },
   compatibilityDate: '2025-05-15',

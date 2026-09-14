@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineI18nRoute(false)
 import type { AdminCommentsResponse } from '~/types/blog'
 
 useSeo({
@@ -86,12 +87,12 @@ async function act(run: () => Promise<unknown>) {
   }
 }
 
-const hide = (id: string) => act(() => $fetch(`/api/admin/comments/${id}`, { method: 'DELETE' }))
-const restore = (id: string) => act(() => $fetch(`/api/admin/comments/${id}/restore`, { method: 'POST' }))
+const hide = (id: string) => act(() => $fetch<unknown>(`/api/admin/comments/${id}`, { method: 'DELETE' }))
+const restore = (id: string) => act(() => $fetch<unknown>(`/api/admin/comments/${id}/restore`, { method: 'POST' }))
 
 function purge(id: string) {
   if (!window.confirm('彻底删除后无法恢复，同时会删掉它下面的回复。继续？')) return
-  return act(() => $fetch(`/api/admin/comments/${id}`, { method: 'DELETE', query: { purge: 1 } }))
+  return act(() => $fetch<unknown>(`/api/admin/comments/${id}`, { method: 'DELETE', query: { purge: 1 } }))
 }
 
 const tabs = [

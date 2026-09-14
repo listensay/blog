@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { NuxtLink } from '#components'
 
+const { locale, pagesCollection, localPath, t } = useLocale()
+
 const { data: page, status, error } = await useAsyncData(
-  'links-page',
-  () => queryCollection('pages').path('/links').first(),
+  () => `links-page-${locale.value}`,
+  () => queryCollection(pagesCollection.value).path(localPath('/links')).first(),
   { lazy: true },
 )
 
@@ -23,8 +25,8 @@ const isExternal = (url: string) => /^https?:\/\//.test(url)
 const initial = (name: string) => [...name][0] ?? '?'
 
 useSeo({
-  title: () => page.value?.title ?? '友情链接',
-  description: () => page.value?.description ?? `${siteConfig.title}交换的友情链接`,
+  title: () => page.value?.title ?? t('links'),
+  description: () => page.value?.description ?? t('linksDescription', { site: siteConfig.title }),
 })
 </script>
 
@@ -37,7 +39,7 @@ useSeo({
       </template>
       <template v-else>
         <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          {{ page?.title ?? '友情链接' }}
+          {{ page?.title ?? t('links') }}
         </h1>
         <p v-if="page?.description" class="mt-3 text-lg text-slate-600">
           {{ page.description }}
@@ -62,7 +64,7 @@ useSeo({
             <img
               v-if="link.avatar"
               :src="link.avatar"
-              :alt="`${link.name} 的头像`"
+              :alt="t('avatar', { name: link.name })"
               width="48"
               height="48"
               loading="lazy"
@@ -88,7 +90,7 @@ useSeo({
         </li>
       </ul>
       <p v-else-if="!loading" class="py-10 text-slate-500 sm:py-12">
-        还没有友情链接。
+        {{ t('noLinksYet') }}
       </p>
     </div>
 

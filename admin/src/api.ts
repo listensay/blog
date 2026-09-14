@@ -17,6 +17,9 @@ import type {
   SiteSettings,
   UnusedImages,
   WorkspaceInfo,
+  EnglishTranslation,
+  EnglishTranslationInput,
+  EnglishTranslationResult,
 } from '@/types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -114,4 +117,17 @@ export const api = {
   aiStatus: () => request<AiStatus>('/api/ai'),
 
   ai: (input: AiRequest) => request<AiResult>('/api/ai', json(input)),
+
+  getEnglishTranslation: (file: string) =>
+    request<EnglishTranslation>(`/api/post/translation?file=${encodeURIComponent(file)}`),
+  saveEnglishTranslation: (file: string, input: EnglishTranslationInput) =>
+    request<EnglishTranslation>(`/api/post/translation?file=${encodeURIComponent(file)}`, {
+      ...json(input),
+      method: 'PUT',
+    }),
+  translateEnglish: (file: string, sourceRevision: string) =>
+    request<EnglishTranslationResult>(
+      `/api/post/translation/ai?file=${encodeURIComponent(file)}`,
+      json({ sourceRevision }),
+    ),
 }

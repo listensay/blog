@@ -15,6 +15,7 @@ import {
 import { api } from '@/api'
 import AiActionModal from '@/components/AiActionModal.vue'
 import AiMetaModal from '@/components/AiMetaModal.vue'
+import EnglishTranslationModal from '@/components/EnglishTranslationModal.vue'
 import ImagePickerModal from '@/components/ImagePickerModal.vue'
 import RichTextEditor from '@/components/RichTextEditor.vue'
 import type {
@@ -97,6 +98,7 @@ const categories = ref<string[]>([])
 const knownTags = ref<string[]>([])
 const dirs = ref<string[]>([])
 const coverPickerOpen = ref(false)
+const englishOpen = ref(false)
 
 const otherPosts = ref<Array<{ realPath: string; file: string }>>([])
 
@@ -603,6 +605,16 @@ function applyAiMeta(payload: {
 
       <span class="spacer" />
 
+      <a-tooltip
+        :title="isNew || dirty ? '请先保存中文文章，再管理英文版' : '查看、编辑或用 AI 翻译英文版'"
+      >
+        <a-button
+          :disabled="isNew || dirty || loading || saving || !!loadError"
+          @click="englishOpen = true"
+          >英文版</a-button
+        >
+      </a-tooltip>
+
       <a-popconfirm
         v-if="!isNew"
         title="将这篇文章移到回收站？"
@@ -828,6 +840,11 @@ function applyAiMeta(payload: {
     </div>
 
     <ImagePickerModal v-model:open="coverPickerOpen" @select="pickCover($event.name)" />
+    <EnglishTranslationModal
+      v-model:open="englishOpen"
+      :source-file="original.file"
+      :ai-status="aiStatus"
+    />
 
     <AiActionModal
       v-model:open="ai.open"

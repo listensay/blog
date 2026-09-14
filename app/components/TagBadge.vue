@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { taxonomyLink } from '../utils/taxonomy'
 
+const { localPath, taxonomyLabel } = useLocale()
+
 defineProps<{ tag: string }>()
 </script>
 
 <template>
   <NuxtLink
-    :to="taxonomyLink('tags', tag)"
+    :to="localPath(taxonomyLink('tags', tag))"
     class="tag-chip"
     :class="tagTone(tag)"
   >
-    {{ tag }}
+    {{ taxonomyLabel(tag, 'tag') }}
   </NuxtLink>
 </template>

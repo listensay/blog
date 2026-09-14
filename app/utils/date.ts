@@ -43,13 +43,13 @@ function toDate(input: DateInput): Date | null {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-export function formatDate(input: DateInput): string {
+export function formatDate(input: DateInput, locale = 'zh-CN'): string {
   const wall = parseWallClock(input)
-  if (wall) return `${wall.year}年${wall.month}月${wall.day}日`
+  if (wall && locale === 'zh-CN') return `${wall.year}年${wall.month}月${wall.day}日`
 
-  const d = toDate(input)
+  const d = wall ? new Date(Date.UTC(wall.year, wall.month - 1, wall.day)) : toDate(input)
   if (!d) return ''
-  return new Intl.DateTimeFormat('zh-CN', {
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -57,14 +57,14 @@ export function formatDate(input: DateInput): string {
   }).format(d)
 }
 
-export function formatDateTime(input: DateInput): string {
+export function formatDateTime(input: DateInput, locale = 'zh-CN'): string {
   const wall = parseWallClock(input)
-  if (!wall || !wall.hasTime) return formatDate(input)
+  if (!wall || !wall.hasTime) return formatDate(input, locale)
 
   const isMidnight = wall.hour === 0 && wall.minute === 0
-  if (isMidnight) return formatDate(input)
+  if (isMidnight) return formatDate(input, locale)
 
-  return `${wall.year}年${wall.month}月${wall.day}日 ${pad(wall.hour)}:${pad(wall.minute)}`
+  return `${formatDate(input, locale)} ${pad(wall.hour)}:${pad(wall.minute)}`
 }
 
 export function isoDate(input: DateInput): string {
@@ -86,11 +86,19 @@ export function isoDateTime(input: DateInput): string {
   return d ? d.toISOString() : ''
 }
 
-export function relativeTime(input: DateInput, now: number = Date.now()): string {
+export function relativeTime(input: DateInput, now: number = Date.now(), locale = 'zh-CN'): string {
   const d = toDate(parseWallClock(input) ? isoDateTime(input) : input)
   if (!d) return ''
 
   const diff = now - d.getTime()
+  if (locale === 'en') {
+    if (diff < 60_000) return 'Just now'
+    const relative = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+    if (diff < 3_600_000) return relative.format(-Math.floor(diff / 60_000), 'minute')
+    if (diff < 86_400_000) return relative.format(-Math.floor(diff / 3_600_000), 'hour')
+    if (diff < 30 * 86_400_000) return relative.format(-Math.floor(diff / 86_400_000), 'day')
+    return formatDate(d, locale)
+  }
   if (diff < 0) return '刚刚'
 
   const minute = 60_000
@@ -104,10 +112,10 @@ export function relativeTime(input: DateInput, now: number = Date.now()): string
   return formatDate(d)
 }
 
-export function localDateTime(input: DateInput): string {
+export function localDateTime(input: DateInput, locale = 'zh-CN'): string {
   const d = toDate(parseWallClock(input) ? isoDateTime(input) : input)
   if (!d) return ''
-  return new Intl.DateTimeFormat('zh-CN', {
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

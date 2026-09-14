@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useLocale()
 const visible = ref(false)
 
 function updateVisibility() {
@@ -32,8 +33,8 @@ onBeforeUnmount(() => {
       v-if="visible"
       type="button"
       class="back-to-top-button"
-      aria-label="回到顶部"
-      title="回到顶部"
+      :aria-label="t('backToTop')"
+      :title="t('backToTop')"
       @click="backToTop"
     >
       <span class="back-to-top-triangle" aria-hidden="true" />

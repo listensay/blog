@@ -51,6 +51,7 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | 管理对象 | 数据位置 | 写入粒度 |
 | --- | --- | --- |
 | 文章 | `content/blog/**.md` | 单文件 |
+| 文章英文版 | `content/en/blog/<同一目录>/<slug>.md` | 独立译文文件 |
 | 固定页 | `content/pages/**.md` | 单文件 |
 | 友情链接 | `content/pages/links.md` 的 `friends` | 整个数组 |
 | 顶部菜单 | `content/data/nav.json` | 整份文件 |
@@ -71,6 +72,9 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | `POST /api/post` | 新建 |
 | `PUT /api/post?file=` | 保存，可同时改名与换目录 |
 | `DELETE /api/post?file=` | 移入 `admin/.trash/` |
+| `GET /api/post/translation?file=` | 读取原文、英文版、版本标识和过期状态 |
+| `POST /api/post/translation/ai?file=` | 使用 `{ sourceRevision }` 生成英文标题、摘要、正文；不写文件 |
+| `PUT /api/post/translation?file=` | 校验原文与译文版本后保存英文版 |
 | `GET /api/pages` | 页面列表，附保留文件名 |
 | `GET /api/page?file=` | 读一个页面，含正文、`friends`、整份 frontmatter |
 | `POST /api/page` · `PUT /api/page?file=` · `DELETE /api/page?file=` | 同文章 |
@@ -154,6 +158,27 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 ### slug
 
 决定文章 URL，由 `slug-path` transformer 处理。同目录下 slug 重复时保存返回 409。
+
+### 文章英文版
+
+1. 打开已保存的中文文章，点击顶部「英文版」。有未保存的中文修改时须先保存。
+2. 点击「AI 翻译英文版」，复用 `.env.local` 的 `ADMIN_AI_*` 配置翻译标题、摘要与全文。
+3. 编辑英文标题、摘要和 Markdown；可切换「英文预览」「中文原文」核对。
+4. 默认保存为英文草稿。开启发布开关后点击「保存英文版」，下次站点部署后上线。
+
+英文版与中文共用目录和 slug，URL 为 `/en/blog/<目录>/<slug>`。保存英文版时复制原文的日期、
+分类、标签和封面；分类与标签的英文显示名称由站点 `i18n/locales/en.json` 维护。
+原文仍为草稿时不能发布英文版。中文改目录或 slug 时英文版跟随移动，中文撤为草稿时英文版
+也撤为草稿；删除中文文章会将两种版本一并移入回收目录。
+
+AI 生成结果只放入编辑表单，点击保存才写入 `content/en/blog/`，不会改写中文正文。
+保存采用原文与译文的版本校验，另一窗口修改文件后返回 409，须重新打开核对。
+原文更新会显示译文待核对提示。生成失败、返回不完整 JSON、输出被截断或代码/链接/图片/HTML
+结构被改动时，不会覆盖已保存译文。正文中的相对 `public/` 图片路径转换为 `/images/...`，
+代码示例中的路径保持原样。
+
+接口报错会展示服务商的具体原因。若返回免费模型尚未开通，需要在服务商处处理账号资格，
+或修改 `ADMIN_AI_MODEL` 等配置并重启后台。单次翻译正文上限为 60000 字符。
 
 ## 固定页
 

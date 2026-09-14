@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { locale } = useLocale()
 interface PostLike {
   path?: string
   title?: string
@@ -28,7 +29,7 @@ defineProps<{ post: PostLike }>()
     <div class="min-w-0 sm:flex-1">
       <div class="flex flex-wrap items-center gap-x-2.5  gap-y-1.5 text-xs text-slate-900 sm:gap-x-3 sm:gap-y-2 sm:text-sm">
         <time v-if="post.date" :datetime="isoDateTime(post.date)">
-          {{ formatDateTime(post.date) }}
+          {{ formatDateTime(post.date, locale) }}
         </time>
         <span v-if="post.date && (post.category || post.tags?.length)" class="text-slate-300">·</span>
         <CategoryBadge v-if="post.category" :category="post.category" class="relative z-10" />

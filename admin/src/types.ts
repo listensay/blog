@@ -39,6 +39,37 @@ export interface PostListResponse {
   dirs: string[]
 }
 
+export interface EnglishContent {
+  title: string
+  description: string
+  body: string
+  draft: boolean
+}
+
+export interface EnglishTranslation {
+  source: PostDetail
+  sourceRevision: string
+  revision: string | null
+  file: string
+  path: string
+  content: EnglishContent | null
+  outdated: boolean
+}
+
+export interface EnglishTranslationInput extends EnglishContent {
+  sourceRevision: string
+  revision: string | null
+}
+
+export interface EnglishTranslationResult {
+  title: string
+  description: string
+  body: string
+  model: string
+  usage: AiUsage | null
+  sourceRevision: string
+}
+
 export interface ImageItem {
   name: string
   bytes: number

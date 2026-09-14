@@ -2,6 +2,8 @@
 import { IconEye, IconHeart, IconMessageCircle } from '@tabler/icons-vue'
 import type { EngagementTarget, PostStats } from '~/types/blog'
 
+const { t } = useLocale()
+
 const props = defineProps<{ target: EngagementTarget }>()
 
 const { data: stats, status } = await useFetch<PostStats>(() => statsUrl(props.target), {
@@ -24,17 +26,17 @@ watch(stats, () => {
   <div
     v-if="ready"
     class="mt-5 flex items-center justify-center gap-4 text-sm text-white/90 sm:gap-5"
-    aria-label="文章统计"
+    :aria-label="t('articleStatistics')"
   >
-    <span class="inline-flex items-center gap-1.5" title="点赞量">
+    <span class="inline-flex items-center gap-1.5" :title="t('likes')">
       <IconHeart :size="17" stroke="1.8" aria-hidden="true" />
       <span class="tabular-nums">{{ stats.likes }}</span>
     </span>
-    <span class="inline-flex items-center gap-1.5" title="评论量">
+    <span class="inline-flex items-center gap-1.5" :title="t('comments')">
       <IconMessageCircle :size="17" stroke="1.8" aria-hidden="true" />
       <span class="tabular-nums">{{ stats.comments }}</span>
     </span>
-    <span class="inline-flex items-center gap-1.5" title="阅读量">
+    <span class="inline-flex items-center gap-1.5" :title="t('views')">
       <IconEye :size="17" stroke="1.8" aria-hidden="true" />
       <span class="tabular-nums">{{ stats.views }}</span>
     </span>

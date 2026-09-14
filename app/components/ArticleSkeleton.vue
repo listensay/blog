@@ -1,7 +1,11 @@
+<script setup lang="ts">
+const { t } = useI18n()
+</script>
+
 <template>
   <div class="skeleton-group">
     <header class="border-b border-slate-200 pb-6 sm:pb-8" role="status" aria-busy="true">
-      <span class="sr-only">正在加载文章…</span>
+      <span class="sr-only">{{ t('loadingArticle') }}</span>
       <div aria-hidden="true">
         <div class="flex items-center gap-3">
           <div class="skeleton h-4 w-24" />

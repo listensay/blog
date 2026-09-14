@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { count = 5 } = defineProps<{ count?: number }>()
 
 const tailWidths = ['w-4/5', 'w-2/3', 'w-3/4', 'w-1/2', 'w-5/6']
@@ -6,7 +7,7 @@ const tailWidths = ['w-4/5', 'w-2/3', 'w-3/4', 'w-1/2', 'w-5/6']
 
 <template>
   <div role="status" aria-busy="true" class="skeleton-group overflow-hidden rounded-2xl bg-white shadow">
-    <span class="sr-only">正在加载文章列表…</span>
+    <span class="sr-only">{{ t('loadingArticles') }}</span>
 
     <div
       v-for="i in count"

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { taxonomySlug } from '../utils/taxonomy'
 
+const { locale, blogCollection, localPath, t, siteDescription, siteBio } = useLocale()
+
 const { data: allPosts, status, error } = await useAsyncData(
-  'home-posts',
+  () => `home-posts-${locale.value}`,
   () =>
-    queryCollection('blog')
+    queryCollection(blogCollection.value)
       .where('draft', '=', false)
       .order('date', 'DESC')
       .all(),
@@ -41,15 +43,15 @@ const socialLinks = computed(() => siteConfig.socials.filter(s => s.url))
 const authorColors = ['#4285f4', '#ea4335', '#f9ab00', '#34a853', '#a855f7']
 
 useSeo({
-  description: siteConfig.description,
+  description: () => siteDescription.value,
 })
 
-useJsonLd({
+useJsonLd(() => ({
   '@type': 'WebSite',
   'name': siteConfig.title,
-  'description': siteConfig.description,
-  'url': `${siteConfig.url}/`,
-  'inLanguage': 'zh-CN',
+  'description': siteDescription.value,
+  'url': `${siteConfig.url}${localPath('/')}`,
+  'inLanguage': locale.value,
   'author': {
     '@type': 'Person',
     'name': siteConfig.author,
@@ -59,7 +61,7 @@ useJsonLd({
       .filter(s => s.url.startsWith('http'))
       .map(s => s.url),
   },
-})
+}))
 </script>
 
 <template>
@@ -70,7 +72,7 @@ useJsonLd({
         :src="siteConfig.profile.avatar"
         class="home-avatar soft-shadow size-20 shrink-0 rounded-full object-cover sm:size-42"
         :class="{ 'home-avatar-jelly': animateAvatar }"
-        :alt="`${siteConfig.profile.name} 的头像`"
+        :alt="t('avatar', { name: siteConfig.profile.name })"
         @load="startAvatarAnimation"
         @animationend="finishAvatarAnimation"
       >
@@ -87,14 +89,14 @@ useJsonLd({
           >{{ char }}</span>
         </h1>
         <p class="max-w-2xl leading-relaxed text-slate-600 sm:text-lg">
-          {{ siteConfig.profile.bio }}
+          {{ siteBio }}
         </p>
         <div v-if="socialLinks.length" class="mt-3 flex flex-wrap items-center gap-2 sm:mt-5 sm:gap-2.5">
           <AppActionIcon
             v-for="(link, index) in socialLinks"
             :key="`${link.icon}-${index}`"
-            :label="link.label"
-            :href="link.url"
+            :label="['qq', 'email', 'rss'].includes(link.icon) ? t(`social.${link.icon}`) : link.label"
+            :href="link.url === '/feed.xml' ? localPath(link.url) : link.url"
             :color="link.color"
           >
             <SocialIcon :icon="link.icon" />
@@ -114,7 +116,7 @@ useJsonLd({
         />
       </div>
       <p v-else class="py-10 text-slate-500 sm:py-12">
-        还没有文章。在 <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">content/blog/</code> 里新建一个 Markdown 文件就会出现在这里。
+        {{ t('noArticlesYet') }}
       </p>
     </section>
   </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const { paragraphs = 3 } = defineProps<{ paragraphs?: number }>()
 
 const lineWidths = ['w-full', 'w-full', 'w-11/12', 'w-3/4']
@@ -6,7 +7,7 @@ const lineWidths = ['w-full', 'w-full', 'w-11/12', 'w-3/4']
 
 <template>
   <div role="status" aria-busy="true" class="skeleton-group">
-    <span class="sr-only">正在加载正文…</span>
+    <span class="sr-only">{{ t('loadingBody') }}</span>
 
     <div
       v-for="p in paragraphs"

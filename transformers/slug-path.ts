@@ -1,12 +1,12 @@
 import { defineTransformer } from '@nuxt/content'
 
 export default defineTransformer({
-  name: 'slug-path-v2',
+  name: 'slug-path-v3',
   extensions: ['.md'],
   transform(file) {
     const f = file as Record<string, unknown>
 
-    if (!String(f.id).startsWith('blog/')) return file
+    if (!/^(blog|blogEn)\//.test(String(f.id))) return file
 
     const slug = typeof f.slug === 'string' ? f.slug.trim() : ''
     if (!slug) return file

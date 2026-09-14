@@ -4,8 +4,20 @@ import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
 
-import type { AiRequest, PageInput, PostInput, WorkspaceInfo } from '../src/types.ts'
-import { type AiConfig, aiStatus, resolveAiConfig, runAi } from './ai.ts'
+import type {
+  AiRequest,
+  EnglishTranslationInput,
+  PageInput,
+  PostInput,
+  WorkspaceInfo,
+} from '../src/types.ts'
+import { type AiConfig, aiStatus, resolveAiConfig, runAi, translateArticle } from './ai.ts'
+import {
+  assertTranslationRevision,
+  readEnglishTranslation,
+  saveEnglishTranslation,
+} from './translations.ts'
+import { normalizeTranslationAssets } from './translation-integrity.ts'
 import { readDashboard } from './dashboard.ts'
 import {
   PUBLIC_MOUNT,
@@ -66,6 +78,31 @@ const routes: Record<string, Handler> = {
 
   'GET /posts': async (_req, res, { ws }) => {
     sendJson(res, 200, await listPosts(ws))
+  },
+
+  'GET /post/translation': async (req, res, { ws }) => {
+    sendJson(res, 200, await readEnglishTranslation(ws, requireQuery(parseUrl(req), 'file')))
+  },
+
+  'PUT /post/translation': async (req, res, { ws }) => {
+    const file = requireQuery(parseUrl(req), 'file')
+    const input = await readJson<EnglishTranslationInput>(req)
+    sendJson(res, 200, await saveEnglishTranslation(ws, file, input))
+  },
+
+  'POST /post/translation/ai': async (req, res, { ws, ai }) => {
+    const file = requireQuery(parseUrl(req), 'file')
+    const input = await readJson<{ sourceRevision: string }>(req)
+    const state = await readEnglishTranslation(ws, file)
+    assertTranslationRevision(state, input?.sourceRevision)
+    const result = await translateArticle(ai, {
+      title: state.source.title,
+      description: state.source.description,
+      body: normalizeTranslationAssets(state.source.body, state.source.file),
+    })
+    // A source edit while the model was running invalidates this candidate.
+    assertTranslationRevision(await readEnglishTranslation(ws, file), state.sourceRevision)
+    sendJson(res, 200, { ...result, sourceRevision: state.sourceRevision })
   },
 
   'GET /post': async (req, res, { ws }) => {

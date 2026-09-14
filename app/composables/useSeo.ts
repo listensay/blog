@@ -16,6 +16,7 @@ function absoluteUrl(path: string): string {
 
 export function useSeo(options: SeoOptions = {}): void {
   const route = useRoute()
+  const { locale, isEnglish, alternates, siteDescription } = useLocale()
 
   const canonical = computed(() => absoluteUrl(route.path))
 
@@ -23,11 +24,11 @@ export function useSeo(options: SeoOptions = {}): void {
   const fullTitle = computed(() =>
     pageTitle.value ? `${pageTitle.value} - ${siteConfig.title}` : siteConfig.title,
   )
-  const description = computed(() => toValue(options.description)?.trim() || siteConfig.description)
+  const description = computed(() => toValue(options.description)?.trim() || siteDescription.value)
   const image = computed(() => absoluteUrl(toValue(options.image)?.trim() || siteConfig.ogImage))
 
   useSeoMeta({
-    title: () => pageTitle.value || undefined,
+    title: () => fullTitle.value,
     description: () => description.value,
 
     ogTitle: () => fullTitle.value,
@@ -35,7 +36,8 @@ export function useSeo(options: SeoOptions = {}): void {
     ogType: options.type ?? 'website',
     ogUrl: () => canonical.value,
     ogSiteName: siteConfig.title,
-    ogLocale: 'zh_CN',
+    ogLocale: () => isEnglish.value ? 'en_US' : 'zh_CN',
+    ogLocaleAlternate: () => alternates.value.length ? [isEnglish.value ? 'zh_CN' : 'en_US'] : undefined,
     ogImage: () => image.value,
     ogImageAlt: () => fullTitle.value,
 
@@ -49,9 +51,15 @@ export function useSeo(options: SeoOptions = {}): void {
     robots: options.noindex ? 'noindex, nofollow' : undefined,
   })
 
-  useHead({
-    link: options.noindex ? [] : [{ rel: 'canonical', href: () => canonical.value }],
-  })
+  useHead(() => ({
+    htmlAttrs: { lang: locale.value },
+    link: options.noindex ? [] : [
+      { rel: 'canonical', href: canonical.value },
+      ...alternates.value.map(alternate => ({
+        rel: 'alternate' as const, hreflang: alternate.hreflang, href: absoluteUrl(alternate.path),
+      })),
+    ],
+  }))
 }
 
 export function useJsonLd(data: MaybeRefOrGetter<Record<string, unknown>>): void {

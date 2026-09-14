@@ -1,6 +1,8 @@
 import { queryCollection } from '@nuxt/content/server'
 import { isoDateTime } from '../../app/utils/date'
 import { siteConfig } from '../../app/utils/site'
+import { pathLocale, localizedPath } from '../../app/utils/locale'
+import englishMessages from '../../i18n/locales/en.json'
 
 function escapeXml(value: string) {
   return value
@@ -12,7 +14,8 @@ function escapeXml(value: string) {
 }
 
 export default defineEventHandler(async (event) => {
-  const posts = await queryCollection(event, 'blog')
+  const locale = pathLocale(getRequestURL(event).pathname)
+  const posts = await queryCollection(event, locale === 'en' ? 'blogEn' : 'blog')
     .where('draft', '=', false)
     .order('date', 'DESC')
     .limit(20)
@@ -37,9 +40,9 @@ export default defineEventHandler(async (event) => {
     '<rss version="2.0">',
     '<channel>',
     `<title>${escapeXml(siteConfig.title)}</title>`,
-    `<link>${escapeXml(siteConfig.url)}</link>`,
-    `<description>${escapeXml(siteConfig.description)}</description>`,
-    '<language>zh-CN</language>',
+    `<link>${escapeXml(siteConfig.url + localizedPath('/', locale))}</link>`,
+    `<description>${escapeXml(locale === 'en' ? englishMessages.site.description : siteConfig.description)}</description>`,
+    `<language>${locale}</language>`,
     `<lastBuildDate>${new Date().toUTCString()}</lastBuildDate>`,
     items,
     '</channel>',

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import ArticleStats from '~/components/ArticleStats.vue'
 
+const { locale, blogCollection, t, localPath } = useLocale()
+
 const route = useRoute()
 const pathSegments = computed(() => Array.isArray(route.params.slug)
   ? route.params.slug.map(String)
   : [String(route.params.slug)])
 const slug = computed(() => pathSegments.value.at(-1) ?? '')
-const path = computed(() => `/blog/${pathSegments.value.join('/')}`)
+const path = computed(() => localPath(`/blog/${pathSegments.value.join('/')}`))
 
 const target = computed(() => postTarget(slug.value))
 
@@ -31,7 +33,7 @@ const headerColor = computed(() => headerColors[colorIndex(path.value)]!)
 const { data: post, status, error } = await useAsyncData(
   () => `post-${path.value}`,
   () => {
-    let q = queryCollection('blog').path(path.value)
+    let q = queryCollection(blogCollection.value).path(path.value)
     if (!import.meta.dev) q = q.where('draft', '=', false)
     return q.first()
   },
@@ -54,7 +56,7 @@ const headerStyle = computed(() => {
 
 function assertFound() {
   if (post.value) return
-  const notFound = createError({ statusCode: 404, message: '文章不存在', fatal: true })
+  const notFound = createError({ statusCode: 404, message: t('articleNotFound'), fatal: true })
   if (import.meta.server) throw notFound
   showError(notFound)
 }
@@ -69,7 +71,7 @@ else {
 const { data: surround } = await useAsyncData(
   () => `surround-${path.value}`,
   async () => {
-    const posts = await queryCollection('blog')
+    const posts = await queryCollection(blogCollection.value)
       .where('draft', '=', false)
       .order('date', 'DESC')
       .select('path', 'title')
@@ -98,7 +100,7 @@ useJsonLd(() => ({
   'headline': post.value?.title ?? '',
   'description': post.value?.description ?? '',
   'datePublished': isoDateTime(post.value?.date),
-  'inLanguage': 'zh-CN',
+  'inLanguage': locale.value,
   'mainEntityOfPage': { '@type': 'WebPage', '@id': `${siteConfig.url}${path.value}` },
   'image': `${siteConfig.url}${post.value?.cover || siteConfig.ogImage}`,
   'author': { '@type': 'Person', 'name': siteConfig.author, 'url': siteConfig.url },
@@ -108,8 +110,8 @@ useJsonLd(() => ({
   'breadcrumb': {
     '@type': 'BreadcrumbList',
     'itemListElement': [
-      { '@type': 'ListItem', 'position': 1, 'name': '首页', 'item': `${siteConfig.url}/` },
-      { '@type': 'ListItem', 'position': 2, 'name': '全部文章', 'item': `${siteConfig.url}/blog` },
+      { '@type': 'ListItem', 'position': 1, 'name': t('home'), 'item': `${siteConfig.url}${localPath('/')}` },
+      { '@type': 'ListItem', 'position': 2, 'name': t('articles'), 'item': `${siteConfig.url}${localPath('/blog')}` },
       { '@type': 'ListItem', 'position': 3, 'name': post.value?.title ?? '' },
     ],
   },
@@ -128,7 +130,7 @@ useJsonLd(() => ({
         >
           <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
             <time v-if="post.date" :datetime="isoDateTime(post.date)" class="font-bold">
-              {{ formatDateTime(post.date) }}
+              {{ formatDateTime(post.date, locale) }}
             </time>
             <span v-if="post.date && (post.category || post.tags?.length)" class="font-bold">·</span>
             <div class="text-white">
@@ -143,7 +145,7 @@ useJsonLd(() => ({
             <span
               v-if="post.draft"
               class="mr-2 align-middle rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700"
-            >草稿</span>{{ post.title }}
+            >{{ t('draft') }}</span>{{ post.title }}
           </h1>
           <ArticleStats :target="target" />
         </header>
@@ -161,7 +163,7 @@ useJsonLd(() => ({
           :to="surround[0].path"
           class="group rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
         >
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-400">上一篇</span>
+          <span class="text-xs font-medium uppercase tracking-wider text-slate-400">{{ t('previousArticle') }}</span>
           <p class="mt-1 font-medium text-slate-900 group-hover:text-brand-700">
             {{ surround[0].title }}
           </p>
@@ -171,7 +173,7 @@ useJsonLd(() => ({
           :to="surround[1].path"
           class="group rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40 sm:col-start-2 sm:text-right"
         >
-          <span class="text-xs font-medium uppercase tracking-wider text-slate-400">下一篇</span>
+          <span class="text-xs font-medium uppercase tracking-wider text-slate-400">{{ t('nextArticle') }}</span>
           <p class="mt-1 font-medium text-slate-900 group-hover:text-brand-700">
             {{ surround[1].title }}
           </p>

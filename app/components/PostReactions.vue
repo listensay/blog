@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { EngagementTarget, PostStats } from '~/types/blog'
 
+const { t } = useLocale()
+
 const props = defineProps<{ target: EngagementTarget }>()
 
 const { data: stats, status } = await useFetch<PostStats>(() => statsUrl(props.target), {
@@ -57,7 +59,7 @@ async function toggleLike() {
   }
   catch (e) {
     stats.value = snapshot
-    error.value = apiErrorMessage(e, '点赞失败，稍后再试')
+    error.value = apiErrorMessage(e, t('couldNotUpdateYourLikePleaseTryAgain'))
   }
   finally {
     pending.value = false
@@ -77,7 +79,7 @@ async function toggleLike() {
         type="button"
         :disabled="pending"
         :aria-pressed="stats.liked"
-        :aria-label="stats.liked ? '取消点赞' : '点赞'"
+        :aria-label="stats.liked ? t('unlike') : t('like')"
         class="group inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-60"
         :class="stats.liked
           ? 'border-brand-300 bg-brand-50 text-brand-700'
@@ -96,7 +98,7 @@ async function toggleLike() {
         >
           <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1l8.1 8.1a1 1 0 0 0 1.4 0l8.1-8.1a5 5 0 0 0 0-7.1Z" />
         </svg>
-        <span>{{ stats.liked ? '已赞' : '点赞' }}</span>
+        <span>{{ stats.liked ? t('liked') : t('like') }}</span>
         <span class="tabular-nums">{{ stats.likes }}</span>
       </button>
 
@@ -115,7 +117,7 @@ async function toggleLike() {
           <circle cx="12" cy="12" r="3" />
         </svg>
         <span class="tabular-nums">{{ stats.views }}</span>
-        <span>次阅读</span>
+        <span>{{ t('views') }}</span>
       </p>
     </template>
 
