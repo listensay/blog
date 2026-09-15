@@ -44,6 +44,11 @@ for (const path of pairedPaths) {
 }
 
 const originalOnly = '/blog/ai/ai-logo-generation'
+for (const [current, target] of [['/blog?q=Nuxt', '/en/blog?q=Nuxt'], ['/en/blog?q=Nuxt', '/blog?q=Nuxt']]) {
+  const html = await get(current)
+  const header = html.match(/<header\b[\s\S]*?<\/header>/)?.[0] || ''
+  assert.equal(tags(header, 'a').find(link => link.hreflang)?.href, target, 'Locale switch preserves query parameters')
+}
 const untranslated = await get(originalOnly)
 assert.equal(tags(untranslated.split('</head>')[0], 'link').filter(link => link.hreflang).length, 0, 'No hreflang for missing translations')
 const untranslatedHeader = untranslated.match(/<header\b[\s\S]*?<\/header>/)?.[0] || ''

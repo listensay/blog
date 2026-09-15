@@ -79,21 +79,6 @@ tags:
 </details>
 
 <details>
-<summary><h3>Conduit</h3></summary>
-
-评价：**夯**
-
-请求速度快，可用GPT5.6、Fable 5等高级模型。
-
-无限免费使用DeepSeek V4 Flash、MiniMax M3。
-
-新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
-
-[https://t.me/conduitoff_bot?start=ref_6406492700](https://t.me/conduitoff_bot?start=ref_6406492700)
-
-</details>
-
-<details>
 <summary><h3>SeekAI</h3></summary>
 
 评价：**无**
@@ -146,7 +131,7 @@ tags:
 </details>
 
 <details>
-<summary><h3>JustDoWork（暂无可用模型）</h3></summary>
+<summary><h3>JustDoWork</h3></summary>
 
 评价：无
 
@@ -173,6 +158,21 @@ macOS
 ```
  echo 'export NO_PROXY=127.0.0.1,localhost' >> ~/.zshrc && source ~/.zshrc
 ```
+
+</details>
+
+<details>
+<summary><h3>Conduit（理论不可用，需要挤）</h3></summary>
+
+评价：**夯**
+
+请求速度快，可用GPT5.6、Fable 5等高级模型。
+
+无限免费使用DeepSeek V4 Flash、MiniMax M3。
+
+新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
+
+[https://t.me/conduitoff_bot?start=ref_6406492700](https://t.me/conduitoff_bot?start=ref_6406492700)
 
 </details>
 

@@ -8,16 +8,18 @@ import {
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
+  TranslationOutlined,
 } from '@ant-design/icons-vue'
 
 import { api } from '@/api'
 import PostThumb from '@/components/PostThumb.vue'
-import type { PostSummary } from '@/types'
+import EnglishTranslationModal from '@/components/EnglishTranslationModal.vue'
+import type { AiStatus, PostListItem, PostSummary } from '@/types'
 
 const router = useRouter()
 
 const loading = ref(false)
-const posts = ref<PostSummary[]>([])
+const posts = ref<PostListItem[]>([])
 const categories = ref<string[]>([])
 const dirs = ref<string[]>([])
 
@@ -25,6 +27,30 @@ const keyword = ref('')
 const categoryFilter = ref<string[]>([])
 const dirFilter = ref<string[]>([])
 const draftFilter = ref<'all' | 'draft' | 'published'>('all')
+const englishFilter = ref<'all' | 'missing' | 'draft' | 'published' | 'outdated'>('all')
+const englishFile = ref('')
+const englishOpen = ref(false)
+const aiStatus = ref<AiStatus>({
+  enabled: false,
+  model: '',
+  baseUrl: '',
+  hint: '正在读取 AI 配置…',
+})
+
+async function openEnglish(post: PostSummary) {
+  englishFile.value = post.file
+  englishOpen.value = true
+  try {
+    aiStatus.value = await api.aiStatus()
+  } catch (err) {
+    aiStatus.value = {
+      enabled: false,
+      model: '',
+      baseUrl: '',
+      hint: `无法读取 AI 配置：${err instanceof Error ? err.message : String(err)}`,
+    }
+  }
+}
 
 async function load() {
   loading.value = true
@@ -50,6 +76,10 @@ const filtered = computed(() => {
     if (dirFilter.value.length && !dirFilter.value.includes(post.dir)) return false
     if (draftFilter.value === 'draft' && !post.draft) return false
     if (draftFilter.value === 'published' && post.draft) return false
+    if (englishFilter.value === 'missing' && post.english) return false
+    if (englishFilter.value === 'draft' && !post.english?.draft) return false
+    if (englishFilter.value === 'published' && (!post.english || post.english.draft)) return false
+    if (englishFilter.value === 'outdated' && !post.english?.outdated) return false
     if (!kw) return true
 
     return [post.title, post.description, post.slug, post.name, post.tags.join(' ')]
@@ -89,6 +119,7 @@ const columns = [
   { title: '分类', key: 'category', width: 110 },
   { title: '标签', key: 'tags', width: 180 },
   { title: '发布时间', key: 'date', width: 140 },
+  { title: '英文版', key: 'english', width: 125 },
   { title: '文件', key: 'file' },
   { title: '', key: 'actions', width: 96, align: 'right' as const },
 ]
@@ -130,6 +161,19 @@ const columns = [
       <a-radio-button value="published">已发布</a-radio-button>
       <a-radio-button value="draft">草稿{{ draftCount ? ` ${draftCount}` : '' }}</a-radio-button>
     </a-radio-group>
+
+    <a-select
+      v-model:value="englishFilter"
+      class="filter"
+      aria-label="英文版状态"
+      :options="[
+        { value: 'all', label: '全部英文状态' },
+        { value: 'missing', label: '未翻译' },
+        { value: 'draft', label: '英文草稿' },
+        { value: 'published', label: '英文已发布' },
+        { value: 'outdated', label: '译文待更新' },
+      ]"
+    />
 
     <span class="spacer" />
 
@@ -208,6 +252,27 @@ const columns = [
         </div>
       </template>
 
+      <template v-else-if="column.key === 'english'">
+        <div v-if="(record as PostListItem).english">
+          <a-tag :color="(record as PostListItem).english!.draft ? 'orange' : 'green'">{{
+            (record as PostListItem).english!.draft ? '英文草稿' : '英文已发布'
+          }}</a-tag>
+          <div v-if="(record as PostListItem).english!.outdated" class="translation-outdated">
+            译文待更新
+          </div>
+        </div>
+        <span v-else class="muted">未翻译</span>
+        <a-button
+          type="link"
+          size="small"
+          class="translation-action"
+          @click="openEnglish(record as PostSummary)"
+        >
+          <template #icon><TranslationOutlined /></template>
+          {{ (record as PostListItem).english ? '管理英文版' : '添加英文版' }}
+        </a-button>
+      </template>
+
       <template v-else-if="column.key === 'actions'">
         <a-space :size="4">
           <a-tooltip title="编辑">
@@ -232,6 +297,13 @@ const columns = [
       </template>
     </template>
   </a-table>
+
+  <EnglishTranslationModal
+    v-model:open="englishOpen"
+    :source-file="englishFile"
+    :ai-status="aiStatus"
+    @saved="load"
+  />
 </template>
 
 <style scoped>
@@ -284,6 +356,18 @@ const columns = [
 
 .muted {
   color: #bfbfbf;
+}
+
+.translation-action {
+  display: block;
+  padding: 0;
+  font-size: 12px;
+}
+
+.translation-outdated {
+  margin-top: 4px;
+  color: #ad6800;
+  font-size: 12px;
 }
 
 .empty {

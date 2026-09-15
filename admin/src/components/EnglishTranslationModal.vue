@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
 import { api } from '@/api'
 import type { AiStatus, EnglishTranslation } from '@/types'
-import { mdToHtml } from '@/utils/markdown'
+import { translationPreviewHtml } from '@/utils/translation-preview'
 
 const props = defineProps<{ open: boolean; sourceFile: string; aiStatus: AiStatus }>()
-const emit = defineEmits<{ 'update:open': [value: boolean] }>()
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+  saved: [value: EnglishTranslation]
+}>()
 const state = ref<EnglishTranslation | null>(null)
 const loading = ref(false)
 const generating = ref(false)
@@ -28,7 +32,10 @@ const canSave = computed(
     !busy.value,
 )
 const preview = computed(() =>
-  mdToHtml(form.body, state.value?.file.split('/').slice(0, -1).join('/') || 'en/blog'),
+  translationPreviewHtml(
+    form.body,
+    state.value?.file.split('/').slice(0, -1).join('/') || 'en/blog',
+  ),
 )
 let requestId = 0
 
@@ -96,48 +103,83 @@ async function save() {
   if (!state.value || !canSave.value) return
   saving.value = true
   error.value = ''
+  const id = requestId
   try {
-    fill(
-      await api.saveEnglishTranslation(props.sourceFile, {
-        ...form,
-        sourceRevision: state.value.sourceRevision,
-        revision: state.value.revision,
-      }),
-    )
+    const saved = await api.saveEnglishTranslation(props.sourceFile, {
+      ...form,
+      sourceRevision: state.value.sourceRevision,
+      revision: state.value.revision,
+    })
+    if (id !== requestId) return
+    fill(saved)
     generatedBy.value = ''
+    emit('saved', saved)
     message.success(form.draft ? '英文草稿已保存' : '英文版已保存，下次站点部署后生效')
   } catch (err) {
-    error.value = err instanceof Error ? err.message : String(err)
+    if (id === requestId) error.value = err instanceof Error ? err.message : String(err)
   } finally {
-    saving.value = false
+    if (id === requestId) saving.value = false
   }
 }
 
-function close() {
-  if (busy.value) return
-  if (!dirty.value) return emit('update:open', false)
-  Modal.confirm({
-    title: '英文版有未保存的修改',
-    content: '关闭后本次编辑会丢失。',
-    okText: '放弃修改',
-    cancelText: '继续编辑',
-    onOk: () => emit('update:open', false),
+function confirmDiscard(): Promise<boolean> {
+  return new Promise((resolve) => {
+    Modal.confirm({
+      title: '英文版有未保存的修改',
+      content: '离开后本次英文编辑会丢失。',
+      okText: '放弃修改',
+      okType: 'danger',
+      cancelText: '继续编辑',
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+    })
   })
 }
 
+async function close() {
+  if (busy.value) return
+  if (!dirty.value || (await confirmDiscard())) emit('update:open', false)
+}
+
+async function canLeave() {
+  if (!props.open) return true
+  if (busy.value) {
+    message.info('英文版正在处理，请完成后再离开')
+    return false
+  }
+  return !dirty.value || (await confirmDiscard())
+}
+onBeforeRouteLeave(canLeave)
+onBeforeRouteUpdate(canLeave)
+
+function onKeydown(event: KeyboardEvent) {
+  if (props.open && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    void save()
+  }
+}
+
 function beforeUnload(event: BeforeUnloadEvent) {
-  if (props.open && (dirty.value || generating.value)) event.preventDefault()
+  if (props.open && (dirty.value || generating.value || saving.value)) event.preventDefault()
 }
 watch(
   () => props.open,
   (open) => {
-    if (open) window.addEventListener('beforeunload', beforeUnload)
-    else window.removeEventListener('beforeunload', beforeUnload)
+    if (open) {
+      window.addEventListener('beforeunload', beforeUnload)
+      window.addEventListener('keydown', onKeydown, true)
+    } else {
+      window.removeEventListener('beforeunload', beforeUnload)
+      window.removeEventListener('keydown', onKeydown, true)
+    }
   },
+  { immediate: true },
 )
 onBeforeUnmount(() => {
   ++requestId
   window.removeEventListener('beforeunload', beforeUnload)
+  window.removeEventListener('keydown', onKeydown, true)
 })
 </script>
 
@@ -169,6 +211,13 @@ onBeforeUnmount(() => {
           </a-tooltip>
         </div>
         <a-alert
+          v-if="!aiStatus.enabled"
+          type="info"
+          show-icon
+          :message="aiStatus.hint"
+          class="translation-alert"
+        />
+        <a-alert
           v-if="state.outdated"
           type="warning"
           show-icon
@@ -189,10 +238,10 @@ onBeforeUnmount(() => {
           本次翻译模型：{{ generatedBy }} · 尚需保存
         </p>
         <a-form layout="vertical" :colon="false" :disabled="busy">
-          <a-form-item label="英文标题"
+          <a-form-item label="英文标题" name="title"
             ><a-input v-model:value="form.title" :maxlength="200" placeholder="English title"
           /></a-form-item>
-          <a-form-item label="英文摘要"
+          <a-form-item label="英文摘要" name="description"
             ><a-textarea
               v-model:value="form.description"
               :auto-size="{ minRows: 2, maxRows: 4 }"
@@ -222,6 +271,7 @@ onBeforeUnmount(() => {
           <div class="translation-publication">
             <a-switch
               :checked="!form.draft"
+              aria-label="发布英文版"
               :disabled="busy || state.source.draft"
               @change="(value) => (form.draft = !value)"
             />

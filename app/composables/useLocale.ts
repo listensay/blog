@@ -4,14 +4,21 @@ export function useLocale() {
   const { t, te } = i18n
   const locale = computed<SiteLocale>(() => i18n.locale.value === 'en' ? 'en' : 'zh-CN')
   const localePath = useLocalePath()
+  const switchLocalePath = useSwitchLocalePath()
+  const mounted = ref(false)
+  onMounted(() => { mounted.value = true })
   const isEnglish = computed(() => locale.value === 'en')
   const blogCollection = computed(() => isEnglish.value ? 'blogEn' as const : 'blog' as const)
   const pagesCollection = computed(() => isEnglish.value ? 'pagesEn' as const : 'pages' as const)
   const { data: publishedPaths } = useNuxtData<string[]>('localized-paths')
   const alternates = computed(() => languageAlternates(route.path, publishedPaths.value ?? []))
   const switchPath = computed(() => {
-    const target = localizedPath(route.path, isEnglish.value ? 'zh-CN' : 'en')
-    return publishedPaths.value?.includes(target) ? target : isEnglish.value ? '/blog' : '/en/blog'
+    const targetLocale = isEnglish.value ? 'zh-CN' : 'en'
+    const resolved = switchLocalePath(targetLocale)
+    // URL fragments are only available in the browser, after hydration.
+    const target = mounted.value ? resolved : resolved.split('#')[0] || ''
+    const path = target.split(/[?#]/)[0]?.replace(/\/+$/, '') || '/'
+    return target && publishedPaths.value?.includes(path) ? target : localePath('/blog', targetLocale)
   })
   const switchLabel = computed(() => {
     const paired = alternates.value.length > 0

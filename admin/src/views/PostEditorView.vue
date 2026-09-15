@@ -359,6 +359,7 @@ async function remove() {
 }
 
 function onKeydown(event: KeyboardEvent) {
+  if (englishOpen.value) return
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
     event.preventDefault()
     void save()

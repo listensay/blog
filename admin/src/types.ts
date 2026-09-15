@@ -25,6 +25,17 @@ export interface PostDetail extends PostSummary {
   raw: Record<string, unknown>
 }
 
+export interface EnglishTranslationSummary {
+  file: string
+  path: string
+  draft: boolean
+  outdated: boolean
+}
+
+export interface PostListItem extends PostSummary {
+  english: EnglishTranslationSummary | null
+}
+
 export interface PostInput extends PostFrontmatter {
   dir: string
   name: string
@@ -33,7 +44,7 @@ export interface PostInput extends PostFrontmatter {
 }
 
 export interface PostListResponse {
-  posts: PostSummary[]
+  posts: PostListItem[]
   categories: string[]
   tags: string[]
   dirs: string[]

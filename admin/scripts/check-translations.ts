@@ -101,6 +101,11 @@ try {
   assert.equal(initial.status, 200)
   assert.equal(initial.data.content, null)
   assert.equal(initial.data.path, '/en/blog/ai/translation-test')
+  assert.equal(
+    (await call('/api/posts')).data.posts[0].english,
+    null,
+    'List marks untranslated posts',
+  )
   const candidate = await call(aiEndpoint, 'POST', { sourceRevision: initial.data.sourceRevision })
   assert.equal(candidate.status, 200)
   assert.equal((await call(endpoint)).data.content, null, 'Generation must not write a file')
@@ -109,6 +114,28 @@ try {
   assert.equal(saved.status, 200)
   assert.equal(saved.data.outdated, false)
   assert.equal(saved.data.content.draft, true)
+  assert.deepEqual(
+    (await call('/api/posts')).data.posts[0].english,
+    {
+      file: saved.data.file,
+      path: saved.data.path,
+      draft: true,
+      outdated: false,
+    },
+    'List shows the saved English draft',
+  )
+
+  const published = await call(endpoint, 'PUT', {
+    ...save,
+    draft: false,
+    revision: saved.data.revision,
+  })
+  assert.equal(published.status, 200)
+  assert.equal(
+    (await call('/api/posts')).data.posts[0].english.draft,
+    false,
+    'List shows publication',
+  )
   assert.equal(
     await readFile(path.join(sandbox, 'content', file), 'utf8'),
     source,
@@ -144,6 +171,11 @@ try {
   )
   assert.equal((await call(endpoint)).data.outdated, true)
   assert.equal(
+    (await call('/api/posts')).data.posts[0].english.outdated,
+    true,
+    'List flags changed sources',
+  )
+  assert.equal(
     (await call(endpoint, 'PUT', { ...save, revision: saved.data.revision })).status,
     409,
   )
@@ -168,6 +200,8 @@ try {
     'utf8',
   )
   assert.ok(movedEnglish.includes('draft: true'))
+  assert.equal((await call('/api/posts')).data.posts[0].english.path, '/en/blog/docs/renamed-test')
+  assert.equal((await call('/api/posts')).data.posts[0].english.draft, true)
   await trashPost(ws, moved.file)
   assert.equal(
     (await readdir(path.join(sandbox, 'trash'))).length,
@@ -184,7 +218,7 @@ try {
   assert.ok(calls >= 8)
   assert.ok(normalizeTranslationAssets('`../../../public/images/a.png`', file).startsWith('`../'))
   console.log(
-    'Translation checks passed: AI generation, preview-before-save, revisions, content integrity, asset paths, move/delete, failures, and path safety.',
+    'Translation checks passed: AI generation, draft/publication status, revisions, content integrity, asset paths, move/delete, failures, and path safety.',
   )
 } finally {
   await server.close()

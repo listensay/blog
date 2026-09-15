@@ -67,7 +67,7 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | --- | --- |
 | `GET /api/workspace` | 仓库路径、文章数、页面数、图片数 |
 | `GET /api/dashboard` | 概览数字、发文趋势、最近修改、待办提示 |
-| `GET /api/posts` | 文章列表，附分类 / 标签 / 子目录候选 |
+| `GET /api/posts` | 文章列表，附分类 / 标签 / 子目录候选及每篇的 `english` 状态 |
 | `GET /api/post?file=` | 读一篇，含正文与整份 frontmatter |
 | `POST /api/post` | 新建 |
 | `PUT /api/post?file=` | 保存，可同时改名与换目录 |
@@ -161,10 +161,14 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 
 ### 文章英文版
 
-1. 打开已保存的中文文章，点击顶部「英文版」。有未保存的中文修改时须先保存。
+1. 在文章列表点击「添加英文版」或「管理英文版」，或打开已保存的中文文章后点击顶部「英文版」。有未保存的中文修改时须先保存。
 2. 点击「AI 翻译英文版」，复用 `.env.local` 的 `ADMIN_AI_*` 配置翻译标题、摘要与全文。
 3. 编辑英文标题、摘要和 Markdown；可切换「英文预览」「中文原文」核对。
 4. 默认保存为英文草稿。开启发布开关后点击「保存英文版」，下次站点部署后上线。
+
+文章列表显示每篇的英文草稿 / 已发布状态，中文原文修改后显示「译文待更新」，并提供英文状态筛选。
+保存译文后列表自动刷新。在英文弹窗内按 ⌘S / Ctrl+S 保存英文版；关闭弹窗、浏览器返回或切换后台页面时，
+未保存的英文编辑会提示确认，生成与保存过程中会阻止离开。英文预览支持站点绝对路径的图片与原始 HTML 图片。
 
 英文版与中文共用目录和 slug，URL 为 `/en/blog/<目录>/<slug>`。保存英文版时复制原文的日期、
 分类、标签和封面；分类与标签的英文显示名称由站点 `i18n/locales/en.json` 维护。
@@ -436,6 +440,7 @@ npm run check
 | `type-check` | `vue-tsc`。`env.d.ts` 引入 `ant-design-vue/typings/global`，覆盖模板中的 `a-*` 组件名与 props |
 | `check:roundtrip` | 取真实文章执行 Markdown → 富文本 → Markdown，断言图片路径一致、标题 / 围栏 / 表格 / 列表数量不变 |
 | `check:api` | 启动 dev server 执行完整增删改，并逐个请求 `src/` 下每个模块 |
+| `check:translations` | 用模拟 AI 验证翻译生成、草稿 / 发布与列表状态、版本冲突、内容完整性和文件联动 |
 
 改动 `src/utils/markdown.ts` 或 tiptap 扩展后须运行 `check:roundtrip`。
 

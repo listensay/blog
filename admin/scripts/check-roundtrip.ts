@@ -28,6 +28,7 @@ const { Editor } = await import('@tiptap/vue-3')
 const { createEditorExtensions } = await import('../src/editor/extensions.ts')
 const { detectRichTextRisks, htmlToMd, mdToHtml, toPreviewSrc, toStoredSrc, retargetImagePaths } =
   await import('../src/utils/markdown.ts')
+const { translationPreviewHtml } = await import('../src/utils/translation-preview.ts')
 
 const editor = new Editor({ extensions: createEditorExtensions(), content: '' })
 
@@ -84,6 +85,40 @@ console.log('\n图片路径：文件里的相对写法 ⇄ 浏览器预览地址
   else fail('外链图片被改了')
 }
 
+console.log('\n英文预览：站点图片映射到本地后台，代码与外链保持原样')
+{
+  const markdown = [
+    '![Root](/images/root.png?v=2)',
+    '![Relative](../../../../public/images/with%20space.png)',
+    '![Remote](https://example.com/remote.png)',
+    '![Protocol relative](//example.com/remote.png)',
+    '<details><summary>Images</summary><img src="/images/inline.png"></details>',
+    '<video src="/media/clip.mp4" poster="/images/poster.png"></video>',
+    '```html\n<img src="/images/code.png">\n```',
+  ].join('\n\n')
+  const preview = new dom.window.DOMParser().parseFromString(
+    translationPreviewHtml(markdown, 'en/blog/ai'),
+    'text/html',
+  )
+  assert.deepEqual(
+    [...preview.querySelectorAll('img')].map((img) => img.getAttribute('src')),
+    [
+      '/blog-public/images/root.png?v=2',
+      '/blog-public/images/with%20space.png',
+      'https://example.com/remote.png',
+      '//example.com/remote.png',
+      '/blog-public/images/inline.png',
+    ],
+  )
+  assert.equal(preview.querySelector('video')?.getAttribute('src'), '/blog-public/media/clip.mp4')
+  assert.equal(
+    preview.querySelector('video')?.getAttribute('poster'),
+    '/blog-public/images/poster.png',
+  )
+  assert.equal(preview.querySelector('code')?.textContent, '<img src="/images/code.png">')
+  pass('Markdown 与 HTML 图片可预览，外链与代码示例未改写')
+}
+
 console.log('\n各种 markdown 语法的往返')
 {
   const cases: Array<[string, string]> = [
@@ -116,10 +151,7 @@ console.log('\n各种 markdown 语法的往返')
       '折叠块标题是裸网址',
       '<details>\n<summary><h3>http://20.115.208.7:4000/v1</h3></summary>\n\n不需要密钥\n\n</details>\n',
     ],
-    [
-      '折叠块正文多段',
-      '<details>\n<summary><h3>甲</h3></summary>\n\n一段\n\n二段\n\n</details>\n',
-    ],
+    ['折叠块正文多段', '<details>\n<summary><h3>甲</h3></summary>\n\n一段\n\n二段\n\n</details>\n'],
     [
       '连续两个折叠块',
       '<details>\n<summary><h3>甲</h3></summary>\n\n甲\n\n</details>\n\n<details>\n<summary><h3>乙</h3></summary>\n\n乙\n\n</details>\n',
@@ -193,7 +225,8 @@ console.log('\n富文本撑不住的语法要能被识别（界面上据此提�
   if (!detectRichTextRisks(collapse).length) pass('折叠块不算风险（富文本支持）')
   else fail(`折叠块被误判：${JSON.stringify(detectRichTextRisks(collapse))}`)
 
-  if (detectRichTextRisks(`${collapse}\n<div>x</div>\n`).length) pass('折叠块与其他 HTML 混排时仍能识别')
+  if (detectRichTextRisks(`${collapse}\n<div>x</div>\n`).length)
+    pass('折叠块与其他 HTML 混排时仍能识别')
   else fail('折叠块之外的 HTML 漏判')
 
   const codeOnly = '```c\n#include <stdio.h>\nprintf("%d\\n", a < b);\n```\n'

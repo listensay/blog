@@ -17,6 +17,7 @@ import { moveToTrash } from './trash.ts'
 import {
   prepareTranslationMove,
   readTranslationFile,
+  revisionOf,
   withContentWrite,
 } from './translation-files.ts'
 
@@ -87,7 +88,26 @@ async function toSummary(ws: Workspace, relative: string): Promise<PostSummary> 
 
 export async function listPosts(ws: Workspace): Promise<PostListResponse> {
   const files = await walkMarkdown(ws.postsDir)
-  const posts = await Promise.all(files.map((file) => toSummary(ws, file)))
+  const posts = await Promise.all(
+    files.map(async (file) => {
+      const post = await toSummary(ws, file)
+      const translated = await readTranslationFile(ws, post)
+      const sourceRevision = translated
+        ? revisionOf(await readFile(resolvePostFile(ws, post.file), 'utf8'))
+        : ''
+      return {
+        ...post,
+        english: translated
+          ? {
+              file: translated.file,
+              path: `/en${post.realPath}`,
+              draft: translated.data.draft === true,
+              outdated: translated.data.translationSourceHash !== sourceRevision,
+            }
+          : null,
+      }
+    }),
+  )
 
   posts.sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.mtime - a.mtime)
 

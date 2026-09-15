@@ -1,12 +1,16 @@
 ---
-title: 'Free AI API Providers: Free Credits, Limits & Availability'
-description: 'A personal directory of free AI APIs and community gateways, with signup credits, daily allowances, availability notes, and hands-on impressions.'
+title: "Free AI API Providers: Free Credits, Limits & Availability"
+description: A personal directory of free AI APIs and community gateways, with signup credits, daily allowances, availability notes, and hands-on impressions.
 date: 2026-08-19 00:00
 slug: free-ai
-category: Benefits
+path: /en/blog/ai/free-ai
+category: 福利
 tags:
   - AI
-  - Freebies
+  - 白嫖
+draft: false
+cover: ""
+translationSourceHash: c250b5bf3262540a0909e7de45d703e4b63c832ca50be5192877a0412628afa3
 ---
 
 > ### Recent updates
@@ -74,19 +78,6 @@ Model pricing is relatively high, but the service has been stable in my experien
 </details>
 
 <details>
-<summary><h3>Conduit</h3></summary>
-
-**My rating: Great.**
-
-Requests are fast. The original listing includes premium models such as GPT5.6 and Fable 5, plus unlimited free access to DeepSeek V4 Flash and MiniMax M3.
-
-Open the Telegram bot below and follow its registration process. New users receive 500 credits after registering.
-
-[Register through the Conduit Telegram bot](https://t.me/conduitoff_bot?start=ref_6406492700)
-
-</details>
-
-<details>
 <summary><h3>SeekAI</h3></summary>
 
 **Not yet rated: I have not tested it.**
@@ -141,7 +132,7 @@ Speed is reasonable, but credits are consumed relatively quickly. Daily check-in
 </details>
 
 <details>
-<summary><h3>JustDoWork — no models currently available</h3></summary>
+<summary><h3>JustDoWork</h3></summary>
 
 **Not yet rated: I have not tested it.**
 
@@ -170,6 +161,19 @@ macOS:
 ```
  echo 'export NO_PROXY=127.0.0.1,localhost' >> ~/.zshrc && source ~/.zshrc
 ```
+
+</details>
+
+<details>
+<summary><h3>Conduit — generally unavailable; access is hard to get</h3></summary>
+
+**My rating: Great.**
+
+Requests are fast. The original listing includes premium models such as GPT5.6 and Fable 5, plus unlimited free access to DeepSeek V4 Flash and MiniMax M3.
+
+Open the Telegram bot below and follow its registration process. New users receive 500 credits after registering.
+
+[Register through the Conduit Telegram bot](https://t.me/conduitoff_bot?start=ref_6406492700)
 
 </details>
 
