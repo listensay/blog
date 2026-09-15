@@ -17,7 +17,7 @@ pnpm、yarn、bun 同样可用。
 
 ## 中英文页面
 
-使用 `@nuxtjs/i18n`，中文地址保持不变，英文站点位于 `/en`。页头右上角通过真实链接切换语言；
+使用 `@nuxtjs/i18n`，中文地址保持不变，英文站点位于 `/en`。页头右上角通过带国旗的真实链接切换语言（中文：中国国旗；English：美国国旗）；
 有译文时通过模块的 `useSwitchLocalePath()` 打开对应页面，保留查询参数和锚点；没有译文时打开另一种语言的文章列表。
 
 - 中文文章：`content/blog/<目录>/<文件名>.md`。
@@ -27,7 +27,7 @@ pnpm、yarn、bun 同样可用。
 - 英文站点摘要、个人简介和分类/标签显示名：`i18n/locales/en.json` 的 `site`、`taxonomy`。
 - 中文站点设置与自定义菜单继续使用 `content/data/site.json`、`nav.json`；英文常用菜单名称使用 `nav` 翻译键，自定义菜单可在 `SiteHeader.vue` 的 `navKeys` 增加对应键。
 
-目前已提供 `free-ai` 文章、关于和友情链接的英文版本。其他文章可逐篇增加译文。
+目前已提供 `free-ai`、`ai-logo-generation`、`codehack-jetbrains` 三篇文章，以及关于和友情链接的英文版本。其他文章可逐篇增加译文。
 文章标题、摘要、正文单独保存在英文 Markdown 中。分类和标签沿用中文原文的值，
 按稳定的 URL slug 在 `taxonomy` 中查找英文显示名（例如 `benefits` 对应 `Benefits`）。
 英文内容建议用 `/images/...` 引用图片，避免不同目录深度造成相对路径错误。

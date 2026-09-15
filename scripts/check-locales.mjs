@@ -5,7 +5,12 @@ import { readFile } from 'node:fs/promises'
 const base = process.argv[2] || 'http://127.0.0.1:3000'
 const { site } = JSON.parse(await readFile(new URL('../content/data/site.json', import.meta.url), 'utf8'))
 const origin = site.url.replace(/\/+$/, '')
-const pairedPaths = ['/', '/blog', '/categories', '/tags', '/about', '/links', '/categories/benefits', '/tags/ai', '/tags/freebies', '/blog/ai/free-ai']
+const pairedArticles = {
+  '/blog/ai/free-ai': ['公益中转站', 'Community AI API gateways'],
+  '/blog/ai/ai-logo-generation': ['前提准备', 'What you need'],
+  '/blog/other/codehack-jetbrains': ['先打开这个网址', 'First, open this website'],
+}
+const pairedPaths = ['/', '/blog', '/categories', '/tags', '/about', '/links', '/categories/benefits', '/categories/ai', '/categories/other', '/tags/ai', '/tags/freebies', '/tags/logo', '/tags/skill', '/tags/tag-1s5v80d', ...Object.keys(pairedArticles)]
 const enPath = path => path === '/' ? '/en' : `/en${path}`
 const attributes = tag => Object.fromEntries([...tag.matchAll(/([\w:-]+)="([^"]*)"/g)].map(([, key, value]) => [key, value]))
 const tags = (html, name) => [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'g'))].map(([tag]) => attributes(tag))
@@ -31,19 +36,19 @@ for (const path of pairedPaths) {
     assert.equal(toggle?.href, locale === 'en' ? path : enPath(path), `${current}: header language switch`)
     assert.ok(!tags(head, 'meta').some(meta => meta.name === 'robots' && meta.content.includes('noindex')), `${current}: indexable`)
 
-    if (path === '/blog/ai/free-ai') {
+    if (path in pairedArticles) {
       const json = [...html.matchAll(/<script\b[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)]
         .map(([, data]) => JSON.parse(data)).find(data => data['@type'] === 'BlogPosting')
       assert.equal(json?.inLanguage, locale, `${current}: structured data language`)
       assert.equal(json?.mainEntityOfPage['@id'], origin + current, `${current}: structured data URL`)
       const article = html.match(/<article\b[\s\S]*?<\/article>/)?.[0] || ''
-      assert.ok(article.includes(locale === 'en' ? 'Community AI API gateways' : '公益中转站'), `${current}: server-rendered article body`)
+      assert.ok(article.includes(pairedArticles[path][locale === 'en' ? 1 : 0]), `${current}: server-rendered article body`)
       assert.equal(tags(head, 'meta').find(meta => meta.property === 'og:locale')?.content, locale === 'en' ? 'en_US' : 'zh_CN')
     }
   }
 }
 
-const originalOnly = '/blog/ai/ai-logo-generation'
+const originalOnly = '/blog/embedded/embedded-100-days'
 for (const [current, target] of [['/blog?q=Nuxt', '/en/blog?q=Nuxt'], ['/en/blog?q=Nuxt', '/blog?q=Nuxt']]) {
   const html = await get(current)
   const header = html.match(/<header\b[\s\S]*?<\/header>/)?.[0] || ''
@@ -59,7 +64,9 @@ assert.equal(tags(missing, 'link').filter(link => link.rel === 'canonical').leng
 
 const listing = await get('/en/blog')
 const main = listing.match(/<main\b[\s\S]*?<\/main>/)?.[0] || ''
-assert.ok(tags(main, 'a').some(link => link.href === '/en/blog/ai/free-ai'), 'English article is discoverable')
+for (const path of Object.keys(pairedArticles)) {
+  assert.ok(tags(main, 'a').some(link => link.href === enPath(path)), `${path}: English article is discoverable`)
+}
 assert.ok(!tags(main, 'a').some(link => link.href === originalOnly), 'English listing excludes untranslated posts')
 
 const sitemap = await get('/sitemap.xml')

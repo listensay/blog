@@ -100,7 +100,10 @@
     "uncategorized": "Uncategorized",
     "other": "Other",
     "python": "Python",
-    "agent": "Agent"
+    "agent": "Agent",
+    "logo": "Logo",
+    "skill": "Skill",
+    "tag-1s5v80d": "Tutorials"
   },
   "categoryCount": "{count} categories | {count} category | {count} categories",
   "loadingArticle": "Loading article…",

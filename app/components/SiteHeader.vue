@@ -143,7 +143,14 @@ onMounted(() => {
         :lang="isEnglish ? 'zh-CN' : 'en'"
         class="col-start-2 row-start-1 inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white/70 px-3 text-sm font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 lg:col-start-3"
       >
-        <IconWorld :size="17" stroke="1.8" aria-hidden="true" />
+        <img
+          :src="isEnglish ? '/flags/cn.svg' : '/flags/us.svg'"
+          width="24"
+          height="16"
+          alt=""
+          aria-hidden="true"
+          class="h-4 w-6 shrink-0 rounded-[2px] object-contain"
+        >
         {{ t(isEnglish ? 'languageChinese' : 'languageEnglish') }}
       </NuxtLink>
     </div>
