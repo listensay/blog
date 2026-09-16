@@ -10,16 +10,8 @@ tags:
   - 白嫖
 draft: false
 cover: ""
-translationSourceHash: c250b5bf3262540a0909e7de45d703e4b63c832ca50be5192877a0412628afa3
+translationSourceHash: c31f07ba852216860af8e094829d2409cdde773bd71ca250f3458337cb2fe7b1
 ---
-
-> ### Recent updates
->
-> September 13, 2026: JustDoWork is temporarily unavailable.
->
-> September 8, 2026: Some models on JustDoWork and SeekAI are available again.
->
-> September 3, 2026: Added OrcaRouter, Conduit, and kktoken.
 
 This is my personal collection of free AI APIs and community gateways. I have not received payment for these listings or accepted paid promotions. Some registration links contain referral codes and may grant account credits.
 
@@ -74,106 +66,6 @@ Model pricing is relatively high, but the service has been stable in my experien
 - Daily check-in: a random allowance of 5–9 credits.
 
 [Register with Gemai](https://api.gemai.cc/sign-up?aff=GmYKJSLl)
-
-</details>
-
-<details>
-<summary><h3>SeekAI</h3></summary>
-
-**Not yet rated: I have not tested it.**
-
-The advertised allowances are generous:
-
-- Signup with a referral: 200 credits.
-- Daily check-in: 20 credits.
-- Referral reward: 20 credits per invited user.
-
-[Register with SeekAI](https://seekai.cc/sign-up?aff=fjxq)
-
-</details>
-
-### Temporarily unavailable gateways
-
-<details>
-<summary><h3>kktoken AI</h3></summary>
-
-**Not rated.**
-
-The listed allowances are 200 signup credits with a referral and 20 credits per daily check-in.
-
-[kktoken AI registration](https://kktoken.cc/sign-up?aff=GGv5)
-
-</details>
-
-<details>
-<summary><h3>TabToken</h3></summary>
-
-**Not yet rated: I have not tested it.**
-
-Model pricing appears relatively high.
-
-- Signup with a referral: 100 credits.
-- Daily check-in: 5–9 credits.
-- Referral reward: 20 credits per invited user.
-
-[TabToken registration](https://tabitoken.com/sign-up?aff=6boQ)
-
-</details>
-
-<details>
-<summary><h3>GoRouter</h3></summary>
-
-**My rating: Average.**
-
-Speed is reasonable, but credits are consumed relatively quickly. Daily check-in grants 6–9 credits.
-
-[GoRouter registration](https://gorouter.app/sign-up?aff=C58L)
-
-</details>
-
-<details>
-<summary><h3>JustDoWork</h3></summary>
-
-**Not yet rated: I have not tested it.**
-
-Pricing appears reasonable. The listed allowances are:
-
-- Signup with a referral: 200 credits.
-- Daily check-in: 5–9 credits.
-- Referral reward: 40 credits per invited user.
-
-[JustDoWork registration](https://api.justwoker.icu/register?aff=Qk1K)
-
-### Connection troubleshooting
-
-![Connection troubleshooting example from the original guide](/images/Pasted-image-20260911200243.png)
-
-The original guide suggests excluding local addresses from your proxy with the command for your operating system.
-
-Windows:
-
-```
-setx NO_PROXY "127.0.0.1,localhost"
-```
-
-macOS:
-
-```
- echo 'export NO_PROXY=127.0.0.1,localhost' >> ~/.zshrc && source ~/.zshrc
-```
-
-</details>
-
-<details>
-<summary><h3>Conduit — generally unavailable; access is hard to get</h3></summary>
-
-**My rating: Great.**
-
-Requests are fast. The original listing includes premium models such as GPT5.6 and Fable 5, plus unlimited free access to DeepSeek V4 Flash and MiniMax M3.
-
-Open the Telegram bot below and follow its registration process. New users receive 500 credits after registering.
-
-[Register through the Conduit Telegram bot](https://t.me/conduitoff_bot?start=ref_6406492700)
 
 </details>
 
