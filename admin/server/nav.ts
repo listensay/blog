@@ -43,12 +43,18 @@ function asItem(value: unknown, index: number): NavItem {
 
   const item = value as Record<string, unknown>
   const label = typeof item.label === 'string' ? item.label.trim() : ''
+  if (item.labelEn !== undefined && typeof item.labelEn !== 'string') {
+    throw badRequest(`${at}的英文名称必须是文字`)
+  }
+  const labelEn = typeof item.labelEn === 'string' ? item.labelEn.trim() : ''
   const to = typeof item.to === 'string' ? item.to.trim() : ''
   const icon = typeof item.icon === 'string' ? item.icon.trim() : ''
   const color = typeof item.color === 'string' ? item.color.trim() : ''
 
-  if (!label) throw badRequest(`${at}的名称不能为空`)
-  if (label.length > MAX_LABEL) throw badRequest(`${at}的文字太长了（最多 ${MAX_LABEL} 个字）`)
+  if (!label) throw badRequest(`${at}的中文名称不能为空`)
+  if (label.length > MAX_LABEL) throw badRequest(`${at}的中文名称太长了（最多 ${MAX_LABEL} 个字）`)
+  if (labelEn.length > MAX_LABEL)
+    throw badRequest(`${at}的英文名称太长了（最多 ${MAX_LABEL} 个字符）`)
   if (!to) throw badRequest(`${at}（${label}）的路径不能为空`)
   if (!to.startsWith('/')) {
     throw badRequest(`${at}（${label}）的路径要以 / 开头，顶栏只放站内页面：${to}`)
@@ -58,7 +64,7 @@ function asItem(value: unknown, index: number): NavItem {
     throw badRequest(`${at}（${label}）的颜色要写成 #rrggbb：${color || '（空）'}`)
   }
 
-  return { label, to, icon, color }
+  return { label, ...(labelEn ? { labelEn } : {}), to, icon, color }
 }
 
 function validate(input: unknown): NavItem[] {

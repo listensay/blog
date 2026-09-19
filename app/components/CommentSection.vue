@@ -34,7 +34,7 @@ function onSubmitted(result: CommentListResponse) {
 </script>
 
 <template>
-  <section id="comments" class="mt-12 border-t border-slate-200 pt-8 sm:mt-16 sm:pt-10">
+  <section id="comments" class="mt-8 rounded-2xl bg-white p-5 shadow sm:p-6">
     <div class="flex items-end justify-between">
       <h2 class="text-lg font-semibold tracking-tight text-slate-900">
         {{ t('comments') }}

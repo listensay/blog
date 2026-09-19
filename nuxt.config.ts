@@ -1,9 +1,27 @@
 import tailwindcss from '@tailwindcss/vite'
+import { watch } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
+const contentDataDir = fileURLToPath(new URL('./content/data', import.meta.url))
 
 export default defineNuxtConfig({
   modules: [
     '@nuxt/content',
     '@nuxtjs/i18n',
+    function watchSiteConfig(_options, nuxt) {
+      if (!nuxt.options.dev) return
+      let timer: ReturnType<typeof setTimeout> | undefined
+      // Content excludes this directory from Vite, but these files are app imports.
+      const watcher = watch(contentDataDir, (_event, filename) => {
+        if (!filename?.endsWith('.json')) return
+        clearTimeout(timer)
+        timer = setTimeout(() => { void nuxt.callHook('restart') }, 200)
+      })
+      nuxt.hook('close', () => {
+        clearTimeout(timer)
+        watcher.close()
+      })
+    },
   ],
 
   i18n: {

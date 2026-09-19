@@ -117,12 +117,16 @@
     overflow-wrap: break-word;
   }
 
+  .prose-cn :where(h2, h3) {
+    scroll-margin-top: 8rem;
+  }
+
   .prose-cn :where(h2) {
-    @apply mt-2 scroll-mt-24 border-b border-slate-200 pb-2 text-2xl font-semibold tracking-tight;
+    @apply mt-2 border-b border-slate-200 pb-2 text-2xl font-semibold tracking-tight;
   }
 
   .prose-cn :where(h3) {
-    @apply mt-2 scroll-mt-24 text-xl font-semibold tracking-tight;
+    @apply mt-2 text-xl font-semibold tracking-tight;
   }
 
   .prose-cn :where(code):not(:where(pre *)) {

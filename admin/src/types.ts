@@ -212,6 +212,7 @@ export interface PageListResponse {
 
 export interface NavItem {
   label: string
+  labelEn?: string
   to: string
   icon: string
   color: string

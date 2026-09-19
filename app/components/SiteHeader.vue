@@ -4,11 +4,13 @@ import {
   IconArticle,
   IconBook,
   IconCategory,
+  IconChevronDown,
   IconCode,
   IconCoffee,
   IconFileText,
   IconHeart,
   IconHome,
+  IconLanguage,
   IconLink,
   IconMail,
   IconMessage,
@@ -25,13 +27,35 @@ import type { NavIcon } from '~/utils/site'
 
 const route = useRoute()
 const { isEnglish, localPath, switchPath, switchLabel, publishedPaths, t } = useLocale()
-const navKeys: Record<string, string> = { '/': 'home', '/blog': 'articles', '/categories': 'categories', '/tags': 'tags', '/about': 'about', '/links': 'links' }
 const navigation = computed(() => siteConfig.nav.map(item => ({
   ...item,
-  label: isEnglish.value && navKeys[item.to] ? t(`nav.${navKeys[item.to]}`) : item.label,
+  label: isEnglish.value ? item.labelEn : item.label,
   to: isEnglish.value && publishedPaths.value?.includes(localPath(item.to)) ? localPath(item.to) : item.to,
 })))
 const titleColors = ['#4285f4', '#ea4335', '#f9ab00', '#34a853', '#a855f7']
+const languageMenu = ref<HTMLDetailsElement>()
+const mounted = ref(false)
+const currentPath = computed(() => mounted.value ? route.fullPath : route.fullPath.split('#')[0])
+const languages = computed(() => [
+  { code: 'zh-CN', label: t('languageChinese'), current: !isEnglish.value },
+  { code: 'en', label: t('languageEnglish'), current: isEnglish.value },
+])
+
+function closeLanguageMenu(restoreFocus = false) {
+  if (!languageMenu.value?.open) return
+  languageMenu.value.open = false
+  if (restoreFocus) languageMenu.value.querySelector('summary')?.focus()
+}
+
+function onOutsidePointerDown(event: PointerEvent) {
+  if (event.target instanceof Node && !languageMenu.value?.contains(event.target)) closeLanguageMenu()
+}
+
+function onLanguageFocusOut(event: FocusEvent) {
+  if (!(event.relatedTarget instanceof Node) || !languageMenu.value?.contains(event.relatedTarget)) closeLanguageMenu()
+}
+
+watch(() => route.fullPath, () => closeLanguageMenu())
 
 const isActive = (to: string) => {
   if (to === '/' || to === '/en') return route.path === to
@@ -86,11 +110,17 @@ function centerActiveItem(smooth: boolean) {
 }
 
 onMounted(() => {
+  mounted.value = true
+  document.addEventListener('pointerdown', onOutsidePointerDown)
   centerActiveItem(false)
 
   watch(() => route.path, () => {
     nextTick(() => centerActiveItem(!prefersReducedMotion()))
   })
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onOutsidePointerDown)
 })
 </script>
 
@@ -135,24 +165,36 @@ onMounted(() => {
           {{ item.label }}
         </NuxtLink>
       </nav>
-      <NuxtLink
-        :to="switchPath"
-        :aria-label="switchLabel"
-        :title="switchLabel"
-        :hreflang="isEnglish ? 'zh-CN' : 'en'"
-        :lang="isEnglish ? 'zh-CN' : 'en'"
-        class="col-start-2 row-start-1 inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white/70 px-3 text-sm font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 lg:col-start-3"
+      <details
+        ref="languageMenu"
+        class="group relative col-start-2 row-start-1 shrink-0 lg:col-start-3"
+        @keydown.esc.stop.prevent="closeLanguageMenu(true)"
+        @focusout="onLanguageFocusOut"
       >
-        <img
-          :src="isEnglish ? '/flags/cn.svg' : '/flags/us.svg'"
-          width="24"
-          height="16"
-          alt=""
-          aria-hidden="true"
-          class="h-4 w-6 shrink-0 rounded-[2px] object-contain"
+        <summary
+          class="inline-flex min-h-10 cursor-pointer list-none items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white/70 px-3 text-sm leading-5 font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 group-open:border-slate-300 group-open:bg-white group-open:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400 [&::-webkit-details-marker]:hidden"
         >
-        {{ t(isEnglish ? 'languageChinese' : 'languageEnglish') }}
-      </NuxtLink>
+          <IconLanguage :size="18" stroke="1.8" aria-hidden="true" />
+          <span lang="en">Language</span>
+          <IconChevronDown :size="14" stroke="1.8" aria-hidden="true" class="transition-transform group-open:rotate-180" />
+        </summary>
+        <ul class="absolute right-0 top-full z-50 mt-2 w-36 space-y-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-md shadow-slate-900/10" aria-label="Language">
+          <li v-for="language in languages" :key="language.code">
+            <NuxtLink
+              :to="language.current ? currentPath : switchPath"
+              :hreflang="language.code"
+              :lang="language.code"
+              :aria-current="language.current ? 'true' : undefined"
+              :title="language.current ? undefined : switchLabel"
+              class="flex min-h-9 items-center rounded-md px-3 py-2 text-sm leading-5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-slate-400"
+              :class="language.current ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'"
+              @click="closeLanguageMenu()"
+            >
+              {{ language.label }}
+            </NuxtLink>
+          </li>
+        </ul>
+      </details>
     </div>
   </header>
 </template>

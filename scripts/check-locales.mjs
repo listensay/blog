@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { escapeHtml } from '@vue/shared'
 
 // Check rendered HTML without JavaScript, as a crawler would see it.
 const base = process.argv[2] || 'http://127.0.0.1:3000'
 const { site } = JSON.parse(await readFile(new URL('../content/data/site.json', import.meta.url), 'utf8'))
+const menu = JSON.parse(await readFile(new URL('../content/data/nav.json', import.meta.url), 'utf8'))
 const origin = site.url.replace(/\/+$/, '')
 const pairedArticles = {
   '/blog/ai/free-ai': ['公益中转站', 'Community AI API gateways'],
@@ -32,7 +34,11 @@ for (const path of pairedPaths) {
       ['en', origin + enPath(path)], ['zh-CN', origin + path],
     ], `${current}: reciprocal language links`)
     const header = html.match(/<header\b[\s\S]*?<\/header>/)?.[0] || ''
-    const toggle = tags(header, 'a').find(link => link.hreflang)
+    const navigation = header.match(/<nav\b[\s\S]*?<\/nav>/)?.[0] || ''
+    const menuLabels = [...navigation.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)]
+      .map(([, label]) => label.replace(/<[^>]*>/g, '').trim())
+    assert.deepEqual(menuLabels, menu.map(item => escapeHtml(locale === 'en' ? item.labelEn?.trim() || item.label.trim() : item.label.trim())), `${current}: configured menu language`)
+    const toggle = tags(header, 'a').find(link => link.hreflang && link.hreflang !== locale)
     assert.equal(toggle?.href, locale === 'en' ? path : enPath(path), `${current}: header language switch`)
     assert.ok(!tags(head, 'meta').some(meta => meta.name === 'robots' && meta.content.includes('noindex')), `${current}: indexable`)
 
@@ -52,12 +58,13 @@ const originalOnly = '/blog/embedded/embedded-100-days'
 for (const [current, target] of [['/blog?q=Nuxt', '/en/blog?q=Nuxt'], ['/en/blog?q=Nuxt', '/blog?q=Nuxt']]) {
   const html = await get(current)
   const header = html.match(/<header\b[\s\S]*?<\/header>/)?.[0] || ''
-  assert.equal(tags(header, 'a').find(link => link.hreflang)?.href, target, 'Locale switch preserves query parameters')
+  const targetLocale = current.startsWith('/en/') ? 'zh-CN' : 'en'
+  assert.equal(tags(header, 'a').find(link => link.hreflang === targetLocale)?.href, target, 'Locale switch preserves query parameters')
 }
 const untranslated = await get(originalOnly)
 assert.equal(tags(untranslated.split('</head>')[0], 'link').filter(link => link.hreflang).length, 0, 'No hreflang for missing translations')
 const untranslatedHeader = untranslated.match(/<header\b[\s\S]*?<\/header>/)?.[0] || ''
-assert.equal(tags(untranslatedHeader, 'a').find(link => link.hreflang)?.href, '/en/blog', 'Untranslated articles switch to the English article list')
+assert.equal(tags(untranslatedHeader, 'a').find(link => link.hreflang === 'en')?.href, '/en/blog', 'Untranslated articles switch to the English article list')
 const missing = await get(enPath(originalOnly), 404)
 assert.ok(tags(missing, 'meta').some(meta => meta.name === 'robots' && meta.content.includes('noindex')), 'Missing translations are not indexable')
 assert.equal(tags(missing, 'link').filter(link => link.rel === 'canonical').length, 0, '404 pages have no canonical')

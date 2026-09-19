@@ -17,7 +17,7 @@ pnpm、yarn、bun 同样可用。
 
 ## 中英文页面
 
-使用 `@nuxtjs/i18n`，中文地址保持不变，英文站点位于 `/en`。页头右上角通过带国旗的真实链接切换语言（中文：中国国旗；English：美国国旗）；
+使用 `@nuxtjs/i18n`，中文地址保持不变，英文站点位于 `/en`。页头右上角显示语言图标与 `Language`，点击展开不带图标的「中文 / English」列表，通过真实链接切换语言；
 有译文时通过模块的 `useSwitchLocalePath()` 打开对应页面，保留查询参数和锚点；没有译文时打开另一种语言的文章列表。
 
 - 中文文章：`content/blog/<目录>/<文件名>.md`。
@@ -25,7 +25,7 @@ pnpm、yarn、bun 同样可用。
 - 英文独立页面：`content/en/pages/`，文件路径与 `content/pages/` 对应。
 - 界面文案：`i18n/locales/zh-CN.json`、`i18n/locales/en.json`，组件通过 `t()` 读取。
 - 英文站点摘要、个人简介和分类/标签显示名：`i18n/locales/en.json` 的 `site`、`taxonomy`。
-- 中文站点设置与自定义菜单继续使用 `content/data/site.json`、`nav.json`；英文常用菜单名称使用 `nav` 翻译键，自定义菜单可在 `SiteHeader.vue` 的 `navKeys` 增加对应键。
+- 中文站点设置使用 `content/data/site.json`；菜单名称在后台「菜单」中分别设置中文和英文，保存到 `content/data/nav.json` 的 `label`、`labelEn`。英文留空时使用中文名称，内置菜单和自定义菜单均适用。
 
 目前已提供 `free-ai`、`ai-logo-generation`、`codehack-jetbrains` 三篇文章，以及关于和友情链接的英文版本。其他文章可逐篇增加译文。
 文章标题、摘要、正文单独保存在英文 Markdown 中。分类和标签沿用中文原文的值，

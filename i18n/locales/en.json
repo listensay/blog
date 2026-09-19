@@ -46,6 +46,7 @@
   "articleCount": "{count} articles | {count} article | {count} articles",
   "articles": "Articles",
   "articleNotFound": "Article not found",
+  "articleContents": "On this page",
   "home": "Home",
   "draft": "Draft",
   "previousArticle": "Previous article",

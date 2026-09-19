@@ -1,8 +1,8 @@
 [
-  { "label": "Home", "to": "/", "icon": "home", "color": "#3b82f6" },
-  { "label": "Articles", "to": "/blog", "icon": "articles", "color": "#10b981" },
-  { "label": "Categories", "to": "/categories", "icon": "categories", "color": "#8b5cf6" },
-  { "label": "Tags", "to": "/tags", "icon": "tags", "color": "#f59e0b" },
-  { "label": "About", "to": "/about", "icon": "about", "color": "#06b6d4" },
-  { "label": "Links", "to": "/links", "icon": "links", "color": "#f43f5e" }
+  { "label": "首页", "labelEn": "Home", "to": "/", "icon": "home", "color": "#3b82f6" },
+  { "label": "文章", "labelEn": "Articles", "to": "/blog", "icon": "articles", "color": "#10b981" },
+  { "label": "分类", "labelEn": "Categories", "to": "/categories", "icon": "categories", "color": "#8b5cf6" },
+  { "label": "标签", "labelEn": "Tags", "to": "/tags", "icon": "tags", "color": "#f59e0b" },
+  { "label": "关于", "labelEn": "About", "to": "/about", "icon": "about", "color": "#06b6d4" },
+  { "label": "友链", "labelEn": "Links", "to": "/links", "icon": "links", "color": "#f43f5e" }
 ]

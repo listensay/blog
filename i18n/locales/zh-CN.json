@@ -46,6 +46,7 @@
   "articleCount": "{count} 篇文章",
   "articles": "全部文章",
   "articleNotFound": "文章不存在",
+  "articleContents": "阅读章节",
   "home": "首页",
   "draft": "草稿",
   "previousArticle": "上一篇",

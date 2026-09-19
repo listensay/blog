@@ -103,7 +103,10 @@ function update(index: number, patch: Partial<NavItem>) {
 }
 
 function add() {
-  items.value = [...items.value, { label: '', to: '', icon: 'page', color: DEFAULT_COLOR }]
+  items.value = [
+    ...items.value,
+    { label: '', labelEn: '', to: '', icon: 'page', color: DEFAULT_COLOR },
+  ]
 }
 
 function remove(index: number) {
@@ -197,28 +200,57 @@ async function save() {
 
     <div class="card">
       <div class="card-title">预览</div>
-      <nav class="preview">
-        <span v-for="(item, index) in items" :key="index" class="preview-item">
-          <NavIcon :name="item.icon" :size="16" :style="{ color: item.color }" />
-          {{ item.label || '未命名' }}
-        </span>
-        <span v-if="!items.length" class="muted">暂无菜单项</span>
-      </nav>
+      <div v-for="language in ['zh-CN', 'en']" :key="language" class="preview-row">
+        <span class="preview-label">{{ language === 'en' ? 'English' : '中文' }}</span>
+        <nav
+          class="preview"
+          :aria-label="language === 'en' ? '英文菜单预览' : '中文菜单预览'"
+          :lang="language"
+        >
+          <span v-for="(item, index) in items" :key="index" class="preview-item">
+            <NavIcon :name="item.icon" :size="16" :style="{ color: item.color }" />
+            {{
+              (language === 'en' ? item.labelEn?.trim() || item.label.trim() : item.label.trim()) ||
+              '未命名'
+            }}
+          </span>
+          <span v-if="!items.length" class="muted">暂无菜单项</span>
+        </nav>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-title">菜单项</div>
+      <p class="field-hint">中文名称用于中文站，英文名称用于英文站；英文留空时显示中文名称。</p>
 
       <div v-for="(item, index) in items" :key="index" class="row">
         <span class="index mono">{{ index + 1 }}</span>
 
         <div class="fields">
-          <a-input
-            :value="item.label"
-            class="label-input"
-            placeholder="菜单名称"
-            @update:value="(v: string) => update(index, { label: v })"
-          />
+          <div class="name-fields">
+            <label class="label-field">
+              <span>中文名称</span>
+              <a-input
+                :value="item.label"
+                class="label-input"
+                placeholder="例如：首页"
+                aria-label="中文名称"
+                :maxlength="24"
+                @update:value="(v: string) => update(index, { label: v })"
+              />
+            </label>
+            <label class="label-field">
+              <span>英文名称（可选）</span>
+              <a-input
+                :value="item.labelEn"
+                class="label-input"
+                placeholder="例如：Home"
+                aria-label="英文名称"
+                :maxlength="24"
+                @update:value="(v: string) => update(index, { labelEn: v })"
+              />
+            </label>
+          </div>
 
           <div class="to-field">
             <a-auto-complete
@@ -338,6 +370,25 @@ async function save() {
   padding: 10px 12px;
   background: #fafafa;
   border-radius: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-row + .preview-row {
+  margin-top: 10px;
+}
+
+.preview-label {
+  width: 48px;
+  flex: none;
+  color: #595959;
+  font-size: 13px;
 }
 
 .preview-item {
@@ -376,7 +427,36 @@ async function save() {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.name-fields {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.label-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: #595959;
+  font-size: 12px;
+}
+
+.field-hint {
+  margin: 0 0 16px;
+  color: #595959;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .name-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .label-input {

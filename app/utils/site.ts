@@ -60,6 +60,7 @@ export interface SocialLink {
 
 export interface NavItem {
   label: string
+  labelEn: string
   to: string
   icon: NavIcon
   color: string
@@ -108,6 +109,7 @@ function toNavItem(raw: unknown): NavItem | null {
 
   return {
     label,
+    labelEn: str(item.labelEn, label),
     to,
     icon: (NAV_ICONS as readonly string[]).includes(item.icon as string)
       ? (item.icon as NavIcon)

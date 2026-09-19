@@ -58,8 +58,8 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | 站点设置 | `content/data/site.json` | 整份文件 |
 | 图片 | `public/images/` | 单文件 |
 
-`content/data/*.json` 由站点侧 `app/utils/site.ts` 静态 import，为站点的硬依赖，修改后需重启
-站点 dev server。
+`content/data/*.json` 由站点侧 `app/utils/site.ts` 静态 import，为站点的硬依赖。开发服务监听
+这些配置文件，保存后会自动重启本地预览服务并刷新前台页面；线上站点需重新构建部署后生效。
 
 ## 接口
 
@@ -236,9 +236,14 @@ AI 生成结果只放入编辑表单，点击保存才写入 `content/en/blog/`�
 
 数据在 `content/data/nav.json`，站点侧 import 为 `siteConfig.nav`。整份数组一起保存。
 
+每项分别提供「中文名称」「英文名称」输入框，上方同时预览两种语言。中文站显示中文名称，
+英文站优先显示英文名称，英文留空时使用中文名称。名称设置适用于内置菜单和自定义菜单；
+两种语言共用路径、顺序、图标和颜色。现有仅含 `label` 的菜单仍可读取和保存。
+
 | 字段 | 规则 |
 | --- | --- |
-| `label` | 必填 |
+| `label` | 中文名称，必填，最多 24 字符 |
+| `labelEn` | 英文名称，可选，最多 24 字符；留空时使用中文名称 |
 | `to` | 必填，须以 `/` 开头，只接受站内地址 |
 | `icon` | 须在图标白名单内 |
 | `color` | `#rrggbb` |
@@ -438,6 +443,7 @@ npm run check
 | 子项 | 内容 |
 | --- | --- |
 | `type-check` | `vue-tsc`。`env.d.ts` 引入 `ant-design-vue/typings/global`，覆盖模板中的 `a-*` 组件名与 props |
+| `check:nav` | 在临时目录校验菜单双语保存、旧数据兼容、排序与无效输入；不启动服务、不改动真实菜单 |
 | `check:roundtrip` | 取真实文章执行 Markdown → 富文本 → Markdown，断言图片路径一致、标题 / 围栏 / 表格 / 列表数量不变 |
 | `check:api` | 启动 dev server 执行完整增删改，并逐个请求 `src/` 下每个模块 |
 | `check:translations` | 用模拟 AI 验证翻译生成、草稿 / 发布与列表状态、版本冲突、内容完整性和文件联动 |
