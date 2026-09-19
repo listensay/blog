@@ -1,5 +1,5 @@
 ---
-title: 免费AI公益中转站收集分享
+title: 【长期更新】免费AI公益中转站收集分享
 description: 带你免费白嫖各种模型，注意！不是广告！！
 date: 2026-08-19 00:00
 slug: free-ai
@@ -9,6 +9,8 @@ tags:
   - AI
   - 白嫖
 ---
+> 2026-09-19 JustDoWork、SeekAI 恢复可用
+
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
 
 站点的评价内容纯主观个人体验，仅供参考。
@@ -67,6 +69,32 @@ tags:
 新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额。
 
 [https://api.gemai.cc/sign-up?aff=GmYKJSLl](https://api.gemai.cc/sign-up?aff=GmYKJSLl)
+
+</details>
+
+<details>
+<summary><h3>SeekAI</h3></summary>
+
+评价：**无**
+
+还没有测试过，不过送的额度多。
+
+新用户使用邀请码注册可以获得200余额，每日签到可获得20余额，邀请一人可获得20余额（拉人就这点拉完了）。
+
+[https://seekai.cc/sign-up?aff=fjxq](https://seekai.cc/sign-up?aff=fjxq)
+
+</details>
+
+<details>
+<summary><h3>JustDoWork</h3></summary>
+
+评价：无
+
+这也是一个没有测试过的站点，模型价格有点还好。
+
+新用户使用邀请码注册可以获得200余额，每日签到随机5-9余额，邀请一人可获得40余额。
+
+[https://api.justwoker.icu/register?aff=Qk1K](https://api.justwoker.icu/register?aff=Qk1K)
 
 </details>
 

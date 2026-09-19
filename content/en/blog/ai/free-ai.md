@@ -1,5 +1,5 @@
 ---
-title: "Free AI API Providers: Free Credits, Limits & Availability"
+title: "[Regularly Updated] Free AI API Providers: Free Credits, Limits & Availability"
 description: A personal directory of free AI APIs and community gateways, with signup credits, daily allowances, availability notes, and hands-on impressions.
 date: 2026-08-19 00:00
 slug: free-ai
@@ -10,8 +10,10 @@ tags:
   - 白嫖
 draft: false
 cover: ""
-translationSourceHash: c31f07ba852216860af8e094829d2409cdde773bd71ca250f3458337cb2fe7b1
+translationSourceHash: aa2ca0309cb39ef56d8785e31a24d6ee5e781d3129146575683d4c1643dfdf66
 ---
+
+> September 19, 2026: JustDoWork and SeekAI are available again.
 
 This is my personal collection of free AI APIs and community gateways. I have not received payment for these listings or accepted paid promotions. Some registration links contain referral codes and may grant account credits.
 
@@ -66,6 +68,36 @@ Model pricing is relatively high, but the service has been stable in my experien
 - Daily check-in: a random allowance of 5–9 credits.
 
 [Register with Gemai](https://api.gemai.cc/sign-up?aff=GmYKJSLl)
+
+</details>
+
+<details>
+<summary><h3>SeekAI</h3></summary>
+
+**Not yet rated: I have not tested it.**
+
+The advertised allowances are generous, although the referral reward feels small:
+
+- Signup with a referral: 200 credits.
+- Daily check-in: 20 credits.
+- Referral reward: 20 credits per invited user.
+
+[Register with SeekAI](https://seekai.cc/sign-up?aff=fjxq)
+
+</details>
+
+<details>
+<summary><h3>JustDoWork</h3></summary>
+
+**Not yet rated: I have not tested it.**
+
+Model pricing appears reasonable. The listed allowances are:
+
+- Signup with a referral: 200 credits.
+- Daily check-in: a random allowance of 5–9 credits.
+- Referral reward: 40 credits per invited user.
+
+[Register with JustDoWork](https://api.justwoker.icu/register?aff=Qk1K)
 
 </details>
 
