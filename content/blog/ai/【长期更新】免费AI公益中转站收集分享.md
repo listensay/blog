@@ -73,6 +73,30 @@ tags:
 </details>
 
 <details>
+<summary><h3>Conduit</h3></summary>
+
+评价：无
+
+Gpt速度快可以用。
+
+新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
+
+[https://t.me/conduitoff_bot?start=ref_6406492700](https://t.me/conduitoff_bot?start=ref_6406492700)
+
+</details>
+
+<details>
+<summary><h3>kktoken AI</h3></summary>
+
+评价：无
+
+新用户使用邀请码注册可以获得200余额，每日签到20余额。
+
+[https://kktoken.cc/sign-up?aff=GGv5](https://kktoken.cc/sign-up?aff=GGv5)
+
+</details>
+
+<details>
 <summary><h3>SeekAI</h3></summary>
 
 评价：**无**

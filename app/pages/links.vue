@@ -95,7 +95,6 @@ useSeo({
     </div>
 
     <template v-if="!loading && page">
-      <PostReactions :target="target" />
       <CommentSection v-if="page.comments" :target="target" />
     </template>
   </div>

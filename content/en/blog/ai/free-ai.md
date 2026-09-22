@@ -10,7 +10,7 @@ tags:
   - 白嫖
 draft: false
 cover: ""
-translationSourceHash: aa2ca0309cb39ef56d8785e31a24d6ee5e781d3129146575683d4c1643dfdf66
+translationSourceHash: 568b991aecb00048a59b5729cb9fd75e0a0ca79c61b213ec589f8d3d8a221c4a
 ---
 
 > September 19, 2026: JustDoWork and SeekAI are available again.
@@ -68,6 +68,31 @@ Model pricing is relatively high, but the service has been stable in my experien
 - Daily check-in: a random allowance of 5–9 credits.
 
 [Register with Gemai](https://api.gemai.cc/sign-up?aff=GmYKJSLl)
+
+</details>
+
+<details>
+<summary><h3>Conduit</h3></summary>
+
+**Not yet rated.**
+
+GPT is available and responds quickly.
+
+New users can open the link below in Telegram and follow the registration steps. Completing registration grants 500 credits.
+
+[Register with Conduit on Telegram](https://t.me/conduitoff_bot?start=ref_6406492700)
+
+</details>
+
+<details>
+<summary><h3>kktoken AI</h3></summary>
+
+**Not yet rated.**
+
+- Signup with a referral: 200 credits.
+- Daily check-in: 20 credits.
+
+[Register with kktoken AI](https://kktoken.cc/sign-up?aff=GGv5)
 
 </details>
 

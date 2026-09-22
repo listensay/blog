@@ -64,7 +64,6 @@ useSeo({
       <div ref="proseEl" class="prose-cn mt-6 sm:mt-10">
         <ContentRenderer :value="page" />
       </div>
-      <PostReactions :target="target" />
       <CommentSection v-if="page.comments" :target="target" />
     </template>
   </div>
