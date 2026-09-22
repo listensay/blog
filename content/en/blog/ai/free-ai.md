@@ -10,7 +10,7 @@ tags:
   - 白嫖
 draft: false
 cover: ""
-translationSourceHash: 568b991aecb00048a59b5729cb9fd75e0a0ca79c61b213ec589f8d3d8a221c4a
+translationSourceHash: e38b670f17e024fd4ed1dfe1a54aba9f43e5c7cd2a4fdf33b8a94a8ec1627595
 ---
 
 > September 19, 2026: JustDoWork and SeekAI are available again.
@@ -81,18 +81,6 @@ GPT is available and responds quickly.
 New users can open the link below in Telegram and follow the registration steps. Completing registration grants 500 credits.
 
 [Register with Conduit on Telegram](https://t.me/conduitoff_bot?start=ref_6406492700)
-
-</details>
-
-<details>
-<summary><h3>kktoken AI</h3></summary>
-
-**Not yet rated.**
-
-- Signup with a referral: 200 credits.
-- Daily check-in: 20 credits.
-
-[Register with kktoken AI](https://kktoken.cc/sign-up?aff=GGv5)
 
 </details>
 

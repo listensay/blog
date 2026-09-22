@@ -86,17 +86,6 @@ Gpt速度快可以用。
 </details>
 
 <details>
-<summary><h3>kktoken AI</h3></summary>
-
-评价：无
-
-新用户使用邀请码注册可以获得200余额，每日签到20余额。
-
-[https://kktoken.cc/sign-up?aff=GGv5](https://kktoken.cc/sign-up?aff=GGv5)
-
-</details>
-
-<details>
 <summary><h3>SeekAI</h3></summary>
 
 评价：**无**
