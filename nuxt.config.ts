@@ -13,7 +13,8 @@ export default defineNuxtConfig({
       let timer: ReturnType<typeof setTimeout> | undefined
       // Content excludes this directory from Vite, but these files are app imports.
       const watcher = watch(contentDataDir, (_event, filename) => {
-        if (!filename?.endsWith('.json')) return
+        // Projects are only imported by Nitro, which reloads them itself.
+        if (!filename?.endsWith('.json') || filename === 'projects.json') return
         clearTimeout(timer)
         timer = setTimeout(() => { void nuxt.callHook('restart') }, 200)
       })

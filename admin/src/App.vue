@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import {
   DashboardOutlined,
+  AppstoreOutlined,
   FileTextOutlined,
   LinkOutlined,
   MenuOutlined,
@@ -39,6 +40,12 @@ const sections = [
     label: '页面',
     icon: ProfileOutlined,
     match: (path: string) => path.startsWith('/pages'),
+  },
+  {
+    name: 'projects',
+    label: '作品',
+    icon: AppstoreOutlined,
+    match: (path: string) => path.startsWith('/projects'),
   },
   {
     name: 'links',

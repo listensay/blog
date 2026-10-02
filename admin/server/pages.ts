@@ -23,7 +23,7 @@ import { moveToTrash } from './trash.ts'
 
 const PAGE_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/
 
-const RESERVED_FIRST_SEGMENTS = new Set(['blog', 'categories', 'tags', 'admin', 'index'])
+const RESERVED_FIRST_SEGMENTS = new Set(['blog', 'categories', 'tags', 'admin', 'index', 'projects'])
 
 const CUSTOM_ROUTE_FILES = new Set([`${PAGES_PREFIX}/links.md`])
 

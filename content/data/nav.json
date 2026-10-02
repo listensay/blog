@@ -1,6 +1,7 @@
 [
   { "label": "首页", "labelEn": "Home", "to": "/", "icon": "home", "color": "#3b82f6" },
   { "label": "文章", "labelEn": "Articles", "to": "/blog", "icon": "articles", "color": "#10b981" },
+  { "label": "作品", "labelEn": "Projects", "to": "/projects", "icon": "code", "color": "#6366f1" },
   { "label": "分类", "labelEn": "Categories", "to": "/categories", "icon": "categories", "color": "#8b5cf6" },
   { "label": "标签", "labelEn": "Tags", "to": "/tags", "icon": "tags", "color": "#f59e0b" },
   { "label": "关于", "labelEn": "About", "to": "/about", "icon": "about", "color": "#06b6d4" },

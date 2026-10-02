@@ -24,7 +24,7 @@ interface LocalizedPost {
 }
 
 export function contentPaths(locale: SiteLocale, posts: LocalizedPost[], pages: { path: string }[]): string[] {
-  const paths = new Set(['/', '/blog', '/categories', '/tags'].map(path => localizedPath(path, locale)))
+  const paths = new Set(['/', '/blog', '/projects', '/categories', '/tags'].map(path => localizedPath(path, locale)))
   for (const page of pages) paths.add(page.path)
   for (const post of posts) {
     if (!post.path) continue

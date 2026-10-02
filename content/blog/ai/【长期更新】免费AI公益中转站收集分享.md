@@ -9,6 +9,8 @@ tags:
   - AI
   - 白嫖
 ---
+> 2026-10-02 新增Axis AI站点
+> 
 > 2026-09-19 JustDoWork、SeekAI 恢复可用
 
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
@@ -34,9 +36,9 @@ tags:
 
 站长还会根据用户使用量增送余额，越活越的用户送的额度越多。
 
-每天签到可获得25余额，邀请一个用户可获150余额。
+每天签到可获得25余额，邀请一个用户可获50余额。
 
-使用以下链接注册可获170额度。
+使用以下链接注册可获50额度。
 
 [https://agentrouter.org/register?aff=QieS](https://agentrouter.org/register?aff=QieS)
 
@@ -60,6 +62,17 @@ tags:
 </details>
 
 <details>
+<summary><h3>Axis AI</h3></summary>
+
+评价：**顶级**
+
+免费使用。请求响应速度快，部分模型opus可能是假的模型，目测gpt6和qwen模型都是真的。
+
+[https://ai.onyxaxis.org/register?invite=Y3M452R3](https://ai.onyxaxis.org/register?invite=Y3M452R3)
+
+</details>
+
+<details>
 <summary><h3>哈吉米AI</h3></summary>
 
 评价：**NPC**
@@ -75,9 +88,9 @@ tags:
 <details>
 <summary><h3>Conduit</h3></summary>
 
-评价：无
+评价：**拉完了**
 
-Gpt速度快可以用。
+Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
 
@@ -88,9 +101,9 @@ Gpt速度快可以用。
 <details>
 <summary><h3>SeekAI</h3></summary>
 
-评价：**无**
+评价：**拉完了**
 
-还没有测试过，不过送的额度多。
+长期没有好模型可用，请求还不稳定。
 
 新用户使用邀请码注册可以获得200余额，每日签到可获得20余额，邀请一人可获得20余额（拉人就这点拉完了）。
 
@@ -101,9 +114,9 @@ Gpt速度快可以用。
 <details>
 <summary><h3>JustDoWork</h3></summary>
 
-评价：无
+评价：**NPC**
 
-这也是一个没有测试过的站点，模型价格有点还好。
+目前仅Claude-opus-4.8可用
 
 新用户使用邀请码注册可以获得200余额，每日签到随机5-9余额，邀请一人可获得40余额。
 

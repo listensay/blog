@@ -1,6 +1,6 @@
 # blog 管理后台
 
-`blog` 仓库的本地管理界面，维护文章、固定页、友情链接、顶部菜单、站点设置与图片。
+`blog` 仓库的本地管理界面，维护文章、作品、固定页、友情链接、顶部菜单、站点设置与图片。
 
 Vue 3 + Vite + ant-design-vue。文件读写接口以 Vite 插件形式挂在 dev server 上，无独立后端进程。
 
@@ -20,7 +20,7 @@ npm run dev          # http://127.0.0.1:5173
 ADMIN_BLOG_ROOT=~/Desktop/工作台/blog npm run dev
 ```
 
-界面为左侧固定侧边栏加右侧内容区。侧边栏分区：概览、文章、页面、链接、菜单、社交设置、系统设置。
+界面为左侧固定侧边栏加右侧内容区。侧边栏分区：概览、文章、页面、作品、链接、菜单、社交设置、系统设置。
 `/` 为概览，`/posts` 为文章列表。右上角显示仓库路径与文章、页面、图片数量。
 
 ## 环境变量
@@ -54,6 +54,7 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | 文章英文版 | `content/en/blog/<同一目录>/<slug>.md` | 独立译文文件 |
 | 固定页 | `content/pages/**.md` | 单文件 |
 | 友情链接 | `content/pages/links.md` 的 `friends` | 整个数组 |
+| 作品 | `content/data/projects.json` | 整个数组，带版本校验 |
 | 顶部菜单 | `content/data/nav.json` | 整份文件 |
 | 站点设置 | `content/data/site.json` | 整份文件 |
 | 图片 | `public/images/` | 单文件 |
@@ -79,6 +80,7 @@ AI 使用 OpenAI 兼容的 `/chat/completions`。密钥只在 Node 侧读取。�
 | `GET /api/page?file=` | 读一个页面，含正文、`friends`、整份 frontmatter |
 | `POST /api/page` · `PUT /api/page?file=` · `DELETE /api/page?file=` | 同文章 |
 | `GET /api/nav` · `PUT /api/nav` | 顶部菜单 |
+| `GET /api/projects` · `PUT /api/projects` | 作品列表；保存参数为 `{ items, revision }` |
 | `GET /api/settings` · `PUT /api/settings` | 站点设置，附图标与分类候选 |
 | `GET /api/images` · `POST /api/images?name=` | 列图 / 存图 |
 | `GET /api/images/unused` | 未被引用的图片清单，附扫描范围与体积合计 |
@@ -191,7 +193,7 @@ AI 生成结果只放入编辑表单，点击保存才写入 `content/en/blog/`�
 | 项 | 规则 |
 | --- | --- |
 | 文件名字符集 | 小写字母、数字、连字符 |
-| 保留文件名 | `blog`、`categories`、`tags`、`admin`、`index` |
+| 保留文件名 | `blog`、`categories`、`tags`、`admin`、`index`、`projects` |
 | 改名或删除 | 更换网址，确认框列出指向旧网址的菜单项 |
 | frontmatter `slug` | 不生效 |
 | frontmatter `comments` | `true` 时页面显示评论区，缺省与 `false` 时不显示 |
@@ -231,6 +233,24 @@ AI 生成结果只放入编辑表单，点击保存才写入 `content/en/blog/`�
 
 空白条目在保存时忽略。`friends` 由后台独占维护，是唯一不保留未识别键的位置，键序、引号与空值
 写法会被归一化。
+
+## 作品
+
+侧栏「作品」，路由 `/projects`。支持新增、编辑、删除、名称 / 简介 / 技术标签搜索、发布状态筛选及上下排序。
+编辑弹窗支持 ⌘S / Ctrl+S 保存，未保存时关闭、切换页面或刷新浏览器会提示。排序、发布和撤为草稿即时保存。
+
+每个作品包含名称、简介、封面、技术标签、演示链接和源码链接。名称必填；封面可从现有图片库选择或上传，
+链接接受 http(s) 或 `/` 开头的站内地址。英文名称和简介选填，英文站留空时回退中文。
+新建作品默认为草稿。博客 `/projects` 与 `/en/projects` 只展示已发布作品，支持按技术标签筛选，列表顺序与后台一致。
+
+作品保存在 `content/data/projects.json`。本地预览随保存自动刷新，线上需要重新构建部署。
+公开的 `GET /api/projects` 仅返回已发布作品，草稿不进入公开页面和响应。管理接口仅在本地后台运行。
+保存校验读取版本，多个窗口同时修改时旧版本返回 409；失败时保留编辑内容，可复制后刷新重新核对。
+删除会先将原列表备份到 `admin/.trash/projects__*.json`，恢复时可从备份复制条目回作品文件。
+损坏的 JSON 文件会阻止读写，需修复后重试。作品封面纳入现有未引用图片扫描。
+
+`projects` 是保留的固定页文件名，不能通过「页面」创建同名页面。
+运行 `npm run check:projects` 在临时目录验证作品接口、发布隔离、输入校验、冲突保护与删除备份。
 
 ## 顶部菜单
 

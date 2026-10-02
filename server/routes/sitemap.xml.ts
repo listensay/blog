@@ -54,6 +54,7 @@ export default defineEventHandler(async (event) => {
     entries.push(
       { loc: `${siteConfig.url}${localizedPath('/', locale)}`, lastmod: newest, priority: '1.0' },
       { loc: `${siteConfig.url}${localizedPath('/blog', locale)}`, lastmod: newest, priority: '0.9' },
+      { loc: `${siteConfig.url}${localizedPath('/projects', locale)}`, priority: '0.7' },
       { loc: `${siteConfig.url}${localizedPath('/categories', locale)}`, lastmod: newest, priority: '0.6' },
       { loc: `${siteConfig.url}${localizedPath('/tags', locale)}`, lastmod: newest, priority: '0.6' },
     )

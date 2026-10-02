@@ -12,7 +12,7 @@ const pairedArticles = {
   '/blog/ai/ai-logo-generation': ['前提准备', 'What you need'],
   '/blog/other/codehack-jetbrains': ['先打开这个网址', 'First, open this website'],
 }
-const pairedPaths = ['/', '/blog', '/categories', '/tags', '/about', '/links', '/categories/benefits', '/categories/ai', '/categories/other', '/tags/ai', '/tags/freebies', '/tags/logo', '/tags/skill', '/tags/tag-1s5v80d', ...Object.keys(pairedArticles)]
+const pairedPaths = ['/', '/blog', '/projects', '/categories', '/tags', '/about', '/links', '/categories/benefits', '/categories/ai', '/categories/other', '/tags/ai', '/tags/freebies', '/tags/logo', '/tags/skill', '/tags/tag-1s5v80d', ...Object.keys(pairedArticles)]
 const enPath = path => path === '/' ? '/en' : `/en${path}`
 const attributes = tag => Object.fromEntries([...tag.matchAll(/([\w:-]+)="([^"]*)"/g)].map(([, key, value]) => [key, value]))
 const tags = (html, name) => [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'g'))].map(([tag]) => attributes(tag))

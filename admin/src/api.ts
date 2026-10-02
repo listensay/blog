@@ -21,6 +21,7 @@ import type {
   EnglishTranslationInput,
   EnglishTranslationResult,
 } from '@/types'
+import type { Project, ProjectsResponse } from '../../app/types/project'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init)
@@ -53,6 +54,11 @@ const json = (body: unknown): RequestInit => ({
 })
 
 export const api = {
+  getProjects: () => request<ProjectsResponse>('/api/projects'),
+
+  saveProjects: (items: Project[], revision: string) =>
+    request<ProjectsResponse>('/api/projects', { ...json({ items, revision }), method: 'PUT' }),
+
   workspace: () => request<WorkspaceInfo>('/api/workspace'),
 
   dashboard: () => request<DashboardStats>('/api/dashboard'),

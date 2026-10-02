@@ -36,6 +36,7 @@ import {
   sendJson,
 } from './http.ts'
 import { readNav, writeNav } from './nav.ts'
+import { readProjects, writeProjects } from './projects.ts'
 import { createPage, listPages, readPage, trashPage, updatePage } from './pages.ts'
 import { createPost, listPosts, readPost, trashPost, updatePost } from './posts.ts'
 import { readSettings, writeSettings } from './settings.ts'
@@ -153,6 +154,14 @@ const routes: Record<string, Handler> = {
 
   'GET /nav': async (_req, res, { ws }) => {
     sendJson(res, 200, await readNav(ws))
+  },
+
+  'GET /projects': async (_req, res, { ws }) => {
+    sendJson(res, 200, await readProjects(ws))
+  },
+
+  'PUT /projects': async (req, res, { ws }) => {
+    sendJson(res, 200, await writeProjects(ws, await readJson<unknown>(req)))
   },
 
   'PUT /nav': async (req, res, { ws }) => {

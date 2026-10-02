@@ -1,4 +1,13 @@
 {
+  "projects": "Projects",
+  "projectsDescription": "Ideas brought to life. A collection of my projects and experiments.",
+  "projectsLoadError": "Projects could not be loaded. Please try again.",
+  "projectTags": "Technologies",
+  "allProjects": "All projects",
+  "noProjectsYet": "Projects are on their way. Check back soon.",
+  "projectCount": "{count} projects | {count} project | {count} projects",
+  "projectDemo": "Live demo",
+  "projectSource": "Source code",
   "anUnexpectedServerErrorOccurred": "An unexpected server error occurred.",
   "theRequestCouldNotBeCompleted": "The request could not be completed.",
   "pageNotFound": "Page not found",
