@@ -14,7 +14,7 @@ translationSourceHash: e38b670f17e024fd4ed1dfe1a54aba9f43e5c7cd2a4fdf33b8a94a8ec
 ---
 
 > September 19, 2026: JustDoWork and SeekAI are available again.
-
+>
 This is my personal collection of free AI APIs and community gateways. I have not received payment for these listings or accepted paid promotions. Some registration links contain referral codes and may grant account credits.
 
 Ratings reflect my own experience. Providers can change their free allowances and model availability; the notes below are a record of my observations, not a guarantee of current service. Credit amounts are the balances advertised by each provider and should not be assumed to represent US dollars.
@@ -34,10 +34,9 @@ Before using a gateway, I recommend reading this analysis of API gateway poisoni
 
 The operator sometimes awards additional credits based on account activity. More active users can receive larger bonuses.
 
-- Daily check-in: 25 credits.
-- Referral reward: 150 credits per invited user.
-- Signup through the following link: 170 credits.
-
+* Daily check-in: 25 credits.
+* Referral reward: 150 credits per invited user.
+* Signup through the following link: 170 credits.
 [Register with AgentRouter](https://agentrouter.org/register?aff=QieS)
 
 </details>
@@ -49,10 +48,9 @@ The operator sometimes awards additional credits based on account activity. More
 
 This is an established gateway, although reliability is mixed and responses can be slow. At the time of writing, Claude Code access is available; other options have limited capacity.
 
-- Daily check-in: 25 credits.
-- Referral reward: 50 credits per invited user.
-- Signup through the following link: 50 credits.
-
+* Daily check-in: 25 credits.
+* Referral reward: 50 credits per invited user.
+* Signup through the following link: 50 credits.
 [Register with AnyRouter](https://anyrouter.top/register?aff=78Jy)
 
 </details>
@@ -64,9 +62,8 @@ This is an established gateway, although reliability is mixed and responses can 
 
 Model pricing is relatively high, but the service has been stable in my experience.
 
-- Signup with a referral: 100 credits.
-- Daily check-in: a random allowance of 5–9 credits.
-
+* Signup with a referral: 100 credits.
+* Daily check-in: a random allowance of 5–9 credits.
 [Register with Gemai](https://api.gemai.cc/sign-up?aff=GmYKJSLl)
 
 </details>
@@ -91,10 +88,9 @@ New users can open the link below in Telegram and follow the registration steps.
 
 The advertised allowances are generous, although the referral reward feels small:
 
-- Signup with a referral: 200 credits.
-- Daily check-in: 20 credits.
-- Referral reward: 20 credits per invited user.
-
+* Signup with a referral: 200 credits.
+* Daily check-in: 20 credits.
+* Referral reward: 20 credits per invited user.
 [Register with SeekAI](https://seekai.cc/sign-up?aff=fjxq)
 
 </details>
@@ -106,10 +102,9 @@ The advertised allowances are generous, although the referral reward feels small
 
 Model pricing appears reasonable. The listed allowances are:
 
-- Signup with a referral: 200 credits.
-- Daily check-in: a random allowance of 5–9 credits.
-- Referral reward: 40 credits per invited user.
-
+* Signup with a referral: 200 credits.
+* Daily check-in: a random allowance of 5–9 credits.
+* Referral reward: 40 credits per invited user.
 [Register with JustDoWork](https://api.justwoker.icu/register?aff=Qk1K)
 
 </details>
@@ -125,7 +120,12 @@ The selection of free models is limited and changes over time. My earlier notes 
 
 [Explore models on NVIDIA Build](https://build.nvidia.com/models)
 
-![NVIDIA model selection in the original article](/images/Pasted%20image%2020260819201306.png)
+
+
+<img
+  src="/affine-assets/78ba948efbf09ad6035644ad48e53b0cab0df516f514dfd5a9ac58a3edf1be29.png"
+  alt=""
+/>
 
 </details>
 
@@ -153,11 +153,21 @@ I have seen garbled output with long agent conversations. Tasks can still comple
 
 [Visit TokenRouter](https://www.tokenrouter.com/)
 
-![TokenRouter model selection](/images/Pasted%20image%2020260819195509.png)
+
+
+<img
+  src="/affine-assets/d9288b5003fa992236570076dcf5f56b551853238a4f02e0eee4feedd0a78935.png"
+  alt=""
+/>
 
 I used this API with Hermas agent. One workaround is to ask the agent to remember to regenerate a response whenever its output becomes garbled.
 
-![Agent configuration example](/images/a0df35509d5985a1c0b053a3ebe141b3.png)
+
+
+<img
+  src="/affine-assets/9169559dea7daf0f2eb8a411311e9a09bc842f57dc5f75fd447ae9bffe0a7c40.png"
+  alt=""
+/>
 
 The main drawback in my testing was readability of the output.
 
@@ -172,7 +182,12 @@ There are some limits and the free model selection is small, but responses were 
 
 [Visit OrcaRouter](https://www.orcarouter.ai/)
 
-![OrcaRouter interface](/images/Pasted-image-20260904090157.png)
+
+
+<img
+  src="/affine-assets/e5a0d6ece6ede30744083ae9a8b84df31ca75422ee4306e201876d4e5bf44918.png"
+  alt=""
+/>
 
 </details>
 
@@ -187,7 +202,12 @@ The original listing reported model access without a key.
 
 [http://20.115.208.7:4000/v1](http://20.115.208.7:4000/v1)
 
-![Models shown by the first endpoint](/images/Pasted%20image%2020260819201423.png)
+
+
+<img
+  src="/affine-assets/5bd33b9110de54988325d54f55e2f9c367d1d85998bd55942521e3f8bfd50a73.png"
+  alt=""
+/>
 
 </details>
 
@@ -198,6 +218,11 @@ This endpoint was also listed as accessible without a key.
 
 [http://130.210.35.157:4000/v1](http://130.210.35.157:4000/v1)
 
-![Models shown by the second endpoint](/images/Pasted%20image%2020260819201507.png)
+
+
+<img
+  src="/affine-assets/074c5376163a91c262c2e53dc05b0ec44b6bbc2ca5cc270e6ce3e81426ce372e.png"
+  alt=""
+/>
 
 </details>

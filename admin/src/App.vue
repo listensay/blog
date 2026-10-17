@@ -8,7 +8,6 @@ import {
   FileTextOutlined,
   LinkOutlined,
   MenuOutlined,
-  ProfileOutlined,
   SettingOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons-vue'
@@ -29,17 +28,10 @@ const sections = [
     match: (path: string) => path === '/',
   },
   {
-    name: 'posts',
-    label: '文章',
+    name: 'affine',
+    label: 'AFFiNE 内容',
     icon: FileTextOutlined,
-    match: (path: string) =>
-      path.startsWith('/posts') || path.startsWith('/new') || path.startsWith('/edit'),
-  },
-  {
-    name: 'pages',
-    label: '页面',
-    icon: ProfileOutlined,
-    match: (path: string) => path.startsWith('/pages'),
+    match: (path: string) => path.startsWith('/affine'),
   },
   {
     name: 'projects',
@@ -105,7 +97,7 @@ onMounted(async () => {
       </a-layout-sider>
 
       <a-layout class="main">
-        <a-layout-header class="topbar">
+        <a-layout-header v-if="activeSection !== 'affine'" class="topbar">
           <div class="topbar-meta">
             <template v-if="info">
               <span class="mono blog-root" :title="info.blogRoot">{{ info.blogRoot }}</span>
@@ -119,7 +111,7 @@ onMounted(async () => {
           </div>
         </a-layout-header>
 
-        <a-layout-content class="content">
+        <a-layout-content class="content" :class="{ 'content-workspace': activeSection === 'affine' }">
           <a-alert
             v-if="loadError"
             class="boot-error"
@@ -254,6 +246,8 @@ onMounted(async () => {
   margin: 0 auto;
   padding: var(--shell-pad);
 }
+
+.content-workspace { max-width: none; padding: 0; }
 
 .boot-error {
   margin-bottom: 16px;

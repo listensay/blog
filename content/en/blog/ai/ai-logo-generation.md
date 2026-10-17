@@ -28,14 +28,13 @@ First, choose an **AI agent that supports image generation**.
 
 Examples include:
 
-- ChatGPT
-- Claude
-- Gemini
-- Other AI agents that support skills
-
+* ChatGPT
+* Claude
+* Gemini
+* Other AI agents that support skills
 Then enter the following command in your agent:
 
-```bash
+```shellscript
 npx skills@latest add s1dashu/ip-as-logo-skill
 ```
 
@@ -48,7 +47,7 @@ Once installation is complete, tell the AI what kind of mascot you would like to
 For example, to create a mascot for a productivity tool, you can enter:
 
 > Design a very simple, cute little bear mascot with rounded shapes for my productivity tool. Use a muted dark blue background.
-
+>
 The skill will then start designing based on your requirements.
 
 This approach first organizes the product context and design requirements, then develops candidate designs step by step, going beyond a simple request to "draw me a logo."
@@ -58,20 +57,19 @@ This approach first organizes the product context and design requirements, then 
 By default, the skill follows these steps:
 
 1. **Understand the product**
+It starts by understanding what your product does, who it is for, and what role the mascot should play. If the agent can read your project context, it will use that information in its analysis.
 
-   It starts by understanding what your product does, who it is for, and what role the mascot should play. If the agent can read your project context, it will use that information in its analysis.
 2. **Propose 3 design directions**
+The AI proposes three different design directions before generating images.
 
-   The AI proposes three different design directions before generating images.
 3. **Develop candidate designs**
+The default recommendation is **6 separate candidate images**, giving you several options to choose from.
 
-   The default recommendation is **6 separate candidate images**, giving you several options to choose from.
 4. **Confirm the design plan**
+After confirmation, the skill generates six final candidate images labeled from `A1` to `C2`.
 
-   After confirmation, the skill generates six final candidate images labeled from `A1` to `C2`.
 5. **Apply consistent visual guidelines**
-
-   Each image uses a square composition and three colors with defined roles. The mascot enters the frame from the lower-left or lower-right corner, making it suitable for different uses across your product.
+Each image uses a square composition and three colors with defined roles. The mascot enters the frame from the lower-left or lower-right corner, making it suitable for different uses across your product.
 
 This turns a casual request for an AI-generated image into a more complete **mascot design workflow**.
 
@@ -82,7 +80,17 @@ Gemini example
 Prompt:
 
 > Design a very simple, cute tomato mascot with rounded shapes for my productivity tool. Give me a few background color options to choose from.
-
+>
 Here are the final results:
 
-![Tomato mascot generated with Gemini](/images/Pasted-image-20260908125509.png)![Mascot logo shown as a macOS app icon](/images/macos_icon_test.png)
+
+
+<img
+  src="/affine-assets/e777bac95641571b6ee76d23c1fcb996c9099894e6a4c1ff510abe2f9395c38a.png"
+  alt=""
+/>
+
+<img
+  src="/affine-assets/57b4edc18e57670f03db7b0e7af45621dc1e11d3c880273a35c1615d55d82863.png"
+  alt=""
+/>

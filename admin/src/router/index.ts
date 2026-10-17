@@ -15,36 +15,14 @@ const router = createRouter({
     },
 
     {
-      path: '/posts',
-      name: 'posts',
-      component: () => import('@/views/PostListView.vue'),
+      path: '/affine',
+      name: 'affine',
+      component: () => import('@/views/AffineView.vue'),
     },
-    {
-      path: '/new',
-      name: 'post-new',
-      component: () => import('@/views/PostEditorView.vue'),
-    },
-    {
-      path: '/edit',
-      name: 'post-edit',
-      component: () => import('@/views/PostEditorView.vue'),
-    },
-
-    {
-      path: '/pages',
-      name: 'pages',
-      component: () => import('@/views/PageListView.vue'),
-    },
-    {
-      path: '/pages/new',
-      name: 'page-new',
-      component: () => import('@/views/PageEditorView.vue'),
-    },
-    {
-      path: '/pages/edit',
-      name: 'page-edit',
-      component: () => import('@/views/PageEditorView.vue'),
-    },
+    ...['/posts', '/new', '/edit', '/pages', '/pages/new', '/pages/edit'].map((path) => ({
+      path,
+      redirect: '/affine',
+    })),
 
     {
       path: '/menu',

@@ -23,11 +23,6 @@ export function countBodyImages(body: string): number {
   return (body.match(MD_IMAGE_RE)?.length ?? 0) + (body.match(HTML_IMAGE_RE)?.length ?? 0)
 }
 
-export function withLeadingBlankLine(body: string): string {
-  if (!body.trim()) return body
-  return body.startsWith('\n') ? body : `\n${body}`
-}
-
 export interface SplitResult {
   data: Record<string, unknown>
   body: string
@@ -155,52 +150,6 @@ export function normalizeFrontmatter(data: Record<string, unknown>): PostFrontma
   }
 }
 
-const OMITTABLE = ['path', 'category', 'tags', 'draft', 'cover'] as const
-
-function isEmptyValue(fm: PostFrontmatter, key: (typeof OMITTABLE)[number]): boolean {
-  switch (key) {
-    case 'tags':
-      return fm.tags.length === 0
-    case 'draft':
-      return fm.draft === false
-    default:
-      return fm[key] === ''
-  }
-}
-
-export function buildFrontmatter(
-  fm: PostFrontmatter,
-  raw: Record<string, unknown> = {},
-): Record<string, unknown> {
-  const data: Record<string, unknown> = {
-    title: fm.title,
-    description: fm.description,
-    date: fm.date,
-    slug: fm.slug,
-  }
-
-  if (typeof raw.date === 'string' && toDateTimeString(raw.date) === fm.date) {
-    data.date = raw.date
-  }
-
-  const originalFm = normalizeFrontmatter(raw)
-
-  for (const key of OMITTABLE) {
-    if (!isEmptyValue(fm, key)) {
-      data[key] = key === 'draft' ? true : fm[key]
-      continue
-    }
-    if (key in raw && isEmptyValue(originalFm, key)) data[key] = raw[key]
-  }
-
-  const known = new Set<string>(POST_KEY_ORDER)
-  for (const [key, value] of Object.entries(raw)) {
-    if (!known.has(key) && !(key in data)) data[key] = value
-  }
-
-  return data
-}
-
 function asFriend(value: unknown): FriendLink | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const item = value as Record<string, unknown>
@@ -230,63 +179,4 @@ export function normalizePageFrontmatter(data: Record<string, unknown>): PageFro
     comments: data.comments === true,
     friends: asFriendList(data.friends),
   }
-}
-
-function toStoredFriend(item: FriendLink): Record<string, unknown> {
-  return {
-    name: item.name,
-    url: item.url,
-    ...(item.description ? { description: item.description } : {}),
-    ...(item.avatar ? { avatar: item.avatar } : {}),
-  }
-}
-
-const PAGE_OMITTABLE = ['description', 'comments', 'friends'] as const
-
-type PageOmittable = (typeof PAGE_OMITTABLE)[number]
-
-function isEmptyPageValue(fm: PageFrontmatter, key: PageOmittable): boolean {
-  switch (key) {
-    case 'friends':
-      return fm.friends.length === 0
-    case 'comments':
-      return fm.comments === false
-    default:
-      return fm.description === ''
-  }
-}
-
-function storedPageValue(fm: PageFrontmatter, key: PageOmittable): unknown {
-  switch (key) {
-    case 'friends':
-      return fm.friends.map(toStoredFriend)
-    case 'comments':
-      return true
-    default:
-      return fm.description
-  }
-}
-
-export function buildPageFrontmatter(
-  fm: PageFrontmatter,
-  raw: Record<string, unknown> = {},
-): Record<string, unknown> {
-  const data: Record<string, unknown> = { title: fm.title }
-
-  const originalFm = normalizePageFrontmatter(raw)
-
-  for (const key of PAGE_OMITTABLE) {
-    if (!isEmptyPageValue(fm, key)) {
-      data[key] = storedPageValue(fm, key)
-      continue
-    }
-    if (key in raw && isEmptyPageValue(originalFm, key)) data[key] = raw[key]
-  }
-
-  const known = new Set<string>(PAGE_KEY_ORDER)
-  for (const [key, value] of Object.entries(raw)) {
-    if (!known.has(key) && !(key in data)) data[key] = value
-  }
-
-  return data
 }

@@ -20,65 +20,11 @@ export interface PostSummary extends PostFrontmatter {
   images: number
 }
 
-export interface PostDetail extends PostSummary {
-  body: string
-  raw: Record<string, unknown>
-}
-
-export interface EnglishTranslationSummary {
-  file: string
-  path: string
-  draft: boolean
-  outdated: boolean
-}
-
-export interface PostListItem extends PostSummary {
-  english: EnglishTranslationSummary | null
-}
-
-export interface PostInput extends PostFrontmatter {
-  dir: string
-  name: string
-  body: string
-  raw?: Record<string, unknown>
-}
-
 export interface PostListResponse {
-  posts: PostListItem[]
+  posts: PostSummary[]
   categories: string[]
   tags: string[]
   dirs: string[]
-}
-
-export interface EnglishContent {
-  title: string
-  description: string
-  body: string
-  draft: boolean
-}
-
-export interface EnglishTranslation {
-  source: PostDetail
-  sourceRevision: string
-  revision: string | null
-  file: string
-  path: string
-  content: EnglishContent | null
-  outdated: boolean
-}
-
-export interface EnglishTranslationInput extends EnglishContent {
-  sourceRevision: string
-  revision: string | null
-}
-
-export interface EnglishTranslationResult {
-  title: string
-  description: string
-  body: string
-  model: string
-  usage: AiUsage | null
-  sourceRevision: string
 }
 
 export interface ImageItem {
@@ -199,12 +145,6 @@ export interface PageDetail extends PageSummary {
   raw: Record<string, unknown>
 }
 
-export interface PageInput extends PageFrontmatter {
-  name: string
-  body: string
-  raw?: Record<string, unknown>
-}
-
 export interface PageListResponse {
   pages: PageSummary[]
   reserved: string[]
@@ -283,47 +223,3 @@ export interface SettingsResponse {
   missing?: boolean
   error?: string
 }
-
-export type AiAction = 'fix' | 'polish' | 'condense' | 'expand' | 'meta'
-
-export type AiScope = 'selection' | 'all'
-
-export interface AiStatus {
-  enabled: boolean
-  model: string
-  baseUrl: string
-  hint: string
-}
-
-export interface AiUsage {
-  prompt: number
-  completion: number
-}
-
-export interface AiRequest {
-  action: AiAction
-  scope: AiScope
-  text: string
-  title?: string
-  category?: string
-}
-
-export interface AiTextResult {
-  kind: 'text'
-  text: string
-  model: string
-  usage: AiUsage | null
-  truncated: boolean
-}
-
-export interface AiMetaResult {
-  kind: 'meta'
-  title: string
-  slug: string
-  description: string
-  tags: string[]
-  model: string
-  usage: AiUsage | null
-}
-
-export type AiResult = AiTextResult | AiMetaResult

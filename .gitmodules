@@ -1,0 +1,5 @@
+[submodule "vendor/affine"]
+	path = vendor/affine
+	url = https://github.com/toeverything/AFFiNE.git
+	ignore = dirty
+

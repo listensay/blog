@@ -179,7 +179,7 @@ try {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ name: 'projects', title: '冲突页面', body: '' }),
   })
-  assert.equal(response.status, 400, '固定页不能占用作品地址')
+  assert.equal(response.status, 404, '旧固定页写入接口已关闭')
   console.log(
     '作品检查通过：接口增删改、双语、发布与排序、草稿隔离、输入校验、并发冲突、删除备份、封面引用与路由保护。',
   )

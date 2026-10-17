@@ -8,9 +8,10 @@ category: 福利
 tags:
   - AI
   - 白嫖
+draft: false
 ---
+
 > 2026-10-02 新增Axis AI站点
-> 
 > 2026-09-19 JustDoWork、SeekAI 恢复可用
 
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
@@ -20,14 +21,10 @@ tags:
 ## 公益中转站
 
 > 公益中转站的安全性无法保证，请注意数据或隐私安全。
-> 
 > 使用中转站前请先阅读这篇文章 👇。
-> 
 > 【AI供应链威胁】API 中转站投毒的攻击链深入分析
-> 
 > 文章转载自
-> 
-> 先知社区 作者：Fausto [https://xz.aliyun.com/news/92154](https://xz.aliyun.com/news/92154)
+> 先知社区 作者：Fausto https://xz.aliyun.com/news/92154
 
 <details>
 <summary><h3>AgentRouter</h3></summary>
@@ -40,7 +37,7 @@ tags:
 
 使用以下链接注册可获50额度。
 
-[https://agentrouter.org/register?aff=QieS](https://agentrouter.org/register?aff=QieS)
+https://agentrouter.org/register?aff=QieS
 
 </details>
 
@@ -57,7 +54,7 @@ tags:
 
 使用以下链接注册可获50额度。
 
-[https://anyrouter.top/register?aff=78Jy](https://anyrouter.top/register?aff=78Jy)
+https://anyrouter.top/register?aff=78Jy
 
 </details>
 
@@ -68,7 +65,7 @@ tags:
 
 免费使用。请求响应速度快，部分模型opus可能是假的模型，目测gpt6和qwen模型都是真的。
 
-[https://ai.onyxaxis.org/register?invite=Y3M452R3](https://ai.onyxaxis.org/register?invite=Y3M452R3)
+https://ai.onyxaxis.org/register?invite=Y3M452R3
 
 </details>
 
@@ -81,7 +78,7 @@ tags:
 
 新用户使用邀请码注册可以获得100余额，每日签到随机5-9余额。
 
-[https://api.gemai.cc/sign-up?aff=GmYKJSLl](https://api.gemai.cc/sign-up?aff=GmYKJSLl)
+https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
 </details>
 
@@ -94,7 +91,7 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
 
-[https://t.me/conduitoff_bot?start=ref_6406492700](https://t.me/conduitoff_bot?start=ref_6406492700)
+https://t.me/conduitoff\_bot?start=ref\_6406492700
 
 </details>
 
@@ -107,7 +104,7 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 新用户使用邀请码注册可以获得200余额，每日签到可获得20余额，邀请一人可获得20余额（拉人就这点拉完了）。
 
-[https://seekai.cc/sign-up?aff=fjxq](https://seekai.cc/sign-up?aff=fjxq)
+https://seekai.cc/sign-up?aff=fjxq
 
 </details>
 
@@ -120,7 +117,7 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 新用户使用邀请码注册可以获得200余额，每日签到随机5-9余额，邀请一人可获得40余额。
 
-[https://api.justwoker.icu/register?aff=Qk1K](https://api.justwoker.icu/register?aff=Qk1K)
+https://api.justwoker.icu/register?aff=Qk1K
 
 </details>
 
@@ -135,9 +132,11 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 目前免费的有智普
 
-[https://build.nvidia.com/models](https://build.nvidia.com/models)
+https://build.nvidia.com/models
 
-![](../../../public/images/Pasted%20image%2020260819201306.png)
+
+
+![](/affine-assets/78ba948efbf09ad6035644ad48e53b0cab0df516f514dfd5a9ac58a3edf1be29.png)
 
 </details>
 
@@ -150,7 +149,7 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 当前日期2026-8-19。近期香港无法使用，需要换到美国节点。
 
-[https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&referrer=Listensay](https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053&referrer=Listensay)
+https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053\&referrer=Listensay
 
 </details>
 
@@ -167,13 +166,17 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 但是其实影响结论不是很大，你让他执行任务都还是OK的，只是任务执行完成后结果有点看不懂，你可以纠正他的行为下次回复他就正常了。
 
-[https://www.tokenrouter.com/](https://www.tokenrouter.com/)
+https://www.tokenrouter.com/
 
-![](../../../public/images/Pasted%20image%2020260819195509.png)
+
+
+![](/affine-assets/d9288b5003fa992236570076dcf5f56b551853238a4f02e0eee4feedd0a78935.png)
 
 这里我推荐Hermas agent去使用这个API，你可以在前面让Agent记忆一下（直接打字让他记住），如果模型输出文字错乱的话就重新输出。
 
-![](../../../public/images/a0df35509d5985a1c0b053a3ebe141b3.png)
+
+
+![](/affine-assets/9169559dea7daf0f2eb8a411311e9a09bc842f57dc5f75fd447ae9bffe0a7c40.png)
 
 总而言之这个网站的免费模型输出阅读性不好，工作是没有问题的。
 
@@ -186,9 +189,11 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 虽然有点限制，但是可以忽略，免费模型不多，整体体验下来速度非常快。
 
-[https://www.orcarouter.ai/](https://www.orcarouter.ai/)
+https://www.orcarouter.ai/
 
-![](../../../public/images/Pasted-image-20260904090157.png)
+
+
+![](/affine-assets/e5a0d6ece6ede30744083ae9a8b84df31ca75422ee4306e201876d4e5bf44918.png)
 
 </details>
 
@@ -201,9 +206,11 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 不需要输入密钥使用这些模型
 
-[http://20.115.208.7:4000/v1](http://20.115.208.7:4000/v1)
+http://20.115.208.7:4000/v1
 
-![](../../../public/images/Pasted%20image%2020260819201423.png)
+
+
+![](/affine-assets/5bd33b9110de54988325d54f55e2f9c367d1d85998bd55942521e3f8bfd50a73.png)
 
 </details>
 
@@ -212,8 +219,10 @@ Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
 
 同样不需要输入密钥使用这些模型
 
-[http://130.210.35.157:4000/v1](http://130.210.35.157:4000/v1)
+http://130.210.35.157:4000/v1
 
-![](../../../public/images/Pasted%20image%2020260819201507.png)
+
+
+![](/affine-assets/074c5376163a91c262c2e53dc05b0ec44b6bbc2ca5cc270e6ce3e81426ce372e.png)
 
 </details>

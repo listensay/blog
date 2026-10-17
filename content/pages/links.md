@@ -1,9 +1,11 @@
 ---
 title: 友情链接
 description: 快来和我交换友情链接呀！
+comments: false
 ---
+
 # 申请须知
 
-- 友情链接部分前后
-- 申请友情链接提交：站点名称、描述、域名、头像链接
-- 邮箱odr233@gmail.com
+* 友情链接部分前后
+* 申请友情链接提交：站点名称、描述、域名、头像链接
+* 邮箱[odr233@gmail.com](mailto:odr233@gmail.com)

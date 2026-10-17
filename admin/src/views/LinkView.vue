@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { Modal, message } from 'ant-design-vue'
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
 
 import { api } from '@/api'
 import FriendLinksEditor from '@/components/FriendLinksEditor.vue'
-import type { FriendLink, PageDetail, PageInput } from '@/types'
-
-const LINKS_NAME = 'links'
-const LINKS_FILE = `pages/${LINKS_NAME}.md`
+import type { FriendLink, PageDetail } from '@/types'
 
 const loading = ref(true)
 const saving = ref(false)
@@ -17,15 +14,6 @@ const loadError = ref('')
 const missing = ref(false)
 
 const friends = ref<FriendLink[]>([])
-
-const page = reactive({
-  title: '',
-  description: '',
-  comments: false,
-  body: '',
-})
-
-const raw = ref<Record<string, unknown>>({})
 
 function snapshot(): string {
   const text = (value: string | null | undefined) => value ?? ''
@@ -50,7 +38,7 @@ async function load() {
   missing.value = false
 
   try {
-    fill(await api.getPage(LINKS_FILE))
+    fill(await api.getLinks())
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err)
     if (text.includes('不存在')) {
@@ -67,11 +55,6 @@ async function load() {
 
 function fill(detail: PageDetail) {
   friends.value = detail.friends.map((item) => ({ ...item }))
-  page.title = detail.title
-  page.description = detail.description
-  page.comments = detail.comments
-  page.body = detail.body
-  raw.value = detail.raw
   baseline.value = snapshot()
 }
 
@@ -89,19 +72,9 @@ onBeforeUnmount(() => {
 async function save() {
   if (saving.value || !savable.value) return
 
-  const input: PageInput = {
-    title: page.title,
-    description: page.description,
-    name: LINKS_NAME,
-    comments: page.comments,
-    friends: friends.value,
-    body: page.body,
-    raw: raw.value,
-  }
-
   saving.value = true
   try {
-    fill(await api.updatePage(LINKS_FILE, input))
+    fill(await api.saveLinks(friends.value))
     message.success('已保存')
   } catch (err) {
     message.error(err instanceof Error ? err.message : String(err))
@@ -164,7 +137,7 @@ onBeforeRouteLeave(async () => {
       show-icon
       class="banner"
       message="页面不存在"
-      :description="`请先在「页面」中创建 ${LINKS_NAME}。`"
+      description="请在 AFFiNE 中创建 slug 为 links 的页面并同步。"
     />
 
     <div class="card">

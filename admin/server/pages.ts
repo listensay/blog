@@ -1,29 +1,27 @@
-import { readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises'
+import { readFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 
-import type {
-  FriendLink,
-  PageDetail,
-  PageInput,
-  PageListResponse,
-  PageSummary,
-} from '../src/types.ts'
+import type { FriendLink, PageDetail, PageListResponse, PageSummary } from '../src/types.ts'
 import {
   PAGE_KEY_ORDER,
-  buildPageFrontmatter,
   countBodyImages,
   normalizePageFrontmatter,
   serializeFile,
   splitFrontmatter,
-  withLeadingBlankLine,
 } from './frontmatter.ts'
-import { badRequest, conflict, notFound } from './http.ts'
-import { PAGES_PREFIX, type Workspace, ensureDir, resolvePageFile, toPosix } from './paths.ts'
-import { moveToTrash } from './trash.ts'
+import { badRequest, notFound } from './http.ts'
+import { PAGES_PREFIX, type Workspace, resolvePageFile, toPosix } from './paths.ts'
+import { atomicWrite } from './affine/config.ts'
+import { safeContentPath } from './affine/sync.ts'
 
-const PAGE_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/
-
-const RESERVED_FIRST_SEGMENTS = new Set(['blog', 'categories', 'tags', 'admin', 'index', 'projects'])
+const RESERVED_FIRST_SEGMENTS = new Set([
+  'blog',
+  'categories',
+  'tags',
+  'admin',
+  'index',
+  'projects',
+])
 
 const CUSTOM_ROUTE_FILES = new Set([`${PAGES_PREFIX}/links.md`])
 
@@ -132,90 +130,13 @@ function validateFriends(input: FriendLink[] | undefined): FriendLink[] {
   return friends
 }
 
-function validate(input: PageInput): PageInput {
-  const name = (input.name?.trim() ?? '').replace(/^\/+|\/+$/g, '')
-  const title = input.title?.trim() ?? ''
-
-  if (!title) throw badRequest('标题不能为空')
-  if (!name) throw badRequest('文件名不能为空')
-  if (!PAGE_NAME_RE.test(name)) {
-    throw badRequest(`文件名只能用小写字母、数字和连字符：${name}`)
-  }
-
-  const first = name.split('/')[0] ?? ''
-  if (RESERVED_FIRST_SEGMENTS.has(first)) {
-    throw badRequest(`/${first} 是站点内置页面，pages/${name}.md 不会生效，请更换文件名`)
-  }
-
-  return {
-    ...input,
-    name,
-    title,
-    description: input.description?.trim() ?? '',
-    comments: input.comments === true,
-    friends: validateFriends(input.friends),
-    body: input.body ?? '',
-  }
-}
-
-const fileIdOf = (name: string) => `${PAGES_PREFIX}/${name}.md`
-
-async function exists(absolute: string): Promise<boolean> {
-  try {
-    await stat(absolute)
-    return true
-  } catch {
-    return false
-  }
-}
-
-export async function createPage(ws: Workspace, raw: PageInput): Promise<PageDetail> {
-  const input = validate(raw)
-  const file = fileIdOf(input.name)
-  const absolute = resolvePageFile(ws, file)
-
-  if (await exists(absolute)) throw conflict(`文件已存在：${file}`)
-
-  ensureDir(path.dirname(absolute))
-  await writeFile(
-    absolute,
-    serializeFile(
-      buildPageFrontmatter(input, input.raw),
-      withLeadingBlankLine(input.body),
-      PAGE_KEY_ORDER,
-    ),
-    'utf8',
+export async function writeFriends(ws: Workspace, input: unknown): Promise<PageDetail> {
+  if (!Array.isArray(input)) throw badRequest('friends 须为数组')
+  const page = await readPage(ws, 'pages/links.md')
+  const friends = validateFriends(input)
+  await atomicWrite(
+    await safeContentPath(ws, page.file),
+    serializeFile({ ...page.raw, friends }, page.body, PAGE_KEY_ORDER),
   )
-
-  return readPage(ws, file)
-}
-
-export async function updatePage(ws: Workspace, file: string, raw: PageInput): Promise<PageDetail> {
-  const input = validate(raw)
-  const from = resolvePageFile(ws, file)
-  if (!(await exists(from))) throw notFound(`页面不存在：${file}`)
-
-  const targetFile = fileIdOf(input.name)
-  const to = resolvePageFile(ws, targetFile)
-  const moving = path.resolve(from) !== path.resolve(to)
-
-  if (moving && (await exists(to))) throw conflict(`目标文件已存在：${targetFile}`)
-
-  ensureDir(path.dirname(to))
-  await writeFile(
-    to,
-    serializeFile(buildPageFrontmatter(input, input.raw), input.body, PAGE_KEY_ORDER),
-    'utf8',
-  )
-  if (moving) await unlink(from)
-
-  return readPage(ws, targetFile)
-}
-
-export async function trashPage(ws: Workspace, file: string): Promise<{ trashed: string }> {
-  const absolute = resolvePageFile(ws, file)
-  if (!(await exists(absolute))) throw notFound(`页面不存在：${file}`)
-
-  const flat = `pages__${file.slice(PAGES_PREFIX.length + 1).replace(/\//g, '__')}`
-  return { trashed: await moveToTrash(ws, absolute, flat) }
+  return readPage(ws, page.file)
 }

@@ -8,12 +8,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import { blogAdminApi } from './server/blog-api.ts'
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueJsx(),
-    vueDevTools(),
-    blogAdminApi(),
-  ],
+  plugins: [vue(), vueJsx(), vueDevTools(), blogAdminApi()],
 
   resolve: {
     alias: {
@@ -27,6 +22,6 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    include: ['ant-design-vue', '@ant-design/icons-vue', 'markdown-it', 'turndown'],
+    include: ['ant-design-vue', '@ant-design/icons-vue'],
   },
 })

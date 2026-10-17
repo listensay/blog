@@ -31,3 +31,6 @@ logs
 .env
 .env.*
 !.env.example
+
+# Local AFFiNE credentials, manifests and migration backups
+.affine/

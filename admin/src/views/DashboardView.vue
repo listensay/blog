@@ -36,8 +36,7 @@ const trendTotal = computed(() =>
 )
 
 function openItem(item: RecentItem | TodoItem) {
-  const name = item.kind === 'post' ? 'post-edit' : 'page-edit'
-  void router.push({ name, query: { file: item.file } })
+  void router.push({ name: 'affine', query: { file: item.file } })
 }
 
 function formatTime(value: number): string {

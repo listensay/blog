@@ -1,23 +1,14 @@
 import type { Connect, Plugin, ViteDevServer } from 'vite'
-import { loadEnv } from 'vite'
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
 
-import type {
-  AiRequest,
-  EnglishTranslationInput,
-  PageInput,
-  PostInput,
-  WorkspaceInfo,
-} from '../src/types.ts'
-import { type AiConfig, aiStatus, resolveAiConfig, runAi, translateArticle } from './ai.ts'
-import {
-  assertTranslationRevision,
-  readEnglishTranslation,
-  saveEnglishTranslation,
-} from './translations.ts'
-import { normalizeTranslationAssets } from './translation-integrity.ts'
+import type { WorkspaceInfo } from '../src/types.ts'
+import { LocalAffineService } from './affine-local/service.ts'
+import { serveAffineApp } from './affine-local/assets.ts'
+import { loadEnv } from 'vite'
+import { exportForAffine } from './affine/export.ts'
+import { withSyncLock } from './affine/sync.ts'
 import { readDashboard } from './dashboard.ts'
 import {
   PUBLIC_MOUNT,
@@ -37,8 +28,8 @@ import {
 } from './http.ts'
 import { readNav, writeNav } from './nav.ts'
 import { readProjects, writeProjects } from './projects.ts'
-import { createPage, listPages, readPage, trashPage, updatePage } from './pages.ts'
-import { createPost, listPosts, readPost, trashPost, updatePost } from './posts.ts'
+import { listPages, readPage, writeFriends } from './pages.ts'
+import { listPosts } from './posts.ts'
 import { readSettings, writeSettings } from './settings.ts'
 import { type Workspace, isInside, resolveWorkspace } from './paths.ts'
 
@@ -48,7 +39,7 @@ const LOCAL_HOSTS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 
 interface Context {
   ws: Workspace
-  ai: AiConfig
+  affine: LocalAffineService
 }
 
 type Handler = (
@@ -77,79 +68,30 @@ const routes: Record<string, Handler> = {
     sendJson(res, 200, await readDashboard(ws))
   },
 
-  'GET /posts': async (_req, res, { ws }) => {
-    sendJson(res, 200, await listPosts(ws))
+  'GET /affine': async (_req, res, { affine }) => {
+    sendJson(res, 200, await affine.status())
   },
-
-  'GET /post/translation': async (req, res, { ws }) => {
-    sendJson(res, 200, await readEnglishTranslation(ws, requireQuery(parseUrl(req), 'file')))
+  'POST /affine-local/invoke': async (req, res, { affine }) => {
+    const input = await readJson<{ command: unknown; args: Record<string, unknown> }>(req)
+    if (!input || !input.args || typeof input.args !== 'object' || Array.isArray(input.args)) throw new HttpError(400, '工作区请求无效')
+    sendJson(res, 200, await affine.invoke(input.command, input.args))
   },
-
-  'PUT /post/translation': async (req, res, { ws }) => {
-    const file = requireQuery(parseUrl(req), 'file')
-    const input = await readJson<EnglishTranslationInput>(req)
-    sendJson(res, 200, await saveEnglishTranslation(ws, file, input))
+  'GET /affine/export': async (_req, res, { ws }) => {
+    const archive = await exportForAffine(ws)
+    res.setHeader('content-type', 'application/zip')
+    res.setHeader('content-disposition', 'attachment; filename="affine-migration.zip"')
+    res.setHeader('cache-control', 'no-store')
+    res.end(Buffer.from(archive))
   },
-
-  'POST /post/translation/ai': async (req, res, { ws, ai }) => {
-    const file = requireQuery(parseUrl(req), 'file')
-    const input = await readJson<{ sourceRevision: string }>(req)
-    const state = await readEnglishTranslation(ws, file)
-    assertTranslationRevision(state, input?.sourceRevision)
-    const result = await translateArticle(ai, {
-      title: state.source.title,
-      description: state.source.description,
-      body: normalizeTranslationAssets(state.source.body, state.source.file),
-    })
-    // A source edit while the model was running invalidates this candidate.
-    assertTranslationRevision(await readEnglishTranslation(ws, file), state.sourceRevision)
-    sendJson(res, 200, { ...result, sourceRevision: state.sourceRevision })
-  },
-
-  'GET /post': async (req, res, { ws }) => {
-    const file = requireQuery(parseUrl(req), 'file')
-    sendJson(res, 200, await readPost(ws, file))
-  },
-
-  'POST /post': async (req, res, { ws }) => {
-    const input = await readJson<PostInput>(req)
-    sendJson(res, 201, await createPost(ws, input))
-  },
-
-  'PUT /post': async (req, res, { ws }) => {
-    const file = requireQuery(parseUrl(req), 'file')
-    const input = await readJson<PostInput>(req)
-    sendJson(res, 200, await updatePost(ws, file, input))
-  },
-
-  'DELETE /post': async (req, res, { ws }) => {
-    const file = requireQuery(parseUrl(req), 'file')
-    sendJson(res, 200, await trashPost(ws, file))
-  },
-
   'GET /pages': async (_req, res, { ws }) => {
     sendJson(res, 200, await listPages(ws))
   },
-
-  'GET /page': async (req, res, { ws }) => {
-    const file = requireQuery(parseUrl(req), 'file')
-    sendJson(res, 200, await readPage(ws, file))
+  'GET /links': async (_req, res, { ws }) => {
+    sendJson(res, 200, await readPage(ws, 'pages/links.md'))
   },
-
-  'POST /page': async (req, res, { ws }) => {
-    const input = await readJson<PageInput>(req)
-    sendJson(res, 201, await createPage(ws, input))
-  },
-
-  'PUT /page': async (req, res, { ws }) => {
-    const file = requireQuery(parseUrl(req), 'file')
-    const input = await readJson<PageInput>(req)
-    sendJson(res, 200, await updatePage(ws, file, input))
-  },
-
-  'DELETE /page': async (req, res, { ws }) => {
-    const file = requireQuery(parseUrl(req), 'file')
-    sendJson(res, 200, await trashPage(ws, file))
+  'PUT /links': async (req, res, { ws }) => {
+    const input = await readJson<{ friends: unknown }>(req)
+    sendJson(res, 200, await withSyncLock(ws, () => writeFriends(ws, input?.friends)))
   },
 
   'GET /nav': async (_req, res, { ws }) => {
@@ -196,15 +138,6 @@ const routes: Record<string, Handler> = {
   'POST /images/cleanup': async (req, res, { ws }) => {
     const input = await readJson<{ names: unknown }>(req)
     sendJson(res, 200, await deleteUnusedImages(ws, input.names))
-  },
-
-  'GET /ai': async (_req, res, { ai }) => {
-    sendJson(res, 200, aiStatus(ai))
-  },
-
-  'POST /ai': async (req, res, { ai }) => {
-    const input = await readJson<AiRequest>(req)
-    sendJson(res, 200, await runAi(ai, input))
   },
 }
 
@@ -279,14 +212,22 @@ export function blogAdminApi(): Plugin {
       const url = parseUrl(req)
       const isApi = url.pathname === API_PREFIX || url.pathname.startsWith(`${API_PREFIX}/`)
       const isPublic = url.pathname.startsWith(`${PUBLIC_MOUNT}/`)
-      if (!isApi && !isPublic) return next()
+      const isAffine = url.pathname === '/affine-workspace' || url.pathname.startsWith('/affine-workspace/')
+      if (!isApi && !isPublic && !isAffine) return next()
 
-      if (!isLocal(req)) {
+      if (!isLocal(req) || !/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(req.headers.host ?? '')) {
         sendJson(res, 403, { error: '这个后台只允许本机访问' })
         return
       }
 
+      const origin = req.headers.origin
+      if (origin && origin !== `http://${req.headers.host}`) {
+        sendJson(res, 403, { error: '不允许跨站访问本地后台' })
+        return
+      }
+
       try {
+        if (await serveAffineApp(req, res, ctx.ws)) return
         if (await servePublic(req, res, ctx.ws)) return
 
         const key = `${req.method ?? 'GET'} ${url.pathname.slice(API_PREFIX.length) || '/'}`
@@ -312,10 +253,7 @@ export function blogAdminApi(): Plugin {
     configResolved(config) {
       const ws = resolveWorkspace(config.root)
 
-      const fromFiles = loadEnv(config.mode, config.envDir, 'ADMIN_')
-      const ai = resolveAiConfig({ ...fromFiles, ...process.env })
-
-      ctx = { ws, ai }
+      ctx = { ws, affine: new LocalAffineService(ws, loadEnv(config.mode, config.envDir, 'AFFINE_AI_')) }
     },
 
     configureServer(server: ViteDevServer) {
@@ -324,12 +262,7 @@ export function blogAdminApi(): Plugin {
       )
       const dim = (text: string) => `\x1b[2m${text}\x1b[0m`
       server.config.logger.info(`  \x1b[32m➜\x1b[0m  ${dim('blog 仓库:')} ${ctx.ws.blogRoot}`)
-      server.config.logger.info(
-        `  \x1b[32m➜\x1b[0m  ${dim('AI 润色:')} ` +
-          (ctx.ai.apiKey
-            ? `${ctx.ai.model} ${dim(`@ ${ctx.ai.baseUrl}`)}`
-            : dim('未配置（ADMIN_AI_API_KEY）')),
-      )
+      server.httpServer?.once('close', () => ctx.affine.stop())
     },
 
     configurePreviewServer(server) {

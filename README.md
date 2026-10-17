@@ -32,10 +32,16 @@ pnpm、yarn、bun 同样可用。
 按稳定的 URL slug 在 `taxonomy` 中查找英文显示名（例如 `benefits` 对应 `Benefits`）。
 英文内容建议用 `/images/...` 引用图片，避免不同目录深度造成相对路径错误。
 
-在本地管理后台的文章列表点击「添加英文版」或「管理英文版」，也可在已保存文章的编辑页点击
-「英文版」→「AI 翻译英文版」。列表可按未翻译、英文草稿、已发布和待更新筛选。可以修改标题、摘要和
-Markdown、预览译文，最后保存为英文草稿或发布版本。翻译复用后台现有的 AI 配置，
-生成不会自动保存；保存到本地的发布版本在下次站点部署后上线。详见 [后台文档](admin/README.md#文章英文版)。
+文章和独立页面在后台内嵌的完整 AFFiNE 工作区中维护。源码位于 `vendor/affine`，支持文档、白板、数据库视图和导入导出；本项目用 SQLite 保存数据，无需 Docker 或独立 AFFiNE 服务。
+
+```bash
+npm --prefix admin install
+npm run affine:build          # 首次构建或修改 AFFiNE 源码后运行，需要 Node 22
+npm run admin                 # 默认 http://127.0.0.1:5173/affine
+```
+
+首次打开自动导入现有文章和页面。文档自动保存，右上角「发布到博客」更新本地 Markdown；线上仍需重新构建部署。
+详见 [运行、源码定制、发布和备份](integrations/affine/README.md)。
 
 两种语言各自输出 canonical，只有已发布且双方存在的页面才输出双向 hreflang。
 站点地图自动包含英文页面；英文 RSS 为 `/en/feed.xml`。正文在服务端渲染，

@@ -6,14 +6,17 @@ description: |-
   整个过程不需要自己研究复杂的提示词，只需要让 AI Agent 安装一个专门用于 IP Logo 设计与生成 的 Skill，就可以直接开始创作。
 date: 2026-09-08 12:46
 slug: ai-logo-generation
+path: /blog/ai/ai-logo-generation
 category: AI
 tags:
   - AI
   - LOGO
   - skill
   - 教程
+draft: false
 cover: ../../../public/images/Pasted-image-20260908124642.png
 ---
+
 如果你正在开发一款 App、效率工具、游戏或者个人项目，想为它设计一个可爱又有辨识度的 IP 形象，但自己又不太会画画，可以试试现在这种 **AI Agent + Skill** 的方式。
 
 整个过程不需要自己研究复杂的提示词，只需要让 AI Agent 安装一个专门用于 **IP Logo 设计与生成** 的 Skill，就可以直接开始创作。
@@ -24,14 +27,13 @@ cover: ../../../public/images/Pasted-image-20260908124642.png
 
 例如：
 
-- ChatGPT
-- Claude
-- Gemini
-- 其他支持 Skill 的 AI Agent
+* ChatGPT
+* Claude
+* Gemini
+* 其他支持 Skill 的 AI Agent
+  然后，在 Agent 中输入下面这条命令：
 
-然后，在 Agent 中输入下面这条命令：
-
-```bash
+```shellscript
 npx skills@latest add s1dashu/ip-as-logo-skill
 ```
 
@@ -54,19 +56,14 @@ Agent 会自动识别并安装这个 Skill。
 这个 Skill 默认会按照下面的流程工作：
 
 1. **了解产品背景**
-
    首先了解你的产品是什么、面向什么用户，以及 IP 需要承担什么作用。如果当前 Agent 能读取项目上下文，也会优先结合项目内容进行分析。
 2. **提出 3 个设计方向**
-
    AI 会先给出三个不同的设计方向，而不是直接开始生成图片。
 3. **生成候选方案**
-
    默认建议生成 **6 个独立候选图**，方便你从不同方案中进行选择。
 4. **确认设计方案**
-
    确认之后，Skill 会按照 `A1` 到 `C2` 的编号生成六张最终候选图。
 5. **统一视觉规范**
-
    每张图默认采用正方形构图，并使用三种语义颜色，同时让 IP 从左下角或右下角进入画面，方便后续用于不同的产品场景。
 
 这样一来，整个设计过程就从“让 AI 随便画一张图”，变成了一个相对完整的 **IP 设计流程**。
@@ -81,4 +78,10 @@ Gemini 示例
 
 最终生成的效果如下：
 
-![](../../../public/images/Pasted-image-20260908125509.png)![](../../../public/images/macos_icon_test.png)
+
+
+![](/affine-assets/e777bac95641571b6ee76d23c1fcb996c9099894e6a4c1ff510abe2f9395c38a.png)
+
+
+
+![](/affine-assets/57b4edc18e57670f03db7b0e7af45621dc1e11d3c880273a35c1615d55d82863.png)

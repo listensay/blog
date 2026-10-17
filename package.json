@@ -8,7 +8,10 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "check:locales": "node scripts/check-locales.mjs",
-    "deploy": "nuxt build && wrangler deploy"
+    "deploy": "nuxt build && wrangler deploy",
+    "affine:build": "node scripts/affine/build.mjs",
+    "affine:patch": "node scripts/affine/patch.mjs",
+    "admin": "npm --prefix admin run dev"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",

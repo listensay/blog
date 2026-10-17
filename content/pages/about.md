@@ -1,6 +1,7 @@
 ---
 title: 关于
 description: 关于我的一些信息。
+comments: false
 ---
 
 ## 关于我
@@ -11,13 +12,13 @@ description: 关于我的一些信息。
 
 我掌握的技术如下：
 
-- **Vue 全家桶** （掌握）
-- **React 全家桶** （掌握）
-- **Nodejs** （掌握）
-- **Python、Java、PHP** （用过，小掌握）
+* **Vue 全家桶** （掌握）
+* **React 全家桶** （掌握）
+* **Nodejs** （掌握）
+* **Python、Java、PHP** （用过，小掌握）
 
 ## 联系
 
 有问题或想交流，可以加入群聊找到我。
 
-点击链接加入群聊【你说话会漏风】：[https://qm.qq.com/q/pa2mcYXCCc](https://qm.qq.com/q/pa2mcYXCCc)
+点击链接加入群聊【你说话会漏风】：https://qm.qq.com/q/pa2mcYXCCc

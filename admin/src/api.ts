@@ -1,25 +1,16 @@
 import type {
-  AiRequest,
-  AiResult,
-  AiStatus,
   CleanupResult,
   DashboardStats,
+  FriendLink,
   ImageItem,
   NavItem,
   NavResponse,
   PageDetail,
-  PageInput,
   PageListResponse,
-  PostDetail,
-  PostInput,
-  PostListResponse,
   SettingsResponse,
   SiteSettings,
   UnusedImages,
   WorkspaceInfo,
-  EnglishTranslation,
-  EnglishTranslationInput,
-  EnglishTranslationResult,
 } from '@/types'
 import type { Project, ProjectsResponse } from '../../app/types/project'
 
@@ -63,39 +54,10 @@ export const api = {
 
   dashboard: () => request<DashboardStats>('/api/dashboard'),
 
-  listPosts: () => request<PostListResponse>('/api/posts'),
-
-  getPost: (file: string) => request<PostDetail>(`/api/post?file=${encodeURIComponent(file)}`),
-
-  createPost: (input: PostInput) => request<PostDetail>('/api/post', json(input)),
-
-  updatePost: (file: string, input: PostInput) =>
-    request<PostDetail>(`/api/post?file=${encodeURIComponent(file)}`, {
-      ...json(input),
-      method: 'PUT',
-    }),
-
-  deletePost: (file: string) =>
-    request<{ trashed: string }>(`/api/post?file=${encodeURIComponent(file)}`, {
-      method: 'DELETE',
-    }),
-
   listPages: () => request<PageListResponse>('/api/pages'),
-
-  getPage: (file: string) => request<PageDetail>(`/api/page?file=${encodeURIComponent(file)}`),
-
-  createPage: (input: PageInput) => request<PageDetail>('/api/page', json(input)),
-
-  updatePage: (file: string, input: PageInput) =>
-    request<PageDetail>(`/api/page?file=${encodeURIComponent(file)}`, {
-      ...json(input),
-      method: 'PUT',
-    }),
-
-  deletePage: (file: string) =>
-    request<{ trashed: string }>(`/api/page?file=${encodeURIComponent(file)}`, {
-      method: 'DELETE',
-    }),
+  getLinks: () => request<PageDetail>('/api/links'),
+  saveLinks: (friends: FriendLink[]) =>
+    request<PageDetail>('/api/links', { ...json({ friends }), method: 'PUT' }),
 
   getNav: () => request<NavResponse>('/api/nav'),
 
@@ -119,21 +81,4 @@ export const api = {
 
   cleanupImages: (names: string[]) =>
     request<CleanupResult>('/api/images/cleanup', json({ names })),
-
-  aiStatus: () => request<AiStatus>('/api/ai'),
-
-  ai: (input: AiRequest) => request<AiResult>('/api/ai', json(input)),
-
-  getEnglishTranslation: (file: string) =>
-    request<EnglishTranslation>(`/api/post/translation?file=${encodeURIComponent(file)}`),
-  saveEnglishTranslation: (file: string, input: EnglishTranslationInput) =>
-    request<EnglishTranslation>(`/api/post/translation?file=${encodeURIComponent(file)}`, {
-      ...json(input),
-      method: 'PUT',
-    }),
-  translateEnglish: (file: string, sourceRevision: string) =>
-    request<EnglishTranslationResult>(
-      `/api/post/translation/ai?file=${encodeURIComponent(file)}`,
-      json({ sourceRevision }),
-    ),
 }
