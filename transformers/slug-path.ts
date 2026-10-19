@@ -6,7 +6,7 @@ export default defineTransformer({
   transform(file) {
     const f = file as Record<string, unknown>
 
-    if (!/^(blog|blogEn)\//.test(String(f.id))) return file
+    if (!/^blog\//.test(String(f.id))) return file
 
     const slug = typeof f.slug === 'string' ? f.slug.trim() : ''
     if (!slug) return file

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { CommentListResponse, CommentNode, EngagementTarget, PostStats } from '~/types/blog'
 
-const { t } = useLocale()
-
 const props = defineProps<{ target: EngagementTarget }>()
 
 const { data, refresh, status } = await useFetch<CommentListResponse>(
@@ -37,7 +35,7 @@ function onSubmitted(result: CommentListResponse) {
   <section id="comments" class="mt-8 rounded-2xl bg-white p-5 shadow sm:p-6">
     <div class="flex items-end justify-between">
       <h2 class="text-lg font-semibold tracking-tight text-slate-900">
-        {{ t('comments') }}
+        评论
         <span v-if="data.total" class="ml-1 text-sm font-normal text-slate-400">{{ data.total }}</span>
       </h2>
       <button
@@ -46,7 +44,7 @@ function onSubmitted(result: CommentListResponse) {
         :disabled="status === 'pending'"
         @click="refresh()"
       >
-        {{ status === 'pending' ? t('refreshing') : t('refresh') }}
+        {{ status === 'pending' ? '刷新中…' : '刷新' }}
       </button>
     </div>
 
@@ -57,11 +55,11 @@ function onSubmitted(result: CommentListResponse) {
     <CommentsSkeleton v-if="loading" class="mt-8" :count="2" />
 
     <p v-else-if="status === 'error'" class="mt-6 text-sm text-slate-400">
-      {{ t('couldNotLoadCommentsUseRefreshToTryAgain') }}
+      评论加载失败，请刷新重试
     </p>
 
     <p v-else-if="!data.comments.length" class="mt-6 text-sm text-slate-400">
-      {{ t('noCommentsYetBeTheFirstToJoinTheConversation') }}
+      暂无评论
     </p>
 
     <ul v-else class="mt-8 space-y-7">

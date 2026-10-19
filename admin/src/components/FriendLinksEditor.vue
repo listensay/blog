@@ -94,7 +94,7 @@ const initial = (name: string) => [...(name || '?')][0] ?? '?'
               placeholder="头像地址（可选）"
               @update:value="(v: string) => update(index, { avatar: v })"
             />
-            <a-tooltip title="从图片库选一张">
+            <a-tooltip title="选择图片">
               <a-button @click="pickingFor = index">
                 <template #icon><PictureOutlined /></template>
               </a-button>
@@ -132,11 +132,11 @@ const initial = (name: string) => [...(name || '?')][0] ?? '?'
       </div>
     </div>
 
-    <p v-if="!friends.length" class="empty">还没有友链。</p>
+    <p v-if="!friends.length" class="empty">暂无友情链接</p>
 
     <a-button type="dashed" block @click="add">
       <template #icon><PlusOutlined /></template>
-      加一条友链
+      添加链接
     </a-button>
 
     <ImagePickerModal v-model:open="pickerOpen" @select="pickAvatar($event.name)" />

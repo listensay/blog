@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { taxonomyLink } from '../../utils/taxonomy'
 
-const { locale, blogCollection, t, localPath, taxonomyLabel } = useLocale()
-
 const { data: posts, status, error } = await useAsyncData(
-  () => `category-index-posts-${locale.value}`,
+  'category-index-posts',
   () =>
-    queryCollection(blogCollection.value)
+    queryCollection('blog')
       .where('draft', '=', false)
       .select('category', 'title', 'path', 'date')
       .order('date', 'DESC')
@@ -27,22 +25,22 @@ const categories = computed(() => {
     map.set(key, cur)
   }
   return [...map.values()]
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, locale.value))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-CN'))
 })
 
 useSeo({
-  title: () => t('categories'),
-  description: () => t('categoriesDescription', { site: siteConfig.title }),
+  title: () => '分类',
+  description: () => `${siteConfig.title}的文章分类`,
 })
 </script>
 
 <template>
   <div class="py-8 sm:py-16">
     <header class="border-b border-slate-200 pb-6 sm:pb-8">
-      <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{{ t('categories') }}</h1>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">分类</h1>
       <div v-if="loading" class="skeleton mt-3 h-5 w-48" aria-hidden="true" />
       <p v-else class="mt-2 text-slate-600">
-        {{ t('categoryCount', { count: categories.length }) }} · {{ t('articleCount', { count: posts?.length ?? 0 }) }}
+        {{ `${categories.length} 个分类` }} · {{ `${posts?.length ?? 0} 篇文章` }}
       </p>
     </header>
 
@@ -52,7 +50,7 @@ useSeo({
       aria-busy="true"
       class="skeleton-group mt-8 grid gap-4 sm:grid-cols-2"
     >
-      <span class="sr-only">{{ t('loadingCategories') }}</span>
+      <span class="sr-only">正在加载分类…</span>
       <div
         v-for="i in 4"
         :key="i"
@@ -70,7 +68,7 @@ useSeo({
     <ul v-else-if="categories.length" class="mt-8 grid gap-4 sm:grid-cols-2">
       <li v-for="(c, i) in categories" :key="c.name" v-reveal="i">
         <NuxtLink
-          :to="localPath(taxonomyLink('categories', c.name))"
+          :to="taxonomyLink('categories', c.name)"
           class="group flex h-full flex-col rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
         >
           <div class="flex items-center justify-between gap-3">
@@ -78,15 +76,15 @@ useSeo({
               {{ taxonomyLabel(c.name, 'category') }}
             </span>
             <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">
-              {{ t('articleCount', { count: c.count }) }}
+              {{ `${c.count} 篇文章` }}
             </span>
           </div>
           <p v-if="c.latest" class="mt-2 truncate text-sm text-slate-500">
-            {{ t('latest') }}{{ c.latest }}
+            最新：{{ c.latest }}
           </p>
         </NuxtLink>
       </li>
     </ul>
-    <p v-else class="py-10 text-slate-500 sm:py-12">{{ t('noCategoriesYet') }}</p>
+    <p v-else class="py-10 text-slate-500 sm:py-12">暂无分类</p>
   </div>
 </template>

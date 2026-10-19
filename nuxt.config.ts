@@ -7,7 +7,6 @@ const contentDataDir = fileURLToPath(new URL('./content/data', import.meta.url))
 export default defineNuxtConfig({
   modules: [
     '@nuxt/content',
-    '@nuxtjs/i18n',
     function watchSiteConfig(_options, nuxt) {
       if (!nuxt.options.dev) return
       let timer: ReturnType<typeof setTimeout> | undefined
@@ -24,16 +23,6 @@ export default defineNuxtConfig({
       })
     },
   ],
-
-  i18n: {
-    defaultLocale: 'zh-CN',
-    strategy: 'prefix_except_default',
-    detectBrowserLanguage: false,
-    locales: [
-      { code: 'zh-CN', language: 'zh-CN', name: '中文', file: 'zh-CN.json' },
-      { code: 'en', language: 'en', name: 'English', file: 'en.json' },
-    ],
-  },
 
   devtools: { enabled: true },
   compatibilityDate: '2025-05-15',
@@ -106,6 +95,7 @@ export default defineNuxtConfig({
         '~~/transformers/image-src.ts',
         '~~/transformers/external-links.ts',
         '~~/transformers/taxonomy.ts',
+        '~~/transformers/journal-privacy.ts',
       ],
       markdown: {
         toc: { depth: 3, searchDepth: 3 },

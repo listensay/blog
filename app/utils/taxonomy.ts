@@ -47,3 +47,22 @@ export function taxonomyMatches(value: string, routeValue: string, kind: 'catego
   return value === decoded || taxonomySlug(value, kind) === decoded.toLowerCase()
 }
 
+
+const TAXONOMY_LABELS: Record<string, string> = {
+  "ai": "AI",
+  "benefits": "福利",
+  "freebies": "白嫖",
+  "docs": "文档",
+  "embedded": "嵌入式",
+  "uncategorized": "未分类",
+  "other": "其他",
+  "python": "Python",
+  "agent": "Agent",
+  "logo": "LOGO",
+  "skill": "skill",
+  "tag-1s5v80d": "教程"
+}
+
+export function taxonomyLabel(name: string, kind: 'category' | 'tag') {
+  return TAXONOMY_LABELS[taxonomySlug(name, kind)] ?? name
+}

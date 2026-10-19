@@ -1,100 +1,84 @@
-# 个人博客
+# Immki Blog
 
-基于 Nuxt Content。评论、点赞、阅读量与评论管理使用 SQLite：本地为 `better-sqlite3`，
-Cloudflare Workers 上为 D1。
+基于 Nuxt 的个人博客，支持文章、日记和作品展示，集成本地内容管理与读者互动功能，可部署至 Cloudflare Workers。
 
-## 命令
+## 功能
 
-| 命令 | 作用 |
+- **内容发布**：文章、日记、独立页面和作品集，支持草稿、分类、标签及封面。
+- **本地写作**：集成 AFFiNE 编辑器，支持富文本、白板、自动保存和导入导出。
+- **读者互动**：评论、回复、点赞、阅读统计及评论管理。
+- **站点管理**：配置个人资料、导航菜单、友情链接和首页展示，管理图片资源。
+- **阅读与订阅**：响应式布局、文章目录、图片预览、RSS 和站点地图。
+
+## 技术栈
+
+| 层级 | 技术 |
 | --- | --- |
-| `npm install` | 安装依赖 |
-| `npm run dev` | 开发服务器，`http://localhost:3000` |
-| `npm run build` | 构建 |
-| `npm run preview` | 本地预览构建产物 |
-| `npm run deploy` | 构建并部署到 Cloudflare Workers |
+| 前台 | Nuxt 4、Vue 3、Nuxt Content、Tailwind CSS |
+| 内容管理 | AFFiNE、Vite、Ant Design Vue |
+| 数据存储 | SQLite、Cloudflare D1 |
+| 部署 | Cloudflare Workers |
 
-pnpm、yarn、bun 同样可用。
+## 快速开始
 
-## 中英文页面
+环境要求：Node.js 22.18 或更高的 22.x 版本、npm、Git。
 
-使用 `@nuxtjs/i18n`，中文地址保持不变，英文站点位于 `/en`。页头右上角显示语言图标与 `Language`，点击展开不带图标的「中文 / English」列表，通过真实链接切换语言；
-有译文时通过模块的 `useSwitchLocalePath()` 打开对应页面，保留查询参数和锚点；没有译文时打开另一种语言的文章列表。
+在克隆后的项目目录中安装依赖并启动前台：
 
-- 中文文章：`content/blog/<目录>/<文件名>.md`。
-- 英文文章：`content/en/blog/<同一目录>/<文件名>.md`，与原文保持相同的 `slug`。
-- 英文独立页面：`content/en/pages/`，文件路径与 `content/pages/` 对应。
-- 界面文案：`i18n/locales/zh-CN.json`、`i18n/locales/en.json`，组件通过 `t()` 读取。
-- 英文站点摘要、个人简介和分类/标签显示名：`i18n/locales/en.json` 的 `site`、`taxonomy`。
-- 中文站点设置使用 `content/data/site.json`；菜单名称在后台「菜单」中分别设置中文和英文，保存到 `content/data/nav.json` 的 `label`、`labelEn`。英文留空时使用中文名称，内置菜单和自定义菜单均适用。
+```bash
+npm install
+npm run dev
+```
 
-目前已提供 `free-ai`、`ai-logo-generation`、`codehack-jetbrains` 三篇文章，以及关于和友情链接的英文版本。其他文章可逐篇增加译文。
-文章标题、摘要、正文单独保存在英文 Markdown 中。分类和标签沿用中文原文的值，
-按稳定的 URL slug 在 `taxonomy` 中查找英文显示名（例如 `benefits` 对应 `Benefits`）。
-英文内容建议用 `/images/...` 引用图片，避免不同目录深度造成相对路径错误。
+访问 [http://localhost:3000](http://localhost:3000)。
 
-文章、独立页面与作品在后台内嵌的完整 AFFiNE 工作区中维护。源码位于 `vendor/affine`，支持文档、白板、数据库视图和导入导出；本项目用 SQLite 保存数据，无需 Docker 或独立 AFFiNE 服务。
+在另一终端安装并启动本地内容管理后台：
 
 ```bash
 npm --prefix admin install
-npm run affine:build          # 首次构建或修改 AFFiNE 源码后运行，需要 Node 22
-npm run admin                 # 默认 http://127.0.0.1:5173/affine
+npm run affine:build
+npm run admin
 ```
 
-首次打开自动导入现有文章、页面和作品。文档自动保存，右上角「发布到博客」更新本地文件；线上仍需重新构建部署。
-详见 [运行、源码定制、发布和备份](integrations/affine/README.md)。
+访问 [http://127.0.0.1:5173](http://127.0.0.1:5173)。首次构建会下载编辑器源码并安装依赖。
 
-两种语言各自输出 canonical，只有已发布且双方存在的页面才输出双向 hreflang。
-站点地图自动包含英文页面；英文 RSS 为 `/en/feed.xml`。正文在服务端渲染，
-不会依赖浏览器实时翻译。文章的评论、点赞和阅读量按原有 slug 共用。
+在编辑器中完成写作后，选择“发布到博客”更新本地预览。线上内容通过重新部署更新。
 
-启动开发服务器后，可以检查两种语言的收录配置和页面行为：
+## 配置
+
+启用评论管理前，复制环境变量示例并填写配置：
 
 ```bash
-npm run check:locales -- http://127.0.0.1:3000
+cp .env.example .env
 ```
 
-## 作品集
-
-作品在 AFFiNE「作品」目录中创建与维护，发布时可填写项目名称、简介、封面、技术标签及演示 / 源码链接，支持草稿与发布。
-前台入口为 `/projects`，英文为 `/en/projects`，仅展示已发布作品，可按技术标签筛选。
-英文名称与简介可单独填写，留空时使用中文。作品同步更新 `content/data/projects.json`，保存后本地预览更新，
-线上需重新构建部署。详见 [作品管理说明](admin/README.md#作品)。
-
-## 环境变量
-
-复制 `.env.example` 为 `.env` 后填写，修改后需重启开发服务器。`.env` 不进 git。
-
-| 变量 | 说明 |
+| 环境变量 | 用途 |
 | --- | --- |
-| `NUXT_ADMIN_PASSWORD` | `/admin` 的登录密码，可为纯数字。未设置时评论管理后台整体关闭 |
-| `NUXT_SESSION_SECRET` | 管理会话 cookie 的签名密钥，用 `openssl rand -hex 32` 生成 |
-| `NUXT_VISITOR_SALT` | 访客指纹盐值。更换后浏览计数与点赞去重的判定重置 |
+| `NUXT_ADMIN_PASSWORD` | 评论管理密码 |
+| `NUXT_SESSION_SECRET` | 管理会话签名密钥 |
+| `NUXT_VISITOR_SALT` | 访客标识与互动去重 |
 
-## 部署到 Cloudflare
+密钥可使用 `openssl rand -hex 32` 生成。修改配置后重启开发服务。
 
-评论与点赞依赖服务端 API 与 D1，不能使用 `npm run generate` 的静态产物部署，须使用项目内的
-Worker 配置。
+网站标题、个人资料、导航和友情链接可在本地后台设置。
 
-线上密钥通过 wrangler 设置，首次部署或更换密钥时执行：
+## 部署
 
-```bash
-npx wrangler secret put NUXT_ADMIN_PASSWORD
-npx wrangler secret put NUXT_SESSION_SECRET
-npx wrangler secret put NUXT_VISITOR_SALT
-```
-
-部署：
+生产环境使用 Cloudflare Workers 和 D1。首次部署前，配置自己的 Workers 项目、域名及 D1 数据库，并在 Cloudflare 中设置上述环境变量。
 
 ```bash
 npm run deploy
 ```
 
-验证：
+本地内容管理后台在开发机器上运行。
 
-```bash
-curl https://<域名>/api/admin/session
-```
+## 开发命令
 
-返回 `{"enabled":true,"authed":false}` 表示配置生效。
-
-由 GitHub 自动部署时，相关提交须先推送到部署所用的分支。
+| 命令 | 用途 |
+| --- | --- |
+| `npm run dev` | 启动前台开发服务 |
+| `npm run admin` | 启动本地内容管理后台 |
+| `npm run build` | 构建生产版本 |
+| `npm run preview` | 预览构建产物 |
+| `npm run check:site` | 检查站点页面与收录配置，需先启动前台 |
+| `npm --prefix admin run check` | 检查后台类型与功能 |

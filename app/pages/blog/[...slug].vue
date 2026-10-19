@@ -2,14 +2,12 @@
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-vue'
 import ArticleStats from '~/components/ArticleStats.vue'
 
-const { locale, blogCollection, t, localPath } = useLocale()
-
 const route = useRoute()
 const pathSegments = computed(() => Array.isArray(route.params.slug)
   ? route.params.slug.map(String)
   : [String(route.params.slug)])
 const slug = computed(() => pathSegments.value.at(-1) ?? '')
-const path = computed(() => localPath(`/blog/${pathSegments.value.join('/')}`))
+const path = computed(() => (`/blog/${pathSegments.value.join('/')}`))
 
 const target = computed(() => postTarget(slug.value))
 
@@ -34,7 +32,7 @@ const headerColor = computed(() => headerColors[colorIndex(path.value)]!)
 const { data: post, status, error } = await useAsyncData(
   () => `post-${path.value}`,
   () => {
-    let q = queryCollection(blogCollection.value).path(path.value)
+    let q = queryCollection('blog').path(path.value)
     if (!import.meta.dev) q = q.where('draft', '=', false)
     return q.first()
   },
@@ -57,7 +55,7 @@ const headerStyle = computed(() => {
 
 function assertFound() {
   if (post.value) return
-  const notFound = createError({ statusCode: 404, message: t('articleNotFound'), fatal: true })
+  const notFound = createError({ statusCode: 404, message: '文章不存在', fatal: true })
   if (import.meta.server) throw notFound
   showError(notFound)
 }
@@ -72,7 +70,7 @@ else {
 const { data: surround } = await useAsyncData(
   () => `surround-${path.value}`,
   async () => {
-    const posts = await queryCollection(blogCollection.value)
+    const posts = await queryCollection('blog')
       .where('draft', '=', false)
       .order('date', 'DESC')
       .select('path', 'title')
@@ -102,7 +100,7 @@ useJsonLd(() => ({
   'headline': post.value?.title ?? '',
   'description': post.value?.description ?? '',
   'datePublished': isoDateTime(post.value?.date),
-  'inLanguage': locale.value,
+  'inLanguage': 'zh-CN',
   'mainEntityOfPage': { '@type': 'WebPage', '@id': `${siteConfig.url}${path.value}` },
   'image': `${siteConfig.url}${post.value?.cover || siteConfig.ogImage}`,
   'author': { '@type': 'Person', 'name': siteConfig.author, 'url': siteConfig.url },
@@ -112,8 +110,8 @@ useJsonLd(() => ({
   'breadcrumb': {
     '@type': 'BreadcrumbList',
     'itemListElement': [
-      { '@type': 'ListItem', 'position': 1, 'name': t('home'), 'item': `${siteConfig.url}${localPath('/')}` },
-      { '@type': 'ListItem', 'position': 2, 'name': t('articles'), 'item': `${siteConfig.url}${localPath('/blog')}` },
+      { '@type': 'ListItem', 'position': 1, 'name': '首页', 'item': `${siteConfig.url}/` },
+      { '@type': 'ListItem', 'position': 2, 'name': '全部文章', 'item': `${siteConfig.url}/blog` },
       { '@type': 'ListItem', 'position': 3, 'name': post.value?.title ?? '' },
     ],
   },
@@ -135,7 +133,7 @@ useJsonLd(() => ({
             >
               <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
                 <time v-if="post.date" :datetime="isoDateTime(post.date)" class="font-bold">
-                  {{ formatDateTime(post.date, locale) }}
+                  {{ formatDateTime(post.date) }}
                 </time>
                 <span v-if="post.date && (post.category || post.tags?.length)" class="font-bold">·</span>
                 <div class="text-white">
@@ -150,7 +148,7 @@ useJsonLd(() => ({
                 <span
                   v-if="post.draft"
                   class="mr-2 align-middle rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700"
-                >{{ t('draft') }}</span>{{ post.title }}
+                >草稿</span>{{ post.title }}
               </h1>
               <ArticleStats :target="target" />
             </header>
@@ -170,7 +168,7 @@ useJsonLd(() => ({
             >
               <span class="inline-flex items-center gap-2 text-xs font-medium text-[#4f6b56]">
                 <IconArrowLeft :size="17" stroke="1.8" aria-hidden="true" class="transition-transform group-hover:-translate-x-1" />
-                {{ t('previousArticle') }}
+                上一篇
               </span>
               <p class="font-semibold leading-relaxed break-words text-slate-800">
                 {{ surround[0].title }}
@@ -182,7 +180,7 @@ useJsonLd(() => ({
               class="group flex min-h-36 flex-col justify-between gap-4 rounded-2xl bg-[#eeebf4] p-5 shadow transition-colors hover:bg-[#e3ddee] focus-visible:outline-violet-700 sm:col-start-2 sm:p-6 sm:text-right"
             >
               <span class="inline-flex items-center gap-2 text-xs font-medium text-[#706081] sm:justify-end">
-                {{ t('nextArticle') }}
+                下一篇
                 <IconArrowRight :size="17" stroke="1.8" aria-hidden="true" class="transition-transform group-hover:translate-x-1" />
               </span>
               <p class="font-semibold leading-relaxed break-words text-slate-800">

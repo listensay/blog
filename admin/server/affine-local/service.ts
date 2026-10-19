@@ -6,10 +6,13 @@ import { stateDir } from '../affine/config.ts'
 import { contentFiles, safeContentPath } from '../affine/sync.ts'
 import { splitFrontmatter } from '../frontmatter.ts'
 import { readProjects } from '../projects.ts'
+import { isJournalDate } from '../affine/document.ts'
 import { WorkspaceStorage } from './storage.ts'
 import { markdownForImport } from './import.ts'
 import {
   bindFile,
+  isEnglishBinding,
+  chineseMetadata,
   bindingKey,
   metadataFor,
   publicationStatus,
@@ -36,7 +39,7 @@ export class LocalAffineService {
       mode: 'source',
       source: 'vendor/affine',
       version: '0.27.4',
-      documents: this.storage.all<Binding>('blog-bindings').length,
+      documents: this.storage.all<Binding>('blog-bindings').filter(b => !isEnglishBinding(b)).length,
     }
   }
   async invoke(command: unknown, args: Record<string, unknown>): Promise<unknown> {
@@ -56,12 +59,15 @@ export class LocalAffineService {
         if (owner && owner !== workspaceId) return []
         const contentSeeded = this.storage.get<boolean>('blog', 'seeded') === true
         const projectsSeeded = this.storage.get<boolean>('blog', 'projects_seeded') === true
-        if (contentSeeded && projectsSeeded) return []
+        const journalsSeeded = this.storage.get<boolean>('blog', 'journals_seeded') === true
+        if (contentSeeded && projectsSeeded && journalsSeeded) return []
         this.storage.set('blog', 'workspace', workspaceId)
         const bound = new Set(this.storage.all<Binding>('blog-bindings').map((b) => b.file))
         const entries = []
-        if (!contentSeeded) {
+        if (!contentSeeded || !journalsSeeded) {
           for (const file of await contentFiles(this.ws)) {
+            const journal = /^journals\//.test(file)
+            if (journal ? journalsSeeded : contentSeeded) continue
             if (bound.has(file)) continue
             const raw = await readFile(await safeContentPath(this.ws, file), 'utf8')
             const { data, body } = splitFrontmatter(raw)
@@ -69,6 +75,7 @@ export class LocalAffineService {
               file,
               title: String(data.title ?? file),
               markdown: markdownForImport(body),
+              ...(journal ? { journalDate: path.posix.basename(file, '.md') } : {}),
             })
           }
         }
@@ -95,16 +102,22 @@ export class LocalAffineService {
         if (this.storage.get<string>('blog', 'workspace') === workspaceId) {
           this.storage.set('blog', 'seeded', true)
           this.storage.set('blog', 'projects_seeded', true)
+          this.storage.set('blog', 'journals_seeded', true)
         }
         return null
       }
       case 'blog_find':
-        return this.storage.all<Binding>('blog-bindings').find((b) => b.file === args.file) ?? null
+        return this.storage.all<Binding>('blog-bindings').find((b) => b.file === args.file && !isEnglishBinding(b)) ?? null
+      case 'blog_retired_documents':
+        if (!workspaceId) throw badRequest('工作区标识无效')
+        return this.storage.all<Binding>('blog-bindings')
+          .filter(binding => binding.workspaceId === workspaceId && isEnglishBinding(binding))
+          .map(binding => binding.docId)
       case 'blog_documents':
         if (!workspaceId) throw badRequest('工作区标识无效')
         return this.storage
           .all<Binding>('blog-bindings')
-          .filter((binding) => binding.workspaceId === workspaceId)
+          .filter((binding) => binding.workspaceId === workspaceId && !isEnglishBinding(binding))
           .map((binding) => ({
             docId: binding.docId,
             kind: binding.metadata.kind,
@@ -117,13 +130,18 @@ export class LocalAffineService {
                 }
               : {}),
           }))
-      case 'blog_metadata':
+      case 'blog_metadata': {
+        const binding = this.storage.get<Binding>('blog-bindings', bindingKey(workspaceId, docId))
+        if (isEnglishBinding(binding)) throw badRequest('英文内容已移除，无法再次发布')
         return (
-          this.storage.get<Binding>('blog-bindings', bindingKey(workspaceId, docId))?.metadata ??
-          metadataFor('blog/article.md', { slug: '', date: new Date().toISOString().slice(0, 10) })
+          (binding ? chineseMetadata(binding.metadata) : null) ??
+          (isJournalDate(args.journalDate)
+            ? metadataFor(`journals/${args.journalDate}.md`, { date: args.journalDate })
+            : metadataFor('blog/article.md', { slug: '', date: new Date().toISOString().slice(0, 10) }))
         )
+      }
       case 'blog_publication_status':
-        return publicationStatus(this.storage, workspaceId, docId)
+        return publicationStatus(this.storage, workspaceId, docId, args.journalDate)
       case 'blog_publish':
         return publish(this.ws, this.storage, args)
       case 'affine_ai_request':

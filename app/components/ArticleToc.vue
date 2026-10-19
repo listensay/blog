@@ -3,7 +3,6 @@ import type { TocLink } from '@nuxt/content'
 import { IconChevronDown } from '@tabler/icons-vue'
 
 const props = defineProps<{ links: TocLink[], content?: HTMLElement }>()
-const { t } = useLocale()
 const listId = useId()
 const expanded = ref(false)
 const activeId = ref('')
@@ -116,7 +115,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <aside class="mb-6 lg:sticky lg:top-24 lg:mb-0 lg:py-1" :aria-label="t('articleContents')">
+  <aside class="mb-6 lg:sticky lg:top-24 lg:mb-0 lg:py-1" aria-label="阅读章节">
     <button
       type="button"
       class="flex min-h-11 w-full items-center justify-between text-sm font-medium text-slate-500 lg:hidden"
@@ -124,16 +123,16 @@ onMounted(() => {
       :aria-controls="listId"
       @click="expanded = !expanded"
     >
-      {{ t('articleContents') }}
+      阅读章节
       <IconChevronDown :size="14" aria-hidden="true" class="transition-transform" :class="{ 'rotate-180': expanded }" />
     </button>
     <h2 class="hidden text-xs font-medium text-slate-500 lg:block">
-      {{ t('articleContents') }}
+      阅读章节
     </h2>
     <nav
       :id="listId"
       ref="list"
-      :aria-label="t('articleContents')"
+      aria-label="阅读章节"
       class="mt-2 max-h-72 overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent] lg:mt-4 lg:max-h-[calc(100dvh-10rem)]"
       :class="expanded ? 'block' : 'hidden lg:block'"
     >

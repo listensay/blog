@@ -28,26 +28,30 @@ const pageSchema = z.object({
     .default([]),
 })
 
+const journalSchema = z.object({
+  title: z.string(),
+  description: z.string().default(''),
+  date: z.string(),
+  tags: z.array(z.string()).default([]),
+  draft: z.boolean().default(false),
+  cover: z.string().optional(),
+})
+
 export default defineContentConfig({
   collections: {
+    journals: defineCollection({
+      type: 'page',
+      source: { include: 'journals/*.md', prefix: '/journals' },
+      schema: journalSchema,
+    }),
     blog: defineCollection({
       type: 'page',
       source: { include: 'blog/**/*.md', prefix: '/blog' },
       schema: blogSchema,
     }),
-    blogEn: defineCollection({
-      type: 'page',
-      source: { include: 'en/blog/**/*.md', prefix: '/en/blog' },
-      schema: blogSchema,
-    }),
     pages: defineCollection({
       type: 'page',
       source: { include: 'pages/**/*.md', prefix: '/' },
-      schema: pageSchema,
-    }),
-    pagesEn: defineCollection({
-      type: 'page',
-      source: { include: 'en/pages/**/*.md', prefix: '/en' },
       schema: pageSchema,
     }),
   },

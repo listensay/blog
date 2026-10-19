@@ -16,7 +16,6 @@ function absoluteUrl(path: string): string {
 
 export function useSeo(options: SeoOptions = {}): void {
   const route = useRoute()
-  const { locale, isEnglish, alternates, siteDescription } = useLocale()
 
   const canonical = computed(() => absoluteUrl(route.path))
 
@@ -24,7 +23,7 @@ export function useSeo(options: SeoOptions = {}): void {
   const fullTitle = computed(() =>
     pageTitle.value ? `${pageTitle.value} - ${siteConfig.title}` : siteConfig.title,
   )
-  const description = computed(() => toValue(options.description)?.trim() || siteDescription.value)
+  const description = computed(() => toValue(options.description)?.trim() || siteConfig.description)
   const image = computed(() => absoluteUrl(toValue(options.image)?.trim() || siteConfig.ogImage))
 
   useSeoMeta({
@@ -36,8 +35,7 @@ export function useSeo(options: SeoOptions = {}): void {
     ogType: options.type ?? 'website',
     ogUrl: () => canonical.value,
     ogSiteName: siteConfig.title,
-    ogLocale: () => isEnglish.value ? 'en_US' : 'zh_CN',
-    ogLocaleAlternate: () => alternates.value.length ? [isEnglish.value ? 'zh_CN' : 'en_US'] : undefined,
+    ogLocale: 'zh_CN',
     ogImage: () => image.value,
     ogImageAlt: () => fullTitle.value,
 
@@ -52,12 +50,9 @@ export function useSeo(options: SeoOptions = {}): void {
   })
 
   useHead(() => ({
-    htmlAttrs: { lang: locale.value },
+    htmlAttrs: { lang: 'zh-CN' },
     link: options.noindex ? [] : [
       { rel: 'canonical', href: canonical.value },
-      ...alternates.value.map(alternate => ({
-        rel: 'alternate' as const, hreflang: alternate.hreflang, href: absoluteUrl(alternate.path),
-      })),
     ],
   }))
 }

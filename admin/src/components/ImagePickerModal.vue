@@ -43,8 +43,8 @@ function choose(item: ImageItem) {
 async function handleUpload(file: File): Promise<boolean> {
   uploading.value = true
   try {
-    const { image, reused } = await api.uploadImage(file.name, file)
-    message.success(reused ? `复用了已有的 ${image.name}` : `已存到 public/images/${image.name}`)
+    const { reused } = await api.uploadImage(file.name, file)
+    message.success(reused ? '图片已存在' : '上传成功')
     await load()
     keyword.value = ''
   } catch (err) {
@@ -59,19 +59,18 @@ async function handleUpload(file: File): Promise<boolean> {
 <template>
   <a-modal v-model:open="open" title="图片" width="760px" :footer="null">
     <div class="head">
-      <a-input v-model:value="keyword" placeholder="按文件名搜" allow-clear style="width: 240px" />
+      <a-input v-model:value="keyword" placeholder="搜索文件名" allow-clear style="width: 240px" />
       <a-upload :before-upload="handleUpload" :show-upload-list="false" accept="image/*" multiple>
         <a-button type="primary" :loading="uploading">
           <template #icon><InboxOutlined /></template>
-          上传新图片
+          上传图片
         </a-button>
       </a-upload>
-      <span class="hint">图片会存到 blog/public/images/</span>
     </div>
 
     <a-spin :spinning="loading">
       <div v-if="!filtered.length" class="empty">
-        {{ images.length ? '没有匹配的图片。' : 'public/images/ 里还没有图片，先上传一张。' }}
+        {{ images.length ? '无匹配图片' : '暂无图片' }}
       </div>
 
       <div v-else class="grid">
@@ -91,11 +90,6 @@ async function handleUpload(file: File): Promise<boolean> {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-}
-
-.hint {
-  color: #8c8c8c;
-  font-size: 12px;
 }
 
 .grid {

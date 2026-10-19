@@ -11,19 +11,19 @@ export async function exportForAffine(ws: Workspace): Promise<Uint8Array> {
   for (const file of await contentFiles(ws)) {
     const raw = await readFile(await safeContentPath(ws, file), 'utf8')
     const { data, body } = splitFrontmatter(raw)
-    const isPost = /^(?:en\/)?blog\//.test(file)
-    const relative = file.replace(/^(?:en\/)?(?:blog|pages)\//, '')
+    const isPost = /^blog\//.test(file)
+    const isJournal = /^journals\//.test(file)
+    const relative = file.replace(/^(?:blog|pages|journals)\//, '')
     const metadata = {
       blog: true,
-      kind: isPost ? 'post' : 'page',
-      locale: file.startsWith('en/') ? 'en' : 'zh-CN',
+      kind: isJournal ? 'journal' : isPost ? 'post' : 'page',
       title: data.title,
       description: data.description ?? '',
       slug: isPost ? data.slug : relative.replace(/\.md$/, ''),
-      ...(isPost
+      ...(isPost || isJournal
         ? {
             directory: path.posix.dirname(relative) === '.' ? '' : path.posix.dirname(relative),
-            date: String(data.date),
+            date: isJournal ? relative.replace(/\.md$/, '') : String(data.date),
             category: data.category ?? '未分类',
             tags: data.tags ?? [],
             draft: data.draft === true,

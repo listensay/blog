@@ -1,6 +1,6 @@
 const GENERIC = new Set(['Server Error', 'Internal Server Error', 'Bad Request', 'Unauthorized'])
 
-export function apiErrorMessage(error: unknown, fallback = '出错了，稍后再试'): string {
+export function apiErrorMessage(error: unknown, fallback = '请求失败，请重试'): string {
   const e = error as {
     data?: { statusMessage?: string, message?: string }
     statusMessage?: string

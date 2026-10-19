@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { taxonomySlug } from '../utils/taxonomy'
 
-const { locale, blogCollection, localPath, t, siteDescription, siteBio } = useLocale()
-
 const { data: allPosts, status, error } = await useAsyncData(
-  () => `home-posts-${locale.value}`,
+  'home-posts',
   () =>
-    queryCollection(blogCollection.value)
+    queryCollection('blog')
       .where('draft', '=', false)
       .order('date', 'DESC')
       .all(),
@@ -43,15 +41,15 @@ const socialLinks = computed(() => siteConfig.socials.filter(s => s.url))
 const authorColors = ['#4285f4', '#ea4335', '#f9ab00', '#34a853', '#a855f7']
 
 useSeo({
-  description: () => siteDescription.value,
+  description: () => siteConfig.description,
 })
 
 useJsonLd(() => ({
   '@type': 'WebSite',
   'name': siteConfig.title,
-  'description': siteDescription.value,
-  'url': `${siteConfig.url}${localPath('/')}`,
-  'inLanguage': locale.value,
+  'description': siteConfig.description,
+  'url': `${siteConfig.url}/`,
+  'inLanguage': 'zh-CN',
   'author': {
     '@type': 'Person',
     'name': siteConfig.author,
@@ -72,7 +70,7 @@ useJsonLd(() => ({
         :src="siteConfig.profile.avatar"
         class="home-avatar soft-shadow size-20 shrink-0 rounded-full object-cover sm:size-42"
         :class="{ 'home-avatar-jelly': animateAvatar }"
-        :alt="t('avatar', { name: siteConfig.profile.name })"
+        :alt="`${siteConfig.profile.name} 的头像`"
         @load="startAvatarAnimation"
         @animationend="finishAvatarAnimation"
       >
@@ -89,14 +87,14 @@ useJsonLd(() => ({
           >{{ char }}</span>
         </h1>
         <p class="max-w-2xl leading-relaxed text-slate-600 sm:text-lg">
-          {{ siteBio }}
+          {{ siteConfig.profile.bio }}
         </p>
         <div v-if="socialLinks.length" class="mt-3 flex flex-wrap items-center gap-2 sm:mt-5 sm:gap-2.5">
           <AppActionIcon
             v-for="(link, index) in socialLinks"
             :key="`${link.icon}-${index}`"
-            :label="['qq', 'email', 'rss'].includes(link.icon) ? t(`social.${link.icon}`) : link.label"
-            :href="link.url === '/feed.xml' ? localPath(link.url) : link.url"
+            :label="link.label"
+            :href="link.url"
             :color="link.color"
           >
             <SocialIcon :icon="link.icon" />
@@ -116,7 +114,7 @@ useJsonLd(() => ({
         />
       </div>
       <p v-else class="py-10 text-slate-500 sm:py-12">
-        {{ t('noArticlesYet') }}
+        暂无文章
       </p>
     </section>
   </div>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-defineI18nRoute(false)
 import type { AdminCommentsResponse } from '~/types/blog'
 
 useSeo({
@@ -91,7 +90,7 @@ const hide = (id: string) => act(() => $fetch<unknown>(`/api/admin/comments/${id
 const restore = (id: string) => act(() => $fetch<unknown>(`/api/admin/comments/${id}/restore`, { method: 'POST' }))
 
 function purge(id: string) {
-  if (!window.confirm('彻底删除后无法恢复，同时会删掉它下面的回复。继续？')) return
+  if (!window.confirm('永久删除此评论及其回复？此操作无法撤销。')) return
   return act(() => $fetch<unknown>(`/api/admin/comments/${id}`, { method: 'DELETE', query: { purge: 1 } }))
 }
 
@@ -114,16 +113,16 @@ const tabs = [
 
     <div v-else-if="screen === 'disabled'" class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
       <p class="font-medium">
-        后台还没启用
+        评论管理未启用
       </p>
       <p class="mt-2 leading-relaxed">
-        需要先设置管理密码和签名密钥。线上（Cloudflare）执行：
+        Cloudflare 环境需配置以下密钥：
       </p>
       <pre class="mt-2 overflow-x-auto rounded-lg bg-amber-900/5 p-3 text-xs leading-relaxed">npx wrangler secret put NUXT_ADMIN_PASSWORD
 npx wrangler secret put NUXT_SESSION_SECRET
 npx wrangler secret put NUXT_VISITOR_SALT</pre>
       <p class="mt-2 leading-relaxed">
-        本地开发则写进项目根目录的 <code class="rounded bg-amber-900/5 px-1">.env</code>（已被 git 忽略）。
+        本地环境在项目根目录的 <code class="rounded bg-amber-900/5 px-1">.env</code> 中配置。
       </p>
     </div>
 
@@ -184,7 +183,7 @@ npx wrangler secret put NUXT_VISITOR_SALT</pre>
       </p>
 
       <p v-if="list && !list.comments.length" class="mt-8 text-sm text-slate-400">
-        这个筛选下没有评论。
+        无符合条件的评论
       </p>
 
       <ul v-else-if="list" class="mt-6 space-y-3">

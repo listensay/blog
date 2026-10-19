@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { CommentListResponse, CommentNode, EngagementTarget } from '~/types/blog'
 
-const { t } = useLocale()
-
 const props = defineProps<{
   target: EngagementTarget
   parent?: CommentNode | null
@@ -52,11 +50,11 @@ async function submit() {
 
     body.value = ''
     remember()
-    done.value = t('commentPublished')
+    done.value = '评论已发布'
     emit('submitted', result)
   }
   catch (e) {
-    error.value = apiErrorMessage(e, t('couldNotSendYourCommentPleaseTryAgain'))
+    error.value = apiErrorMessage(e, '评论提交失败，请重试')
   }
   finally {
     pending.value = false
@@ -73,15 +71,15 @@ const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2
     @submit.prevent="submit"
   >
     <div v-if="parent" class="mb-3 flex items-center justify-between text-xs text-slate-500">
-      <span>{{ t('replyingTo') }} <span class="font-medium text-slate-700">@{{ parent.author }}</span></span>
+      <span>回复 <span class="font-medium text-slate-700">@{{ parent.author }}</span></span>
       <button type="button" class="text-slate-400 transition-colors hover:text-slate-600" @click="emit('cancel')">
-        {{ t('cancel') }}
+        取消
       </button>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-3">
       <label class="block">
-        <span class="mb-1 block text-xs font-medium text-slate-500">{{ t('name') }} <span class="text-brand-600">*</span></span>
+        <span class="mb-1 block text-xs font-medium text-slate-500">昵称 <span class="text-brand-600">*</span></span>
         <input
           v-model="identity.author"
           type="text"
@@ -89,24 +87,22 @@ const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2
           maxlength="24"
           required
           autocomplete="nickname"
-          :placeholder="t('yourName')"
           :class="inputClass"
         >
       </label>
       <label class="block">
-        <span class="mb-1 block text-xs font-medium text-slate-500">{{ t('emailPrivate') }}</span>
+        <span class="mb-1 block text-xs font-medium text-slate-500">邮箱（不公开）</span>
         <input
           v-model="identity.email"
           type="email"
           name="email"
           maxlength="120"
           autocomplete="email"
-          :placeholder="t('usedOnlyForYourAvatar')"
           :class="inputClass"
         >
       </label>
       <label class="block">
-        <span class="mb-1 block text-xs font-medium text-slate-500">{{ t('websiteOptional') }}</span>
+        <span class="mb-1 block text-xs font-medium text-slate-500">网址（选填）</span>
         <input
           v-model="identity.website"
           type="url"
@@ -127,29 +123,28 @@ const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2
     </div>
 
     <label class="mt-3 block">
-      <span class="sr-only">{{ t('comment') }}</span>
+      <span class="sr-only">评论内容</span>
       <textarea
         v-model="body"
         name="body"
         rows="4"
         required
-        :placeholder="parent ? t('replyPlaceholder', { name: parent.author }) : t('shareYourThoughtsLineBreaksAreSupportedHtmlIsNot')"
+        placeholder="评论内容"
         :class="`${inputClass} resize-y`"
       />
     </label>
 
     <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-      <p class="text-xs" :class="remaining < 0 ? 'text-red-500' : 'text-slate-400'">
-        <template v-if="remaining < 100">{{ t('remainingCharacters', { count: remaining }) }}</template>
-        <template v-else>{{ t('commentsAppearImmediatelyPleaseBeKind') }}</template>
+      <p v-if="remaining < 100" class="text-xs" :class="remaining < 0 ? 'text-red-500' : 'text-slate-400'">
+        {{ remaining < 0 ? `超出 ${-remaining} 字` : `剩余 ${remaining} 字` }}
       </p>
 
       <button
         type="submit"
         :disabled="!canSubmit"
-        class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+        class="ml-auto inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
       >
-        {{ pending ? t('sending') : parent ? t('reply') : t('postComment') }}
+        {{ pending ? '发送中…' : parent ? '回复' : '发表评论' }}
       </button>
     </div>
 

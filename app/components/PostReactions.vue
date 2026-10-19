@@ -2,8 +2,6 @@
 import { IconEye, IconHeart } from '@tabler/icons-vue'
 import type { EngagementTarget, PostStats } from '~/types/blog'
 
-const { t } = useLocale()
-
 const props = defineProps<{ target: EngagementTarget }>()
 
 const { data: stats, status } = await useFetch<PostStats>(() => statsUrl(props.target), {
@@ -60,7 +58,7 @@ async function toggleLike() {
   }
   catch (e) {
     stats.value = snapshot
-    error.value = apiErrorMessage(e, t('couldNotUpdateYourLikePleaseTryAgain'))
+    error.value = apiErrorMessage(e, '点赞失败，请重试')
   }
   finally {
     pending.value = false
@@ -76,7 +74,7 @@ async function toggleLike() {
         <p v-else class="flex items-center gap-1.5 text-xs text-slate-500">
           <IconEye :size="14" stroke="1.8" aria-hidden="true" />
           <span class="tabular-nums">{{ stats.views }}</span>
-          <span>{{ t('views') }}</span>
+          <span>次阅读</span>
         </p>
       </div>
 
@@ -86,7 +84,7 @@ async function toggleLike() {
         type="button"
         :disabled="pending"
         :aria-pressed="stats.liked"
-        :aria-label="stats.liked ? t('unlike') : t('like')"
+        :aria-label="stats.liked ? '取消点赞' : '点赞'"
         class="group inline-flex min-h-12 shrink-0 items-center justify-center gap-2.5 rounded-full border px-5 py-3 text-sm font-semibold transition-colors focus-visible:outline-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
         :class="stats.liked
           ? 'border-rose-600 bg-rose-600 text-white hover:border-rose-700 hover:bg-rose-700'

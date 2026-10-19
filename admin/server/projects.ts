@@ -9,9 +9,7 @@ import { ensureDir, type Workspace } from './paths.ts'
 const labels: Record<string, string> = {
   id: '作品标识',
   title: '作品名称',
-  titleEn: '英文名称',
   description: '简介',
-  descriptionEn: '英文简介',
   cover: '封面',
   demoUrl: '演示链接',
   repoUrl: '源码链接',
@@ -70,9 +68,7 @@ function validate(input: unknown): Project[] {
     return {
       id,
       title,
-      titleEn: text(item, 'titleEn', 100),
       description: text(item, 'description', 1000),
-      descriptionEn: text(item, 'descriptionEn', 1000),
       cover: url(item, 'cover'),
       tags: [...new Set((item.tags as string[]).map((tag) => tag.trim()))],
       demoUrl: url(item, 'demoUrl'),

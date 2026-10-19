@@ -23,10 +23,9 @@ try {
   await writeNav(ws, [legacy])
   assert.deepEqual((await readNav(ws)).items, [legacy], '旧版单名称菜单仍可读写')
 
-  const home = { ...legacy, label: '主页', labelEn: 'Start' }
+  const home = { ...legacy, label: '主页' }
   const custom = {
     label: '随笔',
-    labelEn: 'Field Notes',
     to: '/notes',
     icon: 'book',
     color: '#64748b',
@@ -35,12 +34,12 @@ try {
   assert.deepEqual(
     (await readNav(ws)).items,
     [home, custom],
-    '内置和自定义菜单分别保存中英文名称并去除首尾空白',
+    '菜单保存名称并去除首尾空白，丢弃旧英文名称',
   )
   assert.deepEqual(
     JSON.parse(await readFile(ws.navFile, 'utf8')),
     [home, custom],
-    '英文名称持久化到文件',
+    '仅持久化当前菜单字段',
   )
 
   await writeNav(ws, [custom, home])
@@ -48,10 +47,8 @@ try {
 
   const before = await readFile(ws.navFile, 'utf8')
   for (const [patch, message] of [
-    [{ label: '' }, /中文名称不能为空/],
-    [{ label: '中'.repeat(25) }, /中文名称太长/],
-    [{ labelEn: 'x'.repeat(25) }, /英文名称太长/],
-    [{ labelEn: 42 }, /英文名称必须是文字/],
+    [{ label: '' }, /名称不能为空/],
+    [{ label: '中'.repeat(25) }, /名称太长/],
   ] as const) {
     await assert.rejects(writeNav(ws, [{ ...home, ...patch }]), message)
     assert.equal(await readFile(ws.navFile, 'utf8'), before, '校验失败不会覆盖已保存的菜单')
@@ -63,7 +60,7 @@ try {
     [{ ...legacy, label: '主页' }],
     '清空英文名称后不会残留旧英文名称',
   )
-  console.log('菜单检查通过：旧数据兼容、双语保存、排序、输入校验及失败时保留原文件。')
+  console.log('菜单检查通过：旧数据兼容、单名称保存、排序、输入校验及失败时保留原文件。')
 } finally {
   await rm(root, { recursive: true, force: true })
 }

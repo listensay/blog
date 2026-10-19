@@ -114,25 +114,22 @@ function badUrl(url: string): boolean {
 
         <div class="fields-col">
           <a-form layout="vertical">
-            <a-form-item label="名字" required>
+            <a-form-item label="名称" required>
               <a-input
                 v-model:value="settings.profile.name"
                 placeholder="Immki"
                 :maxlength="40"
                 show-count
               />
-              <div class="hint">用于首页标题、页脚和文章作者。</div>
             </a-form-item>
 
             <a-form-item label="个人简介">
               <a-textarea
                 v-model:value="settings.profile.bio"
-                placeholder="了解真相才能获得真正的自由。"
                 :rows="2"
                 :maxlength="300"
                 show-count
               />
-              <div class="hint">留空时使用网站描述。</div>
             </a-form-item>
 
             <a-form-item label="头像地址">
@@ -141,7 +138,6 @@ function badUrl(url: string): boolean {
                 class="mono-input"
                 placeholder="/images/avatar.jpg"
               />
-              <div class="hint">站内路径或 http 链接。</div>
             </a-form-item>
           </a-form>
         </div>
@@ -250,7 +246,7 @@ function badUrl(url: string): boolean {
 
       <a-button type="dashed" block class="add" @click="add">
         <template #icon><PlusOutlined /></template>
-        加一项
+        添加链接
       </a-button>
     </div>
 
@@ -319,13 +315,6 @@ function badUrl(url: string): boolean {
 
 .fields-col :deep(.ant-form-item) {
   margin-bottom: 16px;
-}
-
-.hint {
-  margin-top: 4px;
-  color: #8c8c8c;
-  font-size: 12px;
-  line-height: 1.6;
 }
 
 .preview {

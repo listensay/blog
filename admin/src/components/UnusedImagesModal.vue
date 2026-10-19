@@ -79,9 +79,9 @@ async function remove() {
 </script>
 
 <template>
-  <a-modal v-model:open="open" title="清理垃圾图片" width="780px" :footer="null">
+  <a-modal v-model:open="open" title="清理未引用图片" width="780px" :footer="null">
     <a-spin :spinning="loading">
-      <div class="head">
+      <div v-if="images.length" class="head">
         <a-checkbox
           :checked="allChecked"
           :indeterminate="someChecked"
@@ -92,8 +92,7 @@ async function remove() {
         </a-checkbox>
 
         <span v-if="data" class="hint">
-          {{ data.total }} 张图片中 {{ images.length }} 张未被引用，合计
-          {{ sizeText(data.unusedBytes) }}
+          {{ images.length }} 张 · {{ sizeText(data.unusedBytes) }}
         </span>
 
         <span class="spacer" />
@@ -104,7 +103,7 @@ async function remove() {
       </div>
 
       <div v-if="!loading && !images.length" class="empty">
-        public/images 里没有未被引用的图片。
+        暂无未引用图片
       </div>
 
       <div v-else class="grid">
@@ -133,7 +132,7 @@ async function remove() {
 
       <a-popconfirm
         :disabled="!selected.length"
-        :title="`删除选中的 ${selected.length} 张图片？文件会直接从 public/images 移除，不进回收站。`"
+        :title="`永久删除选中的 ${selected.length} 张图片？此操作无法撤销。`"
         ok-text="删除"
         ok-type="danger"
         cancel-text="取消"

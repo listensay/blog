@@ -60,7 +60,7 @@ function formatTime(value: number): string {
 
     <a-button danger @click="cleanupOpen = true">
       <template #icon><DeleteOutlined /></template>
-      清理垃圾
+      清理图片
     </a-button>
   </div>
 
@@ -78,12 +78,11 @@ function formatTime(value: number): string {
 
       <a-card class="card" size="small">
         <a-statistic title="作品" :value="counts.projects" />
-        <div class="sub">在 AFFiNE 中发布管理</div>
       </a-card>
 
       <a-card class="card" size="small">
         <a-statistic title="图片" :value="counts.images" />
-        <div class="sub">public/images 合计 {{ sizeText(counts.imageBytes) }}</div>
+        <div class="sub">{{ sizeText(counts.imageBytes) }}</div>
       </a-card>
 
       <a-card class="card" size="small">
@@ -92,12 +91,9 @@ function formatTime(value: number): string {
           :value="counts.unusedImages"
           :value-style="counts.unusedImages ? { color: '#cf1322' } : undefined"
         />
-        <div class="sub">
-          <template v-if="counts.unusedImages">
-            可释放 {{ sizeText(counts.unusedBytes) }} ·
-            <a @click="cleanupOpen = true">查看</a>
-          </template>
-          <template v-else>没有可清理的图片</template>
+        <div v-if="counts.unusedImages" class="sub">
+          可释放 {{ sizeText(counts.unusedBytes) }} ·
+          <a @click="cleanupOpen = true">查看</a>
         </div>
       </a-card>
     </div>
@@ -125,10 +121,10 @@ function formatTime(value: number): string {
             </a-list-item>
           </template>
         </a-list>
-        <a-empty v-else description="还没有内容" />
+        <a-empty v-else description="暂无内容" />
       </a-card>
 
-      <a-card class="block" size="small" title="待办提示">
+      <a-card class="block" size="small" title="待办">
         <div v-if="stats?.todos.length" class="todos">
           <div v-for="todo in stats.todos" :key="todo.key" class="todo">
             <div class="todo-head">
@@ -140,12 +136,12 @@ function formatTime(value: number): string {
                 {{ item.title }}
               </a>
               <span v-if="todo.count > todo.items.length" class="sub">
-                还有 {{ todo.count - todo.items.length }} 条
+                其余 {{ todo.count - todo.items.length }} 条
               </span>
             </div>
           </div>
         </div>
-        <a-empty v-else description="没有待办" />
+        <a-empty v-else description="暂无待办" />
       </a-card>
     </div>
   </a-spin>

@@ -1,59 +1,59 @@
-# blog 本地后台
+# Immki Blog Admin
 
-Vue 3 + Vite + ant-design-vue。本地服务监听 `127.0.0.1:5173`，维护 AFFiNE 工作区、作品、友情链接、菜单、社交和站点设置。前台 `/admin` 的评论管理保持独立。
+Immki Blog 的本地内容管理后台，集成 AFFiNE 编辑器，用于日常写作、内容发布、图片管理和站点配置。
 
-```sh
+## 功能
+
+- **内容编辑**：管理文章、日记、独立页面和作品，支持富文本、白板、草稿及自动保存。
+- **内容概览**：查看内容统计、发文趋势、最近修改和待办事项。
+- **图片管理**：上传、选择图片，清理未引用的图片。
+- **站点设置**：管理个人资料、社交链接、导航菜单、友情链接和首页展示。
+- **AI 辅助写作**：接入 OpenAI 兼容服务，支持写作、总结和对话。
+
+## 技术栈
+
+Vue 3、TypeScript、Vite、Ant Design Vue、AFFiNE、SQLite。
+
+## 快速开始
+
+环境要求：Node.js 22.18 或更高的 22.x 版本、npm、Git。
+
+在仓库根目录执行：
+
+```bash
 npm install
-npm run dev
+npm --prefix admin install
+npm run affine:build
+npm run admin
 ```
 
-后台仅在本机运行，不部署。文件接口通过 Vite 插件注册；构建产物不包含后台 API。
-仓库默认取 `admin` 的上级目录，可通过进程环境变量 `ADMIN_BLOG_ROOT` 指定其他目录。
+访问 [http://127.0.0.1:5173](http://127.0.0.1:5173)。首次构建会下载编辑器源码并安装依赖。
 
-## AFFiNE 内容
+在“AFFiNE 内容”中编辑文档，选择“发布到博客”更新本地内容。需要预览博客时，在另一终端运行 `npm run dev`。线上内容通过重新部署更新。
 
-原文章列表、页面列表、作品独立管理界面、富文本编辑器、AI 编辑和 AI 翻译功能已整合。旧 `/posts`、`/edit`、`/pages`、`/projects` 等入口跳转到 `/affine`。
+后台在开发机器上运行。博客的安装与部署说明见[项目 README](../README.md)。
 
-在仓库根目录执行 `npm run affine:build`，随后运行后台，打开「AFFiNE 内容」。无需 Docker、账号或独立服务。
-完整前端嵌入后台，原有文章、页面与作品自动导入，文档自动保存在本项目 SQLite 中。
-右上角「发布到博客」选择内容类型（文章、页面或作品），填写发布设置并更新本地文件；作品发布自动同步更新 `content/data/projects.json`。
-源码、AI 接口与备份说明见 [AFFiNE 集成](../integrations/affine/README.md)。
+## AI 配置
 
-## 概览
+使用 AI 辅助写作时，将以下配置填入 `admin/.env.local`，然后重启后台：
 
-概览读取文章、固定页与作品统计、近 12 个月发文趋势、最近修改和缺失元数据的提示。点击内容进入对应 AFFiNE 文档。
-「清理垃圾」扫描现有内容、页面和配置的图片引用，只处理 `public/images/` 中未被引用的图片。
-
-## 友情链接、菜单和设置
-
-- 「链接」仅更新 `content/pages/links.md` 的 `friends`，不改 AFFiNE 管理的页面正文。缺少页面时应先在 AFFiNE 创建并发布 `slug: links` 的页面。
-- 「菜单」更新 `content/data/nav.json`，支持中英文名称、图标、颜色、顺序和自定义路径。页面路径候选来自当前已发布内容。
-- 「社交设置」和「系统设置」更新 `content/data/site.json`，包括个人资料、社交链接、站点信息和首页展示配置。
-- 图片选择器可上传到 `public/images/`；AFFiNE 正文附件另存于 `public/affine-assets/`。
-
-保存数据后本地预览会更新，线上需要重新构建部署。
-
-## API
-
-| 方法与路径 | 用途 |
+| 环境变量 | 用途 |
 | --- | --- |
-| `GET /api/workspace`、`GET /api/dashboard` | 本地仓库信息及内容统计 |
-| `GET /api/affine` | 本地源码工作区状态 |
-| `POST /api/affine-local/invoke` | 文档存储、导入、发布和 AI 的宿主接口 |
-| `GET /api/affine/export` | 下载现有内容的 Markdown ZIP 迁移包 |
-| `GET /api/pages` | 菜单使用的只读页面路径列表 |
-| `GET /api/links`、`PUT /api/links` | 友链读取及仅 friends 更新 |
-| `GET /api/projects`、`PUT /api/projects` | 作品，写入需携带 revision |
-| `GET /api/nav`、`PUT /api/nav` | 菜单 |
-| `GET /api/settings`、`PUT /api/settings` | 社交和站点设置 |
-| `GET /api/images`、`POST /api/images?name=` | 列图、上传 |
-| `GET /api/images/unused`、`POST /api/images/cleanup` | 未使用图片扫描和清理 |
+| `AFFINE_AI_BASE_URL` | OpenAI 兼容服务地址 |
+| `AFFINE_AI_API_KEY` | API 密钥 |
+| `AFFINE_AI_MODEL` | 模型名称 |
 
-## 检查
+配置示例见 [`.env.example`](.env.example)。
 
-```sh
-npm run check  # 类型、菜单、API、AFFiNE 存储与发布、作品
-npm run build
-```
+## 开发命令
 
-AFFiNE 检查在临时目录运行，覆盖持久化、CRDT 更新合并、附件、发布冲突和路径校验。
+以下命令在仓库根目录执行：
+
+| 命令 | 用途 |
+| --- | --- |
+| `npm run admin` | 启动后台开发服务 |
+| `npm run affine:build` | 构建内容编辑器 |
+| `npm --prefix admin run build` | 类型检查并构建后台前端 |
+| `npm --prefix admin run check` | 检查后台类型与功能 |
+| `npm --prefix admin run lint` | 检查并修复代码风格 |
+| `npm --prefix admin run format` | 格式化后台代码 |

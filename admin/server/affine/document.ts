@@ -6,7 +6,13 @@ interface RemoteDoc { id: string; title: string }
 const SEGMENT = '[a-z0-9]+(?:-[a-z0-9]+)*'
 const SLUG = new RegExp(`^${SEGMENT}$`)
 const ROUTE = new RegExp(`^${SEGMENT}(?:/${SEGMENT})*$`)
-const RESERVED = new Set(['blog', 'categories', 'tags', 'admin', 'index', 'projects', 'en', 'api'])
+const RESERVED = new Set(['blog', 'journals', 'categories', 'tags', 'admin', 'index', 'projects', 'en', 'api'])
+
+export function isJournalDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00Z`)
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
 
 function normalizeMarkdown(body: string, migrated: boolean): string {
   // AFFiNE imports raw HTML wrappers as code blocks and exports unset image
@@ -68,22 +74,24 @@ export function parseDocument(doc: RemoteDoc, markdown: string): BlogDocument | 
     return typeof meta[key] === 'string' ? meta[key].trim() : fail(`${key} 必须是文本`)
   }
   const kind = string('kind')
-  if (kind !== 'post' && kind !== 'page') fail('kind 须为 post 或 page')
+  if (!['post', 'page', 'journal'].includes(kind)) fail('kind 须为 post、page 或 journal')
   const locale = string('locale', 'zh-CN')
-  if (!['zh-CN', 'en'].includes(locale)) fail('locale 须为 zh-CN 或 en')
+  if (locale !== 'zh-CN') fail('博客仅支持中文发布')
   const title = doc.title?.trim() || string('title')
   if (!title) fail('文档标题不能为空')
-  const slug = string('slug')
+  const journalDate = kind === 'journal' ? string('date') : ''
+  if (kind === 'journal' && !isJournalDate(journalDate)) fail('日记日期须为有效的 YYYY-MM-DD')
+  const slug = kind === 'journal' ? journalDate : string('slug')
   if (!(kind === 'post' ? SLUG : ROUTE).test(slug))
     fail('slug 须使用小写英文、数字、连字符；页面可包含子路径')
   const directory = string('directory')
+  if (kind === 'journal' && directory) fail('日记按日期保存，不支持自定义目录')
   if (directory && !ROUTE.test(directory)) fail('directory 格式不正确')
   if (kind === 'page' && (directory || RESERVED.has(slug.split('/')[0]!)))
     fail('页面路径与内置路由冲突')
-  const prefix = locale === 'en' ? 'en/' : ''
-  const route = kind === 'post' ? ['blog', directory, slug].filter(Boolean).join('/') : slug
-  const target = `/${prefix}${route}`
-  const defaultFile = `${prefix}${kind === 'post' ? route : `pages/${slug}`}.md`
+  const route = kind === 'post' ? ['blog', directory, slug].filter(Boolean).join('/') : kind === 'journal' ? `journals/${slug}` : slug
+  const target = `/${route}`
+  const defaultFile = `${kind !== 'page' ? route : `pages/${slug}`}.md`
   const file = string('file', defaultFile)
   if (
     !isContentFile(file) ||
@@ -97,7 +105,7 @@ export function parseDocument(doc: RemoteDoc, markdown: string): BlogDocument | 
     if (meta[key] !== undefined && typeof meta[key] !== 'boolean')
       fail(`${key} 必须是 true 或 false`)
   }
-  if (kind === 'post') {
+  if (kind === 'post' || kind === 'journal') {
     const date = string('date')
     const match = /^(\d{4}-\d{2}-\d{2})(?: (\d{2}:\d{2}))?$/.exec(date)
     const parsed = match ? new Date(`${match[1]}T${match[2] || '00:00'}:00Z`) : null
@@ -114,7 +122,7 @@ export function parseDocument(doc: RemoteDoc, markdown: string): BlogDocument | 
       date,
       slug,
       path: target,
-      category: string('category', '未分类'),
+      ...(kind === 'post' ? { category: string('category', '未分类') } : {}),
       tags,
       draft: meta.draft === true,
     })
@@ -140,7 +148,9 @@ export function parseDocument(doc: RemoteDoc, markdown: string): BlogDocument | 
 
 export function isContentFile(file: string): boolean {
   return (
-    /^(?:en\/)?(?:blog|pages)\/.+\.md$/.test(file) &&
+    (/^(?:blog|pages)\/.+\.md$/.test(file) ||
+      (/^journals\/\d{4}-\d{2}-\d{2}\.md$/.test(file) &&
+        isJournalDate(path.posix.basename(file, '.md')))) &&
     !file.includes('\\') &&
     !/[\p{Cc}]/u.test(file) &&
     file
@@ -153,6 +163,6 @@ export function serializeDocument(doc: BlogDocument): string {
   return serializeFile(
     doc.data,
     `\n${doc.body}\n`,
-    doc.file.includes('blog/') ? POST_KEY_ORDER : PAGE_KEY_ORDER,
+    /(?:blog|journals)\//.test(doc.file) ? POST_KEY_ORDER : PAGE_KEY_ORDER,
   )
 }

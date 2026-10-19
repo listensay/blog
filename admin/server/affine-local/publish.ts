@@ -21,9 +21,17 @@ export interface Binding {
   metadata: Record<string, unknown>
   documentRevision?: number | null
 }
+// Keep retired bindings so old documents cannot be republished under Chinese URLs.
+export function isEnglishBinding(binding: Binding | null | undefined) {
+  return !!binding && (binding.file.startsWith('en/') || binding.metadata.locale === 'en')
+}
+export function chineseMetadata(metadata: Record<string, unknown>) {
+  const { locale, titleEn, descriptionEn, ...chinese } = metadata
+  return chinese
+}
 export const bindingKey = (workspaceId: string, docId: string) =>
   JSON.stringify([workspaceId, docId])
-export function publicationStatus(storage: WorkspaceStorage, workspaceId: string, docId: string) {
+export function publicationStatus(storage: WorkspaceStorage, workspaceId: string, docId: string, journalDate?: unknown) {
   if (!workspaceId || !docId) throw badRequest('文档标识无效')
   const savedRevision = storage.request({
     op: 'clock',
@@ -33,8 +41,10 @@ export function publicationStatus(storage: WorkspaceStorage, workspaceId: string
   const binding = storage.get<Binding>('blog-bindings', bindingKey(workspaceId, docId))
   const published =
     savedRevision !== null &&
+    !isEnglishBinding(binding) &&
     binding?.documentRevision === savedRevision &&
-    binding.metadata.draft !== true
+    binding.metadata.draft !== true &&
+    (binding.metadata.kind !== 'journal' || journalDate === undefined || journalDate === binding.metadata.date)
   return { savedRevision, published, draft: binding?.metadata.draft === true }
 }
 const revision = (file: string, raw: string) => {
@@ -49,37 +59,32 @@ export function metadataFor(file: string, data: Record<string, unknown>) {
       kind: 'project',
       slug: String(data.id ?? file.slice('projects/'.length)),
       title: String(data.title ?? ''),
-      titleEn: String(data.titleEn ?? ''),
       description: String(data.description ?? ''),
-      descriptionEn: String(data.descriptionEn ?? ''),
       cover: String(data.cover ?? ''),
       tags: Array.isArray(data.tags) ? data.tags : [],
       demoUrl: String(data.demoUrl ?? ''),
       repoUrl: String(data.repoUrl ?? ''),
       draft: data.draft === true,
-      locale: 'zh-CN',
       category: '作品',
       directory: '',
       date: new Date().toISOString().slice(0, 10),
       comments: false,
     }
   }
-  const post = /^(?:en\/)?blog\//.test(file)
-  const relative = file.replace(/^(?:en\/)?(?:blog|pages)\//, '')
+  const post = /^blog\//.test(file)
+  const journal = /^journals\//.test(file)
+  const relative = file.replace(/^(?:blog|pages|journals)\//, '')
   return {
-    kind: post ? 'post' : 'page',
-    locale: file.startsWith('en/') ? 'en' : 'zh-CN',
+    kind: journal ? 'journal' : post ? 'post' : 'page',
     slug: post ? data.slug : relative.replace(/\.md$/, ''),
     directory: post && path.posix.dirname(relative) !== '.' ? path.posix.dirname(relative) : '',
-    date: String(data.date ?? new Date().toISOString().slice(0, 10)),
+    date: journal ? relative.replace(/\.md$/, '') : String(data.date ?? new Date().toISOString().slice(0, 10)),
     description: data.description ?? '',
     category: data.category ?? '随笔',
     tags: data.tags ?? [],
     cover: data.cover ?? '',
     comments: data.comments === true,
     draft: data.draft === true,
-    titleEn: data.titleEn ?? '',
-    descriptionEn: data.descriptionEn ?? '',
     demoUrl: data.demoUrl ?? '',
     repoUrl: data.repoUrl ?? '',
   }
@@ -195,7 +200,16 @@ export async function publish(
       throw conflict('文档已有新修改，请等待保存后重新发布')
     const key = bindingKey(workspaceId, docId)
     const previous = storage.get<Binding>('blog-bindings', key)
-    const settings = metadata as Record<string, unknown>
+    if (isEnglishBinding(previous)) throw badRequest('英文内容已移除，无法再次发布')
+    if (metadata && 'locale' in metadata && metadata.locale !== 'zh-CN')
+      throw badRequest('博客仅支持中文发布')
+    const settings = chineseMetadata(metadata as Record<string, unknown>)
+    if (settings.kind === 'journal') {
+      if (input.journalDate !== settings.date)
+        throw badRequest('日记日期必须与 AFFiNE 日记一致，请重新打开发布设置')
+      if (previous?.metadata.kind === 'journal' && previous.metadata.date !== settings.date)
+        throw conflict('已发布日记的日期不可更改，请恢复原日期或新建当天日记')
+    }
 
     if (settings.kind === 'project') {
       if (previous && previous.metadata.kind !== 'project') {
@@ -207,13 +221,10 @@ export async function publish(
         throw badRequest('作品标识只能包含英文、数字、下划线和连字符')
       const projectTitle = title.trim() || String(settings.title ?? '').trim()
       if (!projectTitle) throw badRequest('作品名称不能为空')
-      const titleEn = typeof settings.titleEn === 'string' ? settings.titleEn.trim() : ''
       let description =
         typeof settings.description === 'string' && settings.description.trim()
           ? settings.description.trim()
           : markdown.replace(/^#\s+[^\n]+\n*/, '').trim()
-      let descriptionEn =
-        typeof settings.descriptionEn === 'string' ? settings.descriptionEn.trim() : ''
       let cover = typeof settings.cover === 'string' ? settings.cover.trim() : ''
       const demoUrl = typeof settings.demoUrl === 'string' ? settings.demoUrl.trim() : ''
       const repoUrl = typeof settings.repoUrl === 'string' ? settings.repoUrl.trim() : ''
@@ -225,7 +236,6 @@ export async function publish(
       const assetReplacements = await saveAssets(ws, assets)
       for (const [name, targetUrl] of assetReplacements) {
         description = description.replaceAll(name, targetUrl)
-        descriptionEn = descriptionEn.replaceAll(name, targetUrl)
         cover = cover.replaceAll(name, targetUrl)
       }
 
@@ -255,7 +265,15 @@ export async function publish(
       if (previous) {
         if (currentItem) {
           const currentHash = hash(JSON.stringify(currentItem))
-          if (currentHash !== previous.hash)
+          const legacyHash = hash(JSON.stringify({
+            id: currentItem.id, title: currentItem.title,
+            titleEn: previous.metadata.titleEn ?? '',
+            description: currentItem.description,
+            descriptionEn: previous.metadata.descriptionEn ?? '',
+            cover: currentItem.cover, tags: currentItem.tags,
+            demoUrl: currentItem.demoUrl, repoUrl: currentItem.repoUrl, draft: currentItem.draft,
+          }))
+          if (currentHash !== previous.hash && legacyHash !== previous.hash)
             throw conflict('本地作品数据已被修改，请先合并修改，避免覆盖')
         }
       } else {
@@ -266,9 +284,7 @@ export async function publish(
       const projectItem: Project = {
         id: slug,
         title: projectTitle,
-        titleEn,
         description,
-        descriptionEn,
         cover,
         tags,
         demoUrl,
@@ -293,9 +309,7 @@ export async function publish(
           kind: 'project',
           slug,
           title: projectTitle,
-          titleEn,
           description,
-          descriptionEn,
           cover,
           tags,
           demoUrl,
@@ -309,10 +323,10 @@ export async function publish(
 
     const moved =
       previous &&
-      ['kind', 'locale', 'slug', 'directory'].some(
+      ['kind', 'slug', 'directory'].some(
         (k) => (settings[k] ?? '') !== (previous.metadata[k] ?? ''),
       )
-    if (moved) throw conflict('已发布内容的类型、语言和地址暂不可更改；请新建文档使用新地址')
+    if (moved) throw conflict('已发布内容的类型和地址暂不可更改；请新建文档使用新地址')
     const safeSettings = {
       ...settings,
       blog: true,
@@ -333,7 +347,7 @@ export async function publish(
     for (const file of await contentFiles(ws)) {
       if (file === doc.file) continue
       const data = splitFrontmatter(await readFile(await safeContentPath(ws, file), 'utf8')).data
-      const route = /^(?:en\/)?blog\//.test(file)
+      const route = /^blog\//.test(file)
         ? `/${path.posix.dirname(file)}/${data.slug ?? path.posix.basename(file, '.md')}`
         : `/${file.replace('pages/', '').replace(/\.md$/, '')}`
       if (route === doc.path) throw conflict(`地址已被其他内容使用：${doc.path}`)
@@ -344,7 +358,7 @@ export async function publish(
     }
     if (before !== null) doc.data = { ...splitFrontmatter(before).data, ...doc.data }
     const publishedSettings = { ...settings }
-    if (settings.kind === 'post' && typeof settings.cover === 'string') {
+    if ((settings.kind === 'post' || settings.kind === 'journal') && typeof settings.cover === 'string') {
       const cover = assetReplacements.get(settings.cover.trim()) ?? settings.cover.trim()
       if (cover) doc.data.cover = cover
       else delete doc.data.cover

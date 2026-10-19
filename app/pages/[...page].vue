@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const { pagesCollection, t } = useLocale()
 const route = useRoute()
 
 const path = computed(() => {
@@ -9,7 +8,7 @@ const path = computed(() => {
 
 const { data: page, status, error } = await useAsyncData(
   () => `page-${path.value}`,
-  () => queryCollection(pagesCollection.value).path(path.value).first(),
+  () => queryCollection('pages').path(path.value).first(),
   { lazy: true },
 )
 
@@ -17,7 +16,7 @@ const { loading } = useQueryState(status, error)
 
 function assertFound() {
   if (page.value) return
-  const notFound = createError({ statusCode: 404, message: t('pageNotFound'), fatal: true })
+  const notFound = createError({ statusCode: 404, message: '页面不存在', fatal: true })
   if (import.meta.server) throw notFound
   showError(notFound)
 }
@@ -29,7 +28,7 @@ else {
   watch(status, s => s === 'success' && assertFound(), { immediate: true })
 }
 
-const target = computed(() => pageTarget(unlocalizedPath(path.value)))
+const target = computed(() => pageTarget(path.value))
 
 const proseEl = ref<HTMLElement>()
 useProseLightbox(proseEl)

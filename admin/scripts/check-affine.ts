@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { WorkspaceStorage } from '../server/affine-local/storage.ts'
 import { LocalAffineService } from '../server/affine-local/service.ts'
+import { bindingKey, type Binding } from '../server/affine-local/publish.ts'
+import { hash } from '../server/affine/sync.ts'
 import { resolveWorkspace } from '../server/paths.ts'
 import { markdownForImport } from '../server/affine-local/import.ts'
 import { publishedProjects } from '../../server/utils/projects.ts'
@@ -253,8 +255,28 @@ try {
   assert.equal(savedProjects[0]?.id, 'open-tool')
   assert.equal(savedProjects[0]?.title, '开源工具')
   assert.equal(savedProjects[0]?.draft, false)
+  assert.ok(!('titleEn' in savedProjects[0]!))
+  assert.ok(!('descriptionEn' in savedProjects[0]!))
   assert.equal(publishedProjects(savedProjects).length, 1)
   assert.equal(publishedProjects(savedProjects)[0]?.id, 'open-tool')
+
+  // Previously published projects used a hash including translated fields.
+  const projectKey = bindingKey('local', 'project-doc')
+  const binding = service.storage.get<Binding>('blog-bindings', projectKey)!
+  const item = savedProjects[0]!
+  const legacyItem = {
+    id: item.id, title: item.title, titleEn: 'Open Tool',
+    description: item.description, descriptionEn: 'A useful open source tool',
+    cover: item.cover, tags: item.tags, demoUrl: item.demoUrl, repoUrl: item.repoUrl, draft: item.draft,
+  }
+  service.storage.set('blog-bindings', projectKey, {
+    ...binding, hash: hash(JSON.stringify(legacyItem)),
+    metadata: { ...binding.metadata, locale: 'zh-CN', titleEn: legacyItem.titleEn, descriptionEn: legacyItem.descriptionEn },
+  })
+  const migratedMetadata = await invoke('blog_metadata', { workspaceId: 'local', docId: 'project-doc' }) as Record<string, unknown>
+  assert.ok(!('titleEn' in migratedMetadata) && !('locale' in migratedMetadata))
+  await invoke('blog_publish', { ...projectInput, metadata: migratedMetadata })
+  assert.equal(service.storage.get<Binding>('blog-bindings', projectKey)?.hash, hash(JSON.stringify(item)))
 
   assert.deepEqual(await invoke('blog_documents', { workspaceId: 'local' }), [
     { docId: 'new-page', kind: 'page' },

@@ -1,8 +1,6 @@
 import { queryCollection } from '@nuxt/content/server'
 import { isoDateTime } from '../../app/utils/date'
 import { siteConfig } from '../../app/utils/site'
-import { pathLocale, localizedPath } from '../../app/utils/locale'
-import englishMessages from '../../i18n/locales/en.json'
 
 function escapeXml(value: string) {
   return value
@@ -14,13 +12,18 @@ function escapeXml(value: string) {
 }
 
 export default defineEventHandler(async (event) => {
-  const locale = pathLocale(getRequestURL(event).pathname)
-  const posts = await queryCollection(event, locale === 'en' ? 'blogEn' : 'blog')
+  const [articles, journals] = await Promise.all([
+    queryCollection(event, 'blog')
     .where('draft', '=', false)
     .order('date', 'DESC')
     .limit(20)
     .select('title', 'description', 'date', 'path')
-    .all()
+    .all(),
+    queryCollection(event, 'journals')
+      .where('draft', '=', false).order('date', 'DESC').limit(20)
+      .select('title', 'description', 'date', 'path').all(),
+  ])
+  const posts = [...articles, ...journals].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20)
 
   const items = posts.map((post) => {
     const link = `${siteConfig.url}${post.path}`
@@ -40,9 +43,9 @@ export default defineEventHandler(async (event) => {
     '<rss version="2.0">',
     '<channel>',
     `<title>${escapeXml(siteConfig.title)}</title>`,
-    `<link>${escapeXml(siteConfig.url + localizedPath('/', locale))}</link>`,
-    `<description>${escapeXml(locale === 'en' ? englishMessages.site.description : siteConfig.description)}</description>`,
-    `<language>${locale}</language>`,
+    `<link>${escapeXml(siteConfig.url + '/')}</link>`,
+    `<description>${escapeXml(siteConfig.description)}</description>`,
+    `<language>zh-CN</language>`,
     `<lastBuildDate>${new Date().toUTCString()}</lastBuildDate>`,
     items,
     '</channel>',
