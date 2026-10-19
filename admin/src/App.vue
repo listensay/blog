@@ -4,7 +4,6 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import {
   DashboardOutlined,
-  AppstoreOutlined,
   FileTextOutlined,
   LinkOutlined,
   MenuOutlined,
@@ -32,12 +31,6 @@ const sections = [
     label: 'AFFiNE 内容',
     icon: FileTextOutlined,
     match: (path: string) => path.startsWith('/affine'),
-  },
-  {
-    name: 'projects',
-    label: '作品',
-    icon: AppstoreOutlined,
-    match: (path: string) => path.startsWith('/projects'),
   },
   {
     name: 'links',
@@ -104,7 +97,7 @@ onMounted(async () => {
               <a-divider type="vertical" />
               <span class="counts">
                 {{ info.postCount }} 篇文章 · {{ info.pageCount }} 个页面 ·
-                {{ info.imageCount }} 张图片
+                {{ info.projectCount }} 个作品 · {{ info.imageCount }} 张图片
               </span>
             </template>
             <a-tag v-else-if="loadError" color="error">本地接口连接失败</a-tag>

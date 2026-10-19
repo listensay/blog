@@ -1,19 +1,10 @@
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import type { Workspace } from '../paths.ts'
 
 export function stateDir(ws: Workspace) {
   return path.join(ws.blogRoot, '.affine')
-}
-
-export async function readJsonFile<T>(file: string, fallback: T): Promise<T> {
-  try {
-    return JSON.parse(await readFile(file, 'utf8')) as T
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return fallback
-    throw new Error(`无法读取 ${path.basename(file)}，请修复文件后重试`)
-  }
 }
 
 export async function atomicWrite(file: string, text: string | Uint8Array) {

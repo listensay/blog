@@ -77,6 +77,11 @@ function formatTime(value: number): string {
       </a-card>
 
       <a-card class="card" size="small">
+        <a-statistic title="作品" :value="counts.projects" />
+        <div class="sub">在 AFFiNE 中发布管理</div>
+      </a-card>
+
+      <a-card class="card" size="small">
         <a-statistic title="图片" :value="counts.images" />
         <div class="sub">public/images 合计 {{ sizeText(counts.imageBytes) }}</div>
       </a-card>

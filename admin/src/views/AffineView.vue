@@ -54,7 +54,7 @@ onBeforeRouteLeave(async () => {
 <template>
   <section class="workspace">
     <header class="workspace-bar">
-      <div><strong>AFFiNE 工作区</strong><span>文档自动保存 · 文章与页面在编辑器内发布</span></div>
+      <div><strong>AFFiNE 内容</strong></div>
       <a-space>
         <a-button v-if="error" @click="check"
           ><template #icon><ReloadOutlined /></template>重试</a-button
@@ -65,13 +65,13 @@ onBeforeRouteLeave(async () => {
       </a-space>
     </header>
     <a-alert v-if="error" type="error" show-icon :message="error" />
-    <div v-if="loading" class="loading"><a-spin tip="正在打开工作区…" /></div>
+    <div v-if="loading" class="loading"><a-spin tip="正在打开 AFFiNE…" /></div>
     <iframe
       v-if="ready"
       :key="attempt"
       ref="frame"
       :src="source"
-      title="AFFiNE 博客工作区"
+      title="AFFiNE 博客内容"
       allow="clipboard-read; clipboard-write; fullscreen"
     />
   </section>

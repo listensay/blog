@@ -26,7 +26,7 @@ export function markdownForImport(body: string): string {
       const src = attrs.src
         .replace(/^(?:\.\.\/)+public\//, '/')
         .replace(/[<>\s]/g, (c) => encodeURIComponent(c))
-      const alt = (attrs.alt ?? '').replace(/[\\\[\]]/g, '\\$&').replace(/\r?\n/g, ' ')
+      const alt = (attrs.alt ?? '').replace(/[\\[\]]/g, '\\$&').replace(/\r?\n/g, ' ')
       return `![${alt}](<${src}>)`
     })
   let fence = '',

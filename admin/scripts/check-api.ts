@@ -55,7 +55,9 @@ try {
   }
   for (const method of ['POST', 'PUT', 'DELETE'])
     assert.equal((await fetch(`${base}/api/pages`, { method })).status, 404)
-  console.log('✓ 后台数据可读，旧文章/页面/AI 写入接口已移除')
+  for (const method of ['POST', 'PUT', 'DELETE'])
+    assert.equal((await fetch(`${base}/api/projects`, { method })).status, 404)
+  console.log('✓ 后台数据可读，旧文章/页面/作品/AI 写入接口已移除')
 
   const linksFile = path.join(root, 'content/pages/links.md')
   const before = await readFile(linksFile, 'utf8')

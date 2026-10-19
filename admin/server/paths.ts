@@ -62,10 +62,6 @@ function assertSafeRelative(relative: string, label: string): void {
   }
 }
 
-export function resolvePostFile(ws: Workspace, file: string): string {
-  return resolveContentFile(ws.postsDir, ws.contentDir, file, POSTS_PREFIX, '文章目录')
-}
-
 export function resolvePageFile(ws: Workspace, file: string): string {
   return resolveContentFile(ws.pagesDir, ws.contentDir, file, PAGES_PREFIX, '页面目录')
 }

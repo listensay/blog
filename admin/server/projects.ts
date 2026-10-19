@@ -28,7 +28,7 @@ function text(item: Record<string, unknown>, key: string, max: number): string {
 function url(item: Record<string, unknown>, key: string): string {
   const value = text(item, key, 2048)
   if (!value) return ''
-  if (/[\s\\\u0000-\u001f\u007f]/.test(value)) throw badRequest(`${labels[key]}不是有效的网址`)
+  if (/[\s\\]|[\p{Cc}]/u.test(value)) throw badRequest(`${labels[key]}不是有效的网址`)
   if (value.startsWith('/') && !value.startsWith('//')) return value
   try {
     const parsed = new URL(value)

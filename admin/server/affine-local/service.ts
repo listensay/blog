@@ -5,6 +5,7 @@ import { badRequest } from '../http.ts'
 import { stateDir } from '../affine/config.ts'
 import { contentFiles, safeContentPath } from '../affine/sync.ts'
 import { splitFrontmatter } from '../frontmatter.ts'
+import { readProjects } from '../projects.ts'
 import { WorkspaceStorage } from './storage.ts'
 import { markdownForImport } from './import.ts'
 import {
@@ -53,19 +54,35 @@ export class LocalAffineService {
         if (!workspaceId) throw badRequest('工作区标识无效')
         const owner = this.storage.get<string>('blog', 'workspace')
         if (owner && owner !== workspaceId) return []
-        if (this.storage.get<boolean>('blog', 'seeded')) return []
+        const contentSeeded = this.storage.get<boolean>('blog', 'seeded') === true
+        const projectsSeeded = this.storage.get<boolean>('blog', 'projects_seeded') === true
+        if (contentSeeded && projectsSeeded) return []
         this.storage.set('blog', 'workspace', workspaceId)
         const bound = new Set(this.storage.all<Binding>('blog-bindings').map((b) => b.file))
         const entries = []
-        for (const file of await contentFiles(this.ws)) {
-          if (bound.has(file)) continue
-          const raw = await readFile(await safeContentPath(this.ws, file), 'utf8')
-          const { data, body } = splitFrontmatter(raw)
-          entries.push({
-            file,
-            title: String(data.title ?? file),
-            markdown: markdownForImport(body),
-          })
+        if (!contentSeeded) {
+          for (const file of await contentFiles(this.ws)) {
+            if (bound.has(file)) continue
+            const raw = await readFile(await safeContentPath(this.ws, file), 'utf8')
+            const { data, body } = splitFrontmatter(raw)
+            entries.push({
+              file,
+              title: String(data.title ?? file),
+              markdown: markdownForImport(body),
+            })
+          }
+        }
+        if (!projectsSeeded) {
+          const { items: projects } = await readProjects(this.ws)
+          for (const project of projects) {
+            const file = `projects/${project.id}`
+            if (bound.has(file)) continue
+            entries.push({
+              file,
+              title: project.title,
+              markdown: markdownForImport(project.description || project.title),
+            })
+          }
         }
         return entries
       }
@@ -75,8 +92,10 @@ export class LocalAffineService {
         return bindFile(this.ws, this.storage, workspaceId, docId, args.file)
       }
       case 'blog_seed_done': {
-        if (this.storage.get<string>('blog', 'workspace') === workspaceId)
+        if (this.storage.get<string>('blog', 'workspace') === workspaceId) {
           this.storage.set('blog', 'seeded', true)
+          this.storage.set('blog', 'projects_seeded', true)
+        }
         return null
       }
       case 'blog_find':

@@ -2,6 +2,7 @@ import type { DashboardStats, RecentItem, TodoGroup, TodoItem, TrendPoint } from
 import { findUnusedImages } from './images.ts'
 import { listPages } from './pages.ts'
 import { listPosts } from './posts.ts'
+import { readProjects } from './projects.ts'
 import type { Workspace } from './paths.ts'
 
 /** 趋势图的月份数 */
@@ -42,9 +43,10 @@ function group(key: TodoGroup['key'], label: string, items: TodoItem[]): TodoGro
 }
 
 export async function readDashboard(ws: Workspace): Promise<DashboardStats> {
-  const [{ posts, categories, tags }, { pages }, images] = await Promise.all([
+  const [{ posts, categories, tags }, { pages }, { items: projects }, images] = await Promise.all([
     listPosts(ws),
     listPages(ws),
+    readProjects(ws),
     findUnusedImages(ws),
   ])
 
@@ -116,6 +118,7 @@ export async function readDashboard(ws: Workspace): Promise<DashboardStats> {
       published: posts.length - drafts.length,
       drafts: drafts.length,
       pages: pages.length,
+      projects: projects.length,
       categories: categories.length,
       tags: tags.length,
       images: images.total,

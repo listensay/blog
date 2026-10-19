@@ -78,10 +78,4 @@ Gemini 示例
 
 最终生成的效果如下：
 
-
-
-![](/affine-assets/e777bac95641571b6ee76d23c1fcb996c9099894e6a4c1ff510abe2f9395c38a.png)
-
-
-
-![](/affine-assets/57b4edc18e57670f03db7b0e7af45621dc1e11d3c880273a35c1615d55d82863.png)
+![](/affine-assets/c8a7673521e5cef0dd14581fafff7efdb6ca381f2f9e30c2f4b26f3a464dbe8c.png)

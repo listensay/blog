@@ -32,7 +32,7 @@ pnpm、yarn、bun 同样可用。
 按稳定的 URL slug 在 `taxonomy` 中查找英文显示名（例如 `benefits` 对应 `Benefits`）。
 英文内容建议用 `/images/...` 引用图片，避免不同目录深度造成相对路径错误。
 
-文章和独立页面在后台内嵌的完整 AFFiNE 工作区中维护。源码位于 `vendor/affine`，支持文档、白板、数据库视图和导入导出；本项目用 SQLite 保存数据，无需 Docker 或独立 AFFiNE 服务。
+文章、独立页面与作品在后台内嵌的完整 AFFiNE 工作区中维护。源码位于 `vendor/affine`，支持文档、白板、数据库视图和导入导出；本项目用 SQLite 保存数据，无需 Docker 或独立 AFFiNE 服务。
 
 ```bash
 npm --prefix admin install
@@ -40,7 +40,7 @@ npm run affine:build          # 首次构建或修改 AFFiNE 源码后运行，�
 npm run admin                 # 默认 http://127.0.0.1:5173/affine
 ```
 
-首次打开自动导入现有文章和页面。文档自动保存，右上角「发布到博客」更新本地 Markdown；线上仍需重新构建部署。
+首次打开自动导入现有文章、页面和作品。文档自动保存，右上角「发布到博客」更新本地文件；线上仍需重新构建部署。
 详见 [运行、源码定制、发布和备份](integrations/affine/README.md)。
 
 两种语言各自输出 canonical，只有已发布且双方存在的页面才输出双向 hreflang。
@@ -55,9 +55,9 @@ npm run check:locales -- http://127.0.0.1:3000
 
 ## 作品集
 
-本地后台的「作品」可维护项目名称、简介、封面、技术标签及演示 / 源码链接，支持草稿、发布、排序与删除。
+作品在 AFFiNE「作品」目录中创建与维护，发布时可填写项目名称、简介、封面、技术标签及演示 / 源码链接，支持草稿与发布。
 前台入口为 `/projects`，英文为 `/en/projects`，仅展示已发布作品，可按技术标签筛选。
-英文名称与简介可单独填写，留空时使用中文。作品保存在 `content/data/projects.json`，保存后本地预览更新，
+英文名称与简介可单独填写，留空时使用中文。作品同步更新 `content/data/projects.json`，保存后本地预览更新，
 线上需重新构建部署。详见 [作品管理说明](admin/README.md#作品)。
 
 ## 环境变量

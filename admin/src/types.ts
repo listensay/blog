@@ -60,6 +60,7 @@ export interface DashboardCounts {
   published: number
   drafts: number
   pages: number
+  projects: number
   categories: number
   tags: number
   images: number
@@ -75,7 +76,7 @@ export interface TrendPoint {
 }
 
 export interface RecentItem {
-  kind: 'post' | 'page'
+  kind: 'post' | 'page' | 'project'
   title: string
   file: string
   mtime: number
@@ -83,7 +84,7 @@ export interface RecentItem {
 }
 
 export interface TodoItem {
-  kind: 'post' | 'page'
+  kind: 'post' | 'page' | 'project'
   title: string
   file: string
 }
@@ -109,6 +110,7 @@ export interface WorkspaceInfo {
   blogRoot: string
   postCount: number
   pageCount: number
+  projectCount: number
   imageCount: number
 }
 

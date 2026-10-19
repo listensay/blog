@@ -6,6 +6,9 @@ import { WorkspaceStorage } from '../server/affine-local/storage.ts'
 import { LocalAffineService } from '../server/affine-local/service.ts'
 import { resolveWorkspace } from '../server/paths.ts'
 import { markdownForImport } from '../server/affine-local/import.ts'
+import { publishedProjects } from '../../server/utils/projects.ts'
+import { splitFrontmatter } from '../server/frontmatter.ts'
+import type { Project } from '../../app/types/project.ts'
 
 const htmlImage = '<img\n src="/affine-assets/a.png"\n alt="图 &amp; 示例"\n/>'
 assert.equal(markdownForImport(htmlImage), '![图 & 示例](</affine-assets/a.png>)')
@@ -155,6 +158,32 @@ try {
   )
   await invoke('blog_publish', input)
   console.log('✓ 博客分类目录、重新发布后分类更新与空分类兜底')
+  const coverAsset = {
+    name: 'assets/cover-upload',
+    mime: 'image/png',
+    data: Buffer.from('uploaded cover bytes').toString('base64'),
+  }
+  await invoke('blog_publish', {
+    ...input,
+    metadata: { ...(metadata as object), cover: coverAsset.name },
+    assets: [...input.assets, coverAsset],
+  })
+  const coverMetadata = (await invoke('blog_metadata', {
+    workspaceId: 'local', docId: 'original',
+  })) as Record<string, unknown>
+  const uploadedCover = String(coverMetadata.cover)
+  assert.match(uploadedCover, /^\/affine-assets\/[a-f0-9]+\.png$/)
+  assert.equal(splitFrontmatter(await readFile(sourceFile, 'utf8')).data.cover, uploadedCover)
+  assert.equal(await readFile(path.join(root, 'public', uploadedCover), 'utf8'), 'uploaded cover bytes')
+  await invoke('blog_publish', { ...input, metadata: coverMetadata, assets: [] })
+  assert.equal(splitFrontmatter(await readFile(sourceFile, 'utf8')).data.cover, uploadedCover)
+  await invoke('blog_publish', { ...input, metadata: { ...coverMetadata, cover: '' } })
+  assert.equal(splitFrontmatter(await readFile(sourceFile, 'utf8')).data.cover, undefined)
+  assert.equal(((await invoke('blog_metadata', {
+    workspaceId: 'local', docId: 'original',
+  })) as Record<string, unknown>).cover, '')
+  await invoke('blog_publish', input)
+  console.log('✓ 文章独立封面上传、路径落盘、重新发布保留和移除封面')
   await writeFile(sourceFile, after + '\n外部修改\n')
   await assert.rejects(invoke('blog_publish', input), /本地 Markdown/)
   assert.match(await readFile(sourceFile, 'utf8'), /外部修改/)
@@ -191,6 +220,88 @@ try {
     { docId: 'original', kind: 'post', category: 'AI' },
   ])
   console.log('✓ 内容分类区分博客和页面，隔离工作区，并在新内容发布后更新')
+
+  // Project publication, metadata and conflict tests
+  const projectInput = {
+    workspaceId: 'local',
+    docId: 'project-doc',
+    documentRevision: saveDocument('project-doc'),
+    title: '开源工具',
+    markdown: '# 开源工具\n\n工具详细描述',
+    metadata: {
+      kind: 'project',
+      slug: 'open-tool',
+      titleEn: 'Open Tool',
+      description: '一个好用的开源工具',
+      descriptionEn: 'A useful open source tool',
+      cover: '/images/tool.png',
+      tags: ['Vue', 'TypeScript'],
+      demoUrl: 'https://demo.example.com',
+      repoUrl: 'https://github.com/example/tool',
+      draft: false,
+    },
+    assets: [],
+  }
+  const projectPublished = (await invoke('blog_publish', projectInput)) as { path: string; file: string }
+  assert.equal(projectPublished.path, '/projects')
+  assert.equal(projectPublished.file, 'projects/open-tool')
+  assert.equal((await status('project-doc')).published, true)
+
+  const projectsJsonFile = path.join(root, 'content/data/projects.json')
+  const savedProjects = JSON.parse(await readFile(projectsJsonFile, 'utf8')) as Project[]
+  assert.equal(savedProjects.length, 1)
+  assert.equal(savedProjects[0]?.id, 'open-tool')
+  assert.equal(savedProjects[0]?.title, '开源工具')
+  assert.equal(savedProjects[0]?.draft, false)
+  assert.equal(publishedProjects(savedProjects).length, 1)
+  assert.equal(publishedProjects(savedProjects)[0]?.id, 'open-tool')
+
+  assert.deepEqual(await invoke('blog_documents', { workspaceId: 'local' }), [
+    { docId: 'new-page', kind: 'page' },
+    { docId: 'original', kind: 'post', category: 'AI' },
+    { docId: 'project-doc', kind: 'project' },
+  ])
+
+  // Draft project update
+  await invoke('blog_publish', {
+    ...projectInput,
+    metadata: { ...projectInput.metadata, cover: coverAsset.name },
+    assets: [coverAsset],
+  })
+  const projectCoverMetadata = (await invoke('blog_metadata', {
+    workspaceId: 'local', docId: 'project-doc',
+  })) as Record<string, unknown>
+  assert.equal(projectCoverMetadata.cover, uploadedCover)
+  assert.equal(JSON.parse(await readFile(projectsJsonFile, 'utf8'))[0].cover, uploadedCover)
+  await invoke('blog_publish', { ...projectInput, metadata: projectCoverMetadata })
+  assert.equal(JSON.parse(await readFile(projectsJsonFile, 'utf8'))[0].cover, uploadedCover)
+  await invoke('blog_publish', {
+    ...projectInput, metadata: { ...projectCoverMetadata, cover: '' },
+  })
+  assert.equal(JSON.parse(await readFile(projectsJsonFile, 'utf8'))[0].cover, '')
+  console.log('✓ 作品封面上传、再次发布保留和移除封面')
+  projectInput.documentRevision = saveDocument('project-doc')
+  projectInput.metadata.draft = true
+  await invoke('blog_publish', projectInput)
+  assert.deepEqual(await status('project-doc'), {
+    savedRevision: projectInput.documentRevision,
+    published: false,
+    draft: true,
+  })
+  const draftProjects = JSON.parse(await readFile(projectsJsonFile, 'utf8')) as Project[]
+  assert.equal(draftProjects[0]?.draft, true)
+  assert.deepEqual(publishedProjects(draftProjects), [], '草稿不进入公开数据')
+
+  // External modification conflict check on project
+  await writeFile(
+    projectsJsonFile,
+    JSON.stringify([{ ...savedProjects[0], title: '外部修改作品' }], null, 2) + '\n',
+  )
+  projectInput.documentRevision = saveDocument('project-doc')
+  await assert.rejects(invoke('blog_publish', projectInput), /本地作品数据已被修改/)
+
+  console.log('✓ 作品发布至 content/data/projects.json、分类标记为 project、草稿状态与外部修改冲突保护')
+
   await symlink(path.join(root, 'state'), path.join(root, 'content/blog/escape'))
   await assert.rejects(
     invoke('blog_publish', {

@@ -27,7 +27,7 @@ import {
   sendJson,
 } from './http.ts'
 import { readNav, writeNav } from './nav.ts'
-import { readProjects, writeProjects } from './projects.ts'
+import { readProjects } from './projects.ts'
 import { listPages, readPage, writeFriends } from './pages.ts'
 import { listPosts } from './posts.ts'
 import { readSettings, writeSettings } from './settings.ts'
@@ -50,15 +50,17 @@ type Handler = (
 
 const routes: Record<string, Handler> = {
   'GET /workspace': async (_req, res, { ws }) => {
-    const [{ posts }, { pages }, images] = await Promise.all([
+    const [{ posts }, { pages }, { items: projects }, images] = await Promise.all([
       listPosts(ws),
       listPages(ws),
+      readProjects(ws),
       listImages(ws),
     ])
     const info: WorkspaceInfo = {
       blogRoot: ws.blogRoot,
       postCount: posts.length,
       pageCount: pages.length,
+      projectCount: projects.length,
       imageCount: images.length,
     }
     sendJson(res, 200, info)
@@ -100,10 +102,6 @@ const routes: Record<string, Handler> = {
 
   'GET /projects': async (_req, res, { ws }) => {
     sendJson(res, 200, await readProjects(ws))
-  },
-
-  'PUT /projects': async (req, res, { ws }) => {
-    sendJson(res, 200, await writeProjects(ws, await readJson<unknown>(req)))
   },
 
   'PUT /nav': async (req, res, { ws }) => {
