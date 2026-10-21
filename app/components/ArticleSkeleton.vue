@@ -1,6 +1,6 @@
 <template>
-  <div class="skeleton-group">
-    <header class="border-b border-slate-200 pb-6 sm:pb-8" role="status" aria-busy="true">
+  <div class="skeleton-group rounded-none bg-transparent">
+    <header class="border-b border-panel-line pb-6 sm:pb-8" role="status" aria-busy="true">
       <span class="sr-only">正在加载文章…</span>
       <div aria-hidden="true">
         <div class="flex items-center gap-3">
@@ -12,8 +12,12 @@
       </div>
     </header>
 
-    <div class="mt-6 rounded-xl bg-white p-4 sm:mt-10 sm:p-6">
-      <ProseSkeleton :paragraphs="4" />
+    <div class="mt-8 sm:mt-10">
+      <ProseSkeleton :paragraphs="2" />
+    </div>
+    <div class="mt-8 rounded-sm bg-panel-raised p-5 sm:p-7">
+      <div class="skeleton mb-5 h-7 w-2/5" />
+      <ProseSkeleton :paragraphs="3" />
     </div>
   </div>
 </template>

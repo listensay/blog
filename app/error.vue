@@ -19,18 +19,18 @@ useSeo({
 <template>
   <NuxtLayout>
     <div class="flex min-h-[60vh] flex-col items-center justify-center px-2 py-16 text-center sm:py-20">
-      <p class="text-5xl font-bold tracking-tight text-brand-600 sm:text-6xl">
+      <p class="text-5xl font-bold tracking-tight text-[#c7b7ed] sm:text-6xl">
         {{ error.statusCode }}
       </p>
-      <h1 class="mt-4 text-2xl font-semibold text-slate-900">
+      <h1 class="mt-4 text-2xl font-semibold text-[#eeebf7]">
         {{ error.statusCode === 404 ? '页面不存在' : '请求失败' }}
       </h1>
-      <p v-if="error.statusCode !== 404" class="mt-2 max-w-md text-slate-600">
+      <p v-if="error.statusCode !== 404" class="mt-2 max-w-md text-panel-muted">
         {{ detail }}
       </p>
       <button
         type="button"
-        class="mt-8 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+        class="mt-8 rounded-lg bg-[#6554bc] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#7865cf]"
         @click="clearError({ redirect: '/' })"
       >
         返回首页

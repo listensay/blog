@@ -11,7 +11,7 @@ defineProps<{
   <NuxtLink
     :to="taxonomyLink('categories', category)"
     class="font-medium underline-offset-4 transition-colors"
-    :class="light ? 'text-white hover:text-white/80' : 'text-slate-600 hover:text-brand-600'"
+    :class="light ? 'text-white hover:text-white/80' : 'text-panel-muted hover:text-accent'"
   >
     {{ taxonomyLabel(category, 'category') }}
   </NuxtLink>

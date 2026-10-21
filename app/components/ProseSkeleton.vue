@@ -5,7 +5,7 @@ const lineWidths = ['w-full', 'w-full', 'w-11/12', 'w-3/4']
 </script>
 
 <template>
-  <div role="status" aria-busy="true" class="skeleton-group">
+  <div role="status" aria-busy="true" class="skeleton-group rounded-none bg-transparent">
     <span class="sr-only">正在加载正文…</span>
 
     <div

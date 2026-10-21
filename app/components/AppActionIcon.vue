@@ -23,18 +23,10 @@ const sizeClass = computed(() => (
     :aria-label="label"
     :title="label"
     :type="href ? undefined : 'button'"
-    class="action-icon inline-flex items-center justify-center rounded-full border border-slate-200 bg-white transition-colors"
+    class="inline-flex items-center justify-center rounded-full border border-panel-line bg-panel-raised text-(--icon-color) transition-colors hover:border-[color-mix(in_srgb,var(--icon-color)_40%,white)] hover:bg-[color-mix(in_srgb,var(--icon-color)_10%,white)]"
     :class="sizeClass"
-    :style="{ '--icon-color': color, color }"
+    :style="{ '--icon-color': color }"
   >
     <slot />
   </component>
 </template>
-
-<style scoped>
-.action-icon:hover {
-  color: var(--icon-color);
-  background-color: color-mix(in srgb, var(--icon-color) 10%, white);
-  border-color: color-mix(in srgb, var(--icon-color) 40%, white);
-}
-</style>

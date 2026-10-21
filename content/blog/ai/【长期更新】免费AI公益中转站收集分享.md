@@ -80,20 +80,7 @@ https://ai.onyxaxis.org/register?invite=Y3M452R3
 
 https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
-</details>
 
-<details>
-<summary><h3>Conduit</h3></summary>
-
-评价：**拉完了**
-
-Gpt速度快可以用，但需要PVP抢资源，运气好就能用。
-
-新用户点击链接打开TG按照流程注册，注册完成后新用户可获得500余额使用。
-
-https://t.me/conduitoff\_bot?start=ref\_6406492700
-
-</details>
 
 <details>
 <summary><h3>SeekAI</h3></summary>

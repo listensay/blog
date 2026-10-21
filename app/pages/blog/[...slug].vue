@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-vue'
-import ArticleStats from '~/components/ArticleStats.vue'
 
 const route = useRoute()
 const pathSegments = computed(() => Array.isArray(route.params.slug)
@@ -10,24 +9,6 @@ const slug = computed(() => pathSegments.value.at(-1) ?? '')
 const path = computed(() => (`/blog/${pathSegments.value.join('/')}`))
 
 const target = computed(() => postTarget(slug.value))
-
-const headerColors = [
-  '#e11d48',
-  '#a21caf',
-  '#7c3aed',
-  '#0369a1',
-  '#0f766e',
-  '#047857',
-  '#b45309',
-]
-
-function colorIndex(value: string) {
-  let hash = 0
-  for (const char of value) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
-  return hash % headerColors.length
-}
-
-const headerColor = computed(() => headerColors[colorIndex(path.value)]!)
 
 const { data: post, status, error } = await useAsyncData(
   () => `post-${path.value}`,
@@ -40,18 +21,6 @@ const { data: post, status, error } = await useAsyncData(
 )
 
 const { loading } = useQueryState(status, error)
-
-const headerStyle = computed(() => {
-  const cover = post.value?.cover
-  if (!cover) return { backgroundColor: headerColor.value }
-
-  return {
-    backgroundColor: headerColor.value,
-    backgroundImage: `linear-gradient(rgb(0 0 0 / 45%), rgb(0 0 0 / 65%)), url("${cover}")`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  }
-})
 
 function assertFound() {
   if (post.value) return
@@ -83,7 +52,6 @@ const { data: surround } = await useAsyncData(
 )
 
 const proseEl = ref<HTMLElement>()
-const toc = computed(() => post.value?.body?.toc?.links ?? [])
 useProseLightbox(proseEl)
 
 useSeo({
@@ -119,78 +87,76 @@ useJsonLd(() => ({
 </script>
 
 <template>
-  <article class="py-8 sm:py-16">
+  <article class="article-page pt-1.5 pb-8 lg:pt-0">
     <ArticleSkeleton v-if="loading" />
 
     <template v-else-if="post">
-      <div :class="toc.length ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_13rem] lg:items-start lg:gap-8' : undefined">
-        <ArticleToc v-if="toc.length" :key="post.path" :links="toc" :content="proseEl" class="lg:col-start-2 lg:row-start-1" />
-        <div class="min-w-0 lg:col-start-1 lg:row-start-1">
-          <div ref="proseEl" class="prose-cn shadow">
-            <header
-              class="flex h-64 flex-col items-center justify-center overflow-hidden rounded-2xl px-4 text-center text-white"
-              :style="headerStyle"
-            >
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                <time v-if="post.date" :datetime="isoDateTime(post.date)" class="font-bold">
-                  {{ formatDateTime(post.date) }}
-                </time>
-                <span v-if="post.date && (post.category || post.tags?.length)" class="font-bold">·</span>
-                <div class="text-white">
-                  <CategoryBadge v-if="post.category" :category="post.category" light />
-                </div>
-                <span v-if="post.date && (post.category || post.tags?.length)" class="font-bold">·</span>
-                <div v-if="post.tags?.length" class="flex flex-wrap gap-1.5">
-                  <TagBadge v-for="t in post.tags" :key="t" :tag="t" />
-                </div>
-              </div>
-              <h1 class="mt-3 mb-0 text-2xl font-bold leading-tight tracking-tight text-white sm:mt-4 sm:text-4xl">
-                <span
-                  v-if="post.draft"
-                  class="mr-2 align-middle rounded bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700"
-                >草稿</span>{{ post.title }}
-              </h1>
-              <ArticleStats :target="target" />
-            </header>
-            <ContentRenderer :value="post" />
+      <div class="min-w-0">
+        <header
+          class="grid items-center gap-8 border-b border-panel-line pt-3 pb-8 sm:pb-10"
+          :class="post.cover ? 'min-[1200px]:grid-cols-[minmax(0,1fr)_120px]' : undefined"
+        >
+          <div class="min-w-0">
+            <div v-if="post.category || post.date" class="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-panel-muted">
+              <CategoryBadge v-if="post.category" :category="post.category" class="[&]:text-accent" />
+              <span v-if="post.category && post.date" aria-hidden="true">·</span>
+              <time v-if="post.date" :datetime="isoDateTime(post.date)" class="tabular-nums">{{ formatDateTime(post.date) }}</time>
+            </div>
+            <h1 class="text-[28px] font-bold leading-[1.35] tracking-tight wrap-break-word text-panel-text sm:text-[32px]">
+              <span v-if="post.draft" class="mr-2 align-middle rounded-xs bg-accent/10 px-2 py-1 text-xs font-medium tracking-normal text-accent">草稿</span>{{ post.title }}
+            </h1>
           </div>
-          <PostReactions :target="target" />
-
-          <nav
-            v-if="surround?.some(Boolean)"
-            v-reveal
-            class="mt-5 grid gap-4 sm:grid-cols-2"
+          <img
+            v-if="post.cover"
+            :src="post.cover"
+            alt=""
+            width="120"
+            height="120"
+            class="hidden aspect-square w-full rounded-sm object-cover min-[1200px]:block"
           >
-            <NuxtLink
-              v-if="surround?.[0]"
-              :to="surround[0].path"
-              class="group flex min-h-36 flex-col justify-between gap-4 rounded-2xl bg-[#eaf0ea] p-5 shadow transition-colors hover:bg-[#dee8de] focus-visible:outline-emerald-700 sm:p-6"
-            >
-              <span class="inline-flex items-center gap-2 text-xs font-medium text-[#4f6b56]">
-                <IconArrowLeft :size="17" stroke="1.8" aria-hidden="true" class="transition-transform group-hover:-translate-x-1" />
-                上一篇
-              </span>
-              <p class="font-semibold leading-relaxed break-words text-slate-800">
-                {{ surround[0].title }}
-              </p>
-            </NuxtLink>
-            <NuxtLink
-              v-if="surround?.[1]"
-              :to="surround[1].path"
-              class="group flex min-h-36 flex-col justify-between gap-4 rounded-2xl bg-[#eeebf4] p-5 shadow transition-colors hover:bg-[#e3ddee] focus-visible:outline-violet-700 sm:col-start-2 sm:p-6 sm:text-right"
-            >
-              <span class="inline-flex items-center gap-2 text-xs font-medium text-[#706081] sm:justify-end">
-                下一篇
-                <IconArrowRight :size="17" stroke="1.8" aria-hidden="true" class="transition-transform group-hover:translate-x-1" />
-              </span>
-              <p class="font-semibold leading-relaxed break-words text-slate-800">
-                {{ surround[1].title }}
-              </p>
-            </NuxtLink>
-          </nav>
+        </header>
 
-          <CommentSection :target="target" />
+        <div ref="proseEl" class="mt-8 sm:mt-10 [&.lightbox-ready_img]:cursor-zoom-in">
+          <ArticleBody :value="post" />
         </div>
+
+        <PostReactions :key="target.id" :target="target" variant="inline" show-comments>
+          <div v-if="post.tags?.length" class="mb-5 flex flex-wrap gap-2" aria-label="文章标签">
+            <TagBadge v-for="tag in post.tags" :key="tag" :tag="tag" variant="cover" />
+          </div>
+        </PostReactions>
+
+        <nav
+          v-if="surround?.some(Boolean)"
+          v-reveal
+          aria-label="相邻文章"
+          class="mt-8 grid gap-4 sm:grid-cols-2"
+        >
+          <NuxtLink
+            v-if="surround?.[0]"
+            :to="surround[0].path"
+            class="group flex min-h-28 flex-col justify-between gap-4 rounded-sm border border-panel-line bg-panel-raised p-5 transition-colors hover:border-accent/40 hover:bg-white/5 sm:p-6"
+          >
+            <span class="inline-flex items-center gap-2 text-xs font-medium text-panel-muted group-hover:text-accent">
+              <IconArrowLeft :size="17" stroke="1.8" aria-hidden="true" />
+              上一篇
+            </span>
+            <p class="font-semibold leading-relaxed wrap-break-word text-panel-text">{{ surround[0].title }}</p>
+          </NuxtLink>
+          <NuxtLink
+            v-if="surround?.[1]"
+            :to="surround[1].path"
+            class="group flex min-h-28 flex-col justify-between gap-4 rounded-sm border border-panel-line bg-panel-raised p-5 transition-colors hover:border-accent/40 hover:bg-white/5 sm:col-start-2 sm:p-6 sm:text-right"
+          >
+            <span class="inline-flex items-center gap-2 text-xs font-medium text-panel-muted group-hover:text-accent sm:justify-end">
+              下一篇
+              <IconArrowRight :size="17" stroke="1.8" aria-hidden="true" />
+            </span>
+            <p class="font-semibold leading-relaxed wrap-break-word text-panel-text">{{ surround[1].title }}</p>
+          </NuxtLink>
+        </nav>
+
+        <CommentSection :key="target.id" :target="target" variant="inline" collapsible />
       </div>
     </template>
   </article>

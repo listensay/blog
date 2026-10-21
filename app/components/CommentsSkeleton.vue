@@ -3,7 +3,7 @@ const { count = 2 } = defineProps<{ count?: number }>()
 </script>
 
 <template>
-  <div role="status" aria-busy="true" class="skeleton-group space-y-7">
+  <div role="status" aria-busy="true" class="skeleton-group space-y-7 rounded-none bg-transparent">
     <span class="sr-only">正在加载评论…</span>
 
     <div v-for="i in count" :key="i" aria-hidden="true" class="flex gap-2.5 sm:gap-3">

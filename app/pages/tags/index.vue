@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IconTag } from '@tabler/icons-vue'
 import { taxonomyLink } from '../../utils/taxonomy'
 
 const { data: posts, status, error } = await useAsyncData(
@@ -32,17 +33,18 @@ useSeo({
 
 <template>
   <div class="py-8 sm:py-16">
-    <header class="border-b border-slate-200 pb-6 sm:pb-8">
-      <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">标签</h1>
-      <div v-if="loading" class="skeleton mt-3 h-5 w-24" aria-hidden="true" />
-      <p v-else class="mt-2 text-slate-600">{{ `共 ${tagCounts.length} 个` }}</p>
+    <header class="border-b border-panel-line pb-7 sm:pb-9">
+      <div class="mb-4 flex size-11 items-center justify-center rounded-[5px] bg-amber-100 text-amber-700">
+        <IconTag :size="24" stroke="1.6" aria-hidden="true" />
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-[#eeebf7] sm:text-3xl">标签</h1>
     </header>
 
     <div
       v-if="loading"
       role="status"
       aria-busy="true"
-      class="skeleton-group mt-8 flex flex-wrap gap-3"
+      class="skeleton-group mt-8 flex flex-wrap gap-3 rounded-none bg-transparent"
     >
       <span class="sr-only">正在加载标签…</span>
       <div
@@ -58,7 +60,7 @@ useSeo({
       <li v-for="([tag, count], i) in tagCounts" :key="tag" v-reveal="i">
         <NuxtLink
           :to="taxonomyLink('tags', tag)"
-          class="tag-chip gap-2 rounded-xl px-4 py-2 text-sm"
+          class="tag-chip inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors"
           :class="tagTone(tag)"
         >
           <span class="font-medium">{{ taxonomyLabel(tag, 'tag') }}</span>
@@ -66,6 +68,6 @@ useSeo({
         </NuxtLink>
       </li>
     </ul>
-    <p v-else class="py-10 text-slate-500 sm:py-12">暂无标签</p>
+    <p v-else class="py-10 text-panel-muted sm:py-12">暂无标签</p>
   </div>
 </template>

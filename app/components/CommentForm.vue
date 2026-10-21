@@ -61,25 +61,24 @@ async function submit() {
   }
 }
 
-const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-400 focus:outline-none'
 </script>
 
 <template>
   <form
-    class="rounded-xl border border-slate-200 bg-white p-4"
+    class="rounded-[5px] border border-panel-line bg-panel-raised p-4"
     :class="parent ? 'mt-3' : ''"
     @submit.prevent="submit"
   >
-    <div v-if="parent" class="mb-3 flex items-center justify-between text-xs text-slate-500">
-      <span>回复 <span class="font-medium text-slate-700">@{{ parent.author }}</span></span>
-      <button type="button" class="text-slate-400 transition-colors hover:text-slate-600" @click="emit('cancel')">
+    <div v-if="parent" class="mb-3 flex items-center justify-between text-xs text-panel-muted">
+      <span>回复 <span class="font-medium text-panel-text">@{{ parent.author }}</span></span>
+      <button type="button" class="text-panel-muted transition-colors hover:text-accent" @click="emit('cancel')">
         取消
       </button>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-3">
       <label class="block">
-        <span class="mb-1 block text-xs font-medium text-slate-500">昵称 <span class="text-brand-600">*</span></span>
+        <span class="mb-1 block text-xs font-medium text-panel-muted">昵称 <span class="text-accent">*</span></span>
         <input
           v-model="identity.author"
           type="text"
@@ -87,22 +86,22 @@ const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2
           maxlength="24"
           required
           autocomplete="nickname"
-          :class="inputClass"
+          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent"
         >
       </label>
       <label class="block">
-        <span class="mb-1 block text-xs font-medium text-slate-500">邮箱（不公开）</span>
+        <span class="mb-1 block text-xs font-medium text-panel-muted">邮箱（不公开）</span>
         <input
           v-model="identity.email"
           type="email"
           name="email"
           maxlength="120"
           autocomplete="email"
-          :class="inputClass"
+          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent"
         >
       </label>
       <label class="block">
-        <span class="mb-1 block text-xs font-medium text-slate-500">网址（选填）</span>
+        <span class="mb-1 block text-xs font-medium text-panel-muted">网址（选填）</span>
         <input
           v-model="identity.website"
           type="url"
@@ -110,7 +109,7 @@ const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2
           maxlength="200"
           autocomplete="url"
           placeholder="https://"
-          :class="inputClass"
+          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent"
         >
       </label>
     </div>
@@ -130,28 +129,28 @@ const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2
         rows="4"
         required
         placeholder="评论内容"
-        :class="`${inputClass} resize-y`"
+        class="w-full resize-y rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent"
       />
     </label>
 
     <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-      <p v-if="remaining < 100" class="text-xs" :class="remaining < 0 ? 'text-red-500' : 'text-slate-400'">
+      <p v-if="remaining < 100" class="text-xs" :class="remaining < 0 ? 'text-danger' : 'text-panel-muted'">
         {{ remaining < 0 ? `超出 ${-remaining} 字` : `剩余 ${remaining} 字` }}
       </p>
 
       <button
         type="submit"
         :disabled="!canSubmit"
-        class="ml-auto inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+        class="ml-auto inline-flex min-h-11 items-center rounded-[4px] border border-accent bg-accent px-4 py-2 text-sm font-medium text-panel transition-colors enabled:hover:border-accent/90 enabled:hover:bg-accent/90 disabled:cursor-not-allowed disabled:border-panel-line disabled:bg-panel-line disabled:text-panel-muted"
       >
         {{ pending ? '发送中…' : parent ? '回复' : '发表评论' }}
       </button>
     </div>
 
-    <p v-if="error" class="mt-2 text-xs text-red-500">
+    <p v-if="error" class="mt-2 text-xs text-danger">
       {{ error }}
     </p>
-    <p v-else-if="done" class="mt-2 text-xs text-brand-600">
+    <p v-else-if="done" class="mt-2 text-xs text-[#c7b7ed]">
       {{ done }}
     </p>
   </form>

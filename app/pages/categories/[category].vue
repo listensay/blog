@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IconCategory } from '@tabler/icons-vue'
 import { taxonomyMatches } from '../../utils/taxonomy'
 
 const route = useRoute()
@@ -29,30 +30,32 @@ useSeo({
 
 <template>
   <div class="py-8 sm:py-16">
-    <header class="pb-6 sm:pb-8">
+    <header class="pb-7 sm:pb-9">
       <NuxtLink
         :to="'/categories'"
-        class="text-sm text-slate-500 transition-colors hover:text-brand-600"
+        class="text-sm text-panel-muted transition-colors hover:text-accent"
       >
         ← 所有分类
       </NuxtLink>
-      <h1 class="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+      <div class="mt-4 mb-4 flex size-11 items-center justify-center rounded-[5px] bg-amber-100 text-amber-700">
+        <IconCategory :size="24" stroke="1.6" aria-hidden="true" />
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-[#eeebf7] sm:text-3xl">
         {{ taxonomyLabel(category, 'category') }}
       </h1>
-      <div v-if="loading" class="skeleton mt-3 h-5 w-20" aria-hidden="true" />
-      <p v-else class="mt-2 text-slate-600">{{ `${posts?.length ?? 0} 篇文章` }}</p>
     </header>
 
     <PostListSkeleton v-if="loading" :count="3" />
-    <div v-else-if="posts?.length" class="overflow-hidden rounded-2xl bg-white shadow">
+    <p v-else-if="error" class="article-empty p-[40px_0] text-panel-muted text-base" role="alert">文章加载失败</p>
+    <div v-else-if="posts?.length" class="article-list overflow-visible [border-block:1px_solid_var(--color-panel-line)]">
       <PostCard
         v-for="(post, i) in posts"
         :key="post.path"
-        v-reveal="i"
         :post="post"
+        :index="i + 1"
       />
     </div>
-    <p v-else class="py-10 text-slate-500 sm:py-12">
+    <p v-else class="py-10 text-panel-muted sm:py-12">
       暂无文章
     </p>
   </div>

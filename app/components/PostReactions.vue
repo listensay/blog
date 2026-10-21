@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { IconEye, IconHeart } from '@tabler/icons-vue'
+import { IconEye, IconHeart, IconMessageCircle } from '@tabler/icons-vue'
 import type { EngagementTarget, PostStats } from '~/types/blog'
 
-const props = defineProps<{ target: EngagementTarget }>()
+const props = withDefaults(defineProps<{
+  target: EngagementTarget
+  variant?: 'panel' | 'inline'
+  showComments?: boolean
+}>(), { variant: 'panel', showComments: false })
 
 const { data: stats, status } = await useFetch<PostStats>(() => statsUrl(props.target), {
   key: () => statsKey(props.target),
@@ -67,28 +71,33 @@ async function toggleLike() {
 </script>
 
 <template>
-  <div class="mt-8 rounded-2xl bg-white p-5 shadow sm:p-6">
+  <div :class="variant === 'inline' ? 'mt-12 border-t border-panel-line pt-6' : 'mt-8 rounded-[5px] bg-panel-raised p-5 shadow-none sm:p-6'">
+    <slot />
     <div class="flex flex-wrap items-center justify-between gap-5">
-      <div v-if="countsViews" class="min-w-0">
+      <div v-if="countsViews || showComments" class="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
         <div v-if="showPlaceholder" class="skeleton h-4 w-20" aria-hidden="true" />
-        <p v-else class="flex items-center gap-1.5 text-xs text-slate-500">
+        <p v-else-if="countsViews" class="flex items-center gap-2 text-sm text-panel-muted">
           <IconEye :size="14" stroke="1.8" aria-hidden="true" />
           <span class="tabular-nums">{{ stats.views }}</span>
           <span>次阅读</span>
         </p>
+        <a v-if="showComments && !showPlaceholder" href="#comments" class="inline-flex min-h-11 items-center gap-2 text-sm text-panel-muted transition-colors hover:text-accent">
+          <IconMessageCircle :size="16" stroke="1.8" aria-hidden="true" />
+          评论 <span class="tabular-nums">{{ stats.comments }}</span>
+        </a>
       </div>
 
-      <div v-if="showPlaceholder" class="skeleton h-12 w-32 rounded-full" aria-hidden="true" />
+      <div v-if="showPlaceholder" class="skeleton h-12 w-24 rounded-[4px]" aria-hidden="true" />
       <button
         v-else
         type="button"
         :disabled="pending"
         :aria-pressed="stats.liked"
         :aria-label="stats.liked ? '取消点赞' : '点赞'"
-        class="group inline-flex min-h-12 shrink-0 items-center justify-center gap-2.5 rounded-full border px-5 py-3 text-sm font-semibold transition-colors focus-visible:outline-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+        class="group inline-flex min-h-12 shrink-0 items-center justify-center gap-2.5 rounded-[4px] border px-5 py-3 text-sm font-semibold transition-colors focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
         :class="stats.liked
-          ? 'border-rose-600 bg-rose-600 text-white hover:border-rose-700 hover:bg-rose-700'
-          : 'border-rose-200 bg-rose-100 text-rose-800 hover:border-rose-300 hover:bg-rose-200'"
+          ? 'border-accent/60 bg-accent/10 text-accent enabled:hover:border-accent enabled:hover:bg-accent/15'
+          : 'border-panel-line bg-panel-raised text-panel-muted enabled:hover:border-accent/50 enabled:hover:bg-white/5 enabled:hover:text-accent'"
         @click="toggleLike"
       >
         <IconHeart
@@ -96,16 +105,15 @@ async function toggleLike() {
           stroke="1.8"
           :fill="stats.liked ? 'currentColor' : 'none'"
           aria-hidden="true"
-          class="transition-transform group-active:scale-90"
+          class="transition-transform group-active:scale-90 motion-reduce:transform-none motion-reduce:transition-none"
         />
         <span
-          class="min-w-6 rounded-full px-1.5 py-0.5 text-center text-xs tabular-nums"
-          :class="stats.liked ? 'bg-white/20 text-white' : 'bg-rose-200/70 text-rose-800'"
+          class="min-w-6 text-center text-xs tabular-nums"
         >{{ stats.likes }}</span>
       </button>
     </div>
 
-    <p v-if="error" role="alert" class="mt-3 text-xs text-red-700">
+    <p v-if="error" role="alert" class="mt-3 text-xs text-danger">
       {{ error }}
     </p>
   </div>

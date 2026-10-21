@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IconLink } from '@tabler/icons-vue'
 import { NuxtLink } from '#components'
 
 const { data: page, status, error } = await useAsyncData(
@@ -30,18 +31,17 @@ useSeo({
 
 <template>
   <div class="py-8 sm:py-16">
-    <header class="border-b border-slate-200 pb-6 sm:pb-8">
+    <header class="border-b border-panel-line pb-7 sm:pb-9">
+      <div class="mb-4 flex size-11 items-center justify-center rounded-[5px] bg-amber-100 text-amber-700">
+        <IconLink :size="24" stroke="1.6" aria-hidden="true" />
+      </div>
       <template v-if="loading">
         <div class="skeleton h-9 w-40" aria-hidden="true" />
-        <div class="skeleton mt-4 h-6 w-3/5" aria-hidden="true" />
       </template>
       <template v-else>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 class="text-2xl font-bold tracking-tight text-[#eeebf7] sm:text-3xl">
           {{ page?.title ?? '友情链接' }}
         </h1>
-        <p v-if="page?.description" class="mt-3 text-lg text-slate-600">
-          {{ page.description }}
-        </p>
       </template>
     </header>
 
@@ -57,7 +57,7 @@ useSeo({
             v-bind="isExternal(link.url)
               ? { href: link.url, target: '_blank', rel: 'noopener noreferrer' }
               : { to: link.url }"
-            class="group flex h-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+            class="group flex h-full items-center gap-4 rounded-xl border border-panel-line bg-panel-raised p-4 transition-colors hover:border-brand-300 hover:bg-[#29243b]"
           >
             <img
               v-if="link.avatar"
@@ -71,23 +71,23 @@ useSeo({
             <span
               v-else
               aria-hidden="true"
-              class="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-100 text-lg font-semibold text-brand-700"
+              class="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#312744] text-lg font-semibold text-[#c7b7ed]"
             >
               {{ initial(link.name) }}
             </span>
 
             <span class="min-w-0">
-              <span class="block truncate font-semibold text-slate-900 group-hover:text-brand-700">
+              <span class="block truncate font-semibold text-[#eeebf7] group-hover:text-accent">
                 {{ link.name }}
               </span>
-              <span class="mt-0.5 block truncate text-sm text-slate-500">
+              <span class="mt-0.5 block truncate text-sm text-panel-muted">
                 {{ link.description }}
               </span>
             </span>
           </component>
         </li>
       </ul>
-      <p v-else-if="!loading" class="py-10 text-slate-500 sm:py-12">
+      <p v-else-if="!loading" class="py-10 text-panel-muted sm:py-12">
         暂无友情链接
       </p>
     </div>

@@ -27,6 +27,15 @@ export interface CommentListResponse {
   comments: CommentNode[]
 }
 
+export interface RecentComment {
+  id: string
+  author: string
+  body: string
+  hue: number
+  path: string
+  title: string
+}
+
 export interface AdminComment {
   id: string
   target: string
