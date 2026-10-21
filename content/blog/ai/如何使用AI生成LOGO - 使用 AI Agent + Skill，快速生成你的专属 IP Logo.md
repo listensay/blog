@@ -1,5 +1,5 @@
 ---
-title: 如何使用AI生成LOGO - 使用 AI Agent + Skill，快速生成你的专属 IP Logo
+title: 如何使用AI生成IP LOGO 图标
 description: |-
   如果你正在开发一款 App、效率工具、游戏或者个人项目，想为它设计一个可爱又有辨识度的 IP 形象，但自己又不太会画画，可以试试现在这种 AI Agent + Skill 的方式。
 

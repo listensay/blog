@@ -24,7 +24,7 @@ watch(() => route.path, () => {
         " :data-home="isHome ? '' : undefined" :class="{ 'site-shell-home': isHome }">
     <SiteHeader />
     <div class="site-workspace lg:min-h-0 min-w-[0] flex flex-col">
-      <header class="workspace-header h-[78px] flex shrink-0 justify-between items-center p-[0_28px] max-[1200px]:px-[20px] max-md:h-[62px] max-md:px-[16px]">
+      <header class="workspace-header h-[78px] flex shrink-0 justify-between items-center p-[0_28px] max-[1200px]:px-[20px] max-md:hidden">
         <nav class="workspace-breadcrumb flex items-center gap-[14px] text-panel-muted text-sm [&_span]:text-[#dbd8e9] [&_a:hover]:text-accent" aria-label="当前位置">
           <NuxtLink to="/" aria-label="首页"><IconHome :size="17" stroke="1.7" /></NuxtLink>
           <IconChevronRight :size="14" aria-hidden="true" />

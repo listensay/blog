@@ -111,10 +111,10 @@ useJsonLd(() => ({
           max-lg:grid-cols-[24px_minmax(0,_1fr)_88px_28px] max-md:hidden [&>:nth-child(2)]:pl-[92px]
           max-[1200px]:[&>:nth-child(2)]:pl-[73px] max-lg:[&>:nth-child(2)]:pl-[76px]
         " aria-hidden="true"><span>#</span><span>文章</span><span>发布日期</span><span /></div>
-      <PostListSkeleton v-if="loading" :count="4" />
+      <PostListSkeleton v-if="loading" :count="4" mobile-layout="light" />
       <p v-else-if="error" class="article-empty p-[40px_0] text-panel-muted text-base" role="alert">文章加载失败</p>
       <div v-else-if="posts.length" class="article-list overflow-visible [border-block:1px_solid_var(--color-panel-line)]">
-        <PostCard v-for="(post, i) in posts" :key="post.path" :post="post" :index="i + 1" />
+        <PostCard v-for="(post, i) in posts" :key="post.path" :post="post" :index="i + 1" mobile-layout="light" />
       </div>
       <p v-else class="article-empty p-[40px_0] text-panel-muted text-base">暂无文章</p>
       <NuxtLink v-if="visiblePosts.length > posts.length" to="/blog" class="articles-view-all flex gap-[10px] items-center justify-center p-[20px] [border-top:1px_solid_var(--color-panel-line)] text-accent text-sm">查看全部文章 <IconArrowRight :size="16" aria-hidden="true" /></NuxtLink>

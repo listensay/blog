@@ -1,5 +1,5 @@
 ---
-title: 【长期更新】免费AI公益中转站收集分享
+title: 免费AI公益中转站收集分享
 description: 带你免费白嫖各种模型，注意！不是广告！！
 date: 2026-08-19 00:00
 slug: free-ai
