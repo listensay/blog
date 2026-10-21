@@ -26,8 +26,7 @@ draft: false
 > 文章转载自
 > 先知社区 作者：Fausto https://xz.aliyun.com/news/92154
 
-<details>
-<summary><h3>AgentRouter</h3></summary>
+### AgentRouter
 
 评价：**夯**
 
@@ -39,10 +38,7 @@ draft: false
 
 https://agentrouter.org/register?aff=QieS
 
-</details>
-
-<details>
-<summary><h3>AnyRouter</h3></summary>
+### AnyRouter
 
 评价：**夯**
 
@@ -56,10 +52,7 @@ https://agentrouter.org/register?aff=QieS
 
 https://anyrouter.top/register?aff=78Jy
 
-</details>
-
-<details>
-<summary><h3>Axis AI</h3></summary>
+### Axis AI
 
 评价：**顶级**
 
@@ -67,10 +60,7 @@ https://anyrouter.top/register?aff=78Jy
 
 https://ai.onyxaxis.org/register?invite=Y3M452R3
 
-</details>
-
-<details>
-<summary><h3>哈吉米AI</h3></summary>
+### 哈吉米AI
 
 评价：**NPC**
 
@@ -80,10 +70,7 @@ https://ai.onyxaxis.org/register?invite=Y3M452R3
 
 https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
-
-
-<details>
-<summary><h3>SeekAI</h3></summary>
+### SeekAI
 
 评价：**拉完了**
 
@@ -93,10 +80,7 @@ https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
 https://seekai.cc/sign-up?aff=fjxq
 
-</details>
-
-<details>
-<summary><h3>JustDoWork</h3></summary>
+### JustDoWork
 
 评价：**NPC**
 
@@ -106,12 +90,9 @@ https://seekai.cc/sign-up?aff=fjxq
 
 https://api.justwoker.icu/register?aff=Qk1K
 
-</details>
-
 ## 一些大牌AI
 
-<details>
-<summary><h3>Nvidia</h3></summary>
+### Nvidia
 
 评价：**顶级**
 
@@ -121,14 +102,9 @@ https://api.justwoker.icu/register?aff=Qk1K
 
 https://build.nvidia.com/models
 
-
-
 ![](/affine-assets/78ba948efbf09ad6035644ad48e53b0cab0df516f514dfd5a9ac58a3edf1be29.png)
 
-</details>
-
-<details>
-<summary><h3>FreeBuff</h3></summary>
+### FreeBuff
 
 评价：**顶级**
 
@@ -138,10 +114,7 @@ https://build.nvidia.com/models
 
 https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053\&referrer=Listensay
 
-</details>
-
-<details>
-<summary><h3>TokenRouter</h3></summary>
+### TokenRouter
 
 评价：**顶级**
 
@@ -155,22 +128,15 @@ https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053\&r
 
 https://www.tokenrouter.com/
 
-
-
 ![](/affine-assets/d9288b5003fa992236570076dcf5f56b551853238a4f02e0eee4feedd0a78935.png)
 
 这里我推荐Hermas agent去使用这个API，你可以在前面让Agent记忆一下（直接打字让他记住），如果模型输出文字错乱的话就重新输出。
-
-
 
 ![](/affine-assets/9169559dea7daf0f2eb8a411311e9a09bc842f57dc5f75fd447ae9bffe0a7c40.png)
 
 总而言之这个网站的免费模型输出阅读性不好，工作是没有问题的。
 
-</details>
-
-<details>
-<summary><h3>OrcaRouter</h3></summary>
+### OrcaRouter
 
 评价：**夯**
 
@@ -178,38 +144,24 @@ https://www.tokenrouter.com/
 
 https://www.orcarouter.ai/
 
-
-
 ![](/affine-assets/e5a0d6ece6ede30744083ae9a8b84df31ca75422ee4306e201876d4e5bf44918.png)
-
-</details>
 
 ## 一些不明来历的AI，但是能用
 
 这些AI都不建议使用。
 
-<details>
-<summary><h3>http://20.115.208.7:4000/v1</h3></summary>
+### http://20.115.208.7:4000/v1
 
 不需要输入密钥使用这些模型
 
 http://20.115.208.7:4000/v1
 
-
-
 ![](/affine-assets/5bd33b9110de54988325d54f55e2f9c367d1d85998bd55942521e3f8bfd50a73.png)
 
-</details>
-
-<details>
-<summary><h3>http://130.210.35.157:4000/v1</h3></summary>
+### http://130.210.35.157:4000/v1
 
 同样不需要输入密钥使用这些模型
 
 http://130.210.35.157:4000/v1
 
-
-
 ![](/affine-assets/074c5376163a91c262c2e53dc05b0ec44b6bbc2ca5cc270e6ce3e81426ce372e.png)
-
-</details>

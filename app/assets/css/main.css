@@ -118,67 +118,6 @@
   .prose-cn :where(blockquote p:last-of-type)::after {
     @apply [content:none];
   }
-  .prose-cn :where(details) {
-    @apply my-3 rounded-xl border border-[#343046] bg-[#10101f];
-    @apply px-[1rem] [transition:border-color_var(--anim-fast)_var(--anim-ease)];
-  }
-  .prose-cn :where(details:has(> summary:hover)) {
-    @apply border-[#8870bd];
-  }
-  .prose-cn :where(details > summary) {
-    @apply flex cursor-pointer flex-wrap items-center border-b border-transparent bg-[#1d192d] py-3 text-lg font-semibold text-[#e7e0f1];
-    @apply mx-[-1rem] px-[1rem] rounded-[calc(0.75rem_-_1px)] [list-style:none] [transition:color_var(--anim-fast)_var(--anim-ease),_background-color_var(--anim-fast)_var(--anim-ease),_border-color_var(--anim-fast)_var(--anim-ease)];
-  }
-  .prose-cn :where(details > summary)::-webkit-details-marker {
-    @apply hidden;
-  }
-  .prose-cn :where(details > summary > :is(h2, h3, h4)) {
-    @apply m-[0] min-w-[0] text-[inherit] [font-weight:inherit] leading-[inherit] text-inherit;
-  }
-  .prose-cn :where(details > summary:hover) {
-    @apply bg-[#2d2543] text-[#e7e0f1];
-  }
-  .prose-cn :where(details[open] > summary) {
-    @apply border-[#343046];
-    @apply [border-end-start-radius:0] [border-end-end-radius:0];
-  }
-  .prose-cn :where(details > summary)::before {
-    @apply [content:""];
-    @apply border-panel-muted;
-    @apply flex-none w-[0.45em] h-[0.45em] mx-[0.15em_0.625rem] [border-style:solid] [border-width:0_2px_2px_0] [transform:rotate(-45deg)] [transition:transform_var(--anim-base)_var(--anim-ease),_border-color_var(--anim-fast)_var(--anim-ease)];
-  }
-  .prose-cn :where(details[open] > summary)::before {
-    @apply [transform:rotate(45deg)];
-  }
-  .prose-cn :where(details > summary:hover)::before {
-    @apply border-accent;
-  }
-  .prose-cn :where(details > summary + *) {
-    @apply mt-[1rem];
-  }
-  .prose-cn :where(details pre) {
-    @apply bg-[#10101f];
-  }
-  .prose-cn :where(details > :last-child:not(summary)) {
-    @apply mb-[1rem];
-  }
-  .prose-cn :where(details > summary + * > :first-child) {
-    @apply mt-[0];
-  }
-  .prose-cn :where(details > :last-child:not(summary) > :last-child) {
-    @apply mb-[0];
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .prose-cn :where(details) {
-      @apply [interpolate-size:allow-keywords];
-    }
-    .prose-cn :where(details)::details-content {
-      @apply [block-size:0] overflow-hidden [transition:block-size_var(--anim-base)_var(--anim-ease),_content-visibility_var(--anim-base)_var(--anim-ease)_allow-discrete];
-    }
-    .prose-cn :where(details[open])::details-content {
-      @apply [block-size:auto];
-    }
-  }
   .prose-cn :where(img) {
     @apply rounded-xl border border-[#343046];
   }

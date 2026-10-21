@@ -14,23 +14,15 @@ export function isJournalDate(value: unknown): value is string {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
 
-function normalizeMarkdown(body: string, migrated: boolean): string {
-  // AFFiNE imports raw HTML wrappers as code blocks and exports unset image
-  // dimensions as zero. Restore migrated details wrappers, but leave examples
-  // and explicitly sized images alone.
+function normalizeMarkdown(body: string): string {
+  // AFFiNE exports unset image dimensions as zero. Normalize prose while
+  // preserving code examples and explicitly sized images.
   return body
     .split(
       /(^`{3,}[^\n]*\n[\s\S]*?^`{3,}[ \t]*$|^~{3,}[^\n]*\n[\s\S]*?^~{3,}[ \t]*$|`+[^`\n]*`+)/gm,
     )
     .map((part, index) => {
-      if (index % 2) {
-        const html = /^(`{3,}|~{3,})html\s*\n([\s\S]*?)\n\1[ \t]*$/.exec(part)?.[2]?.trim()
-        return migrated &&
-          html &&
-          /^(?:<details(?:\s+open)?>\s*<summary>[\s\S]*<\/summary>|<\/details>)$/.test(html)
-          ? html
-          : part
-      }
+      if (index % 2) return part
       return part
         .replace(/<img\b[^>]*>/gi, (tag) => tag.replace(/\s+(?:width|height)=["']0["']/gi, ''))
         .replace(/^([ \t]*>)[ \t]+$/gm, '$1')
@@ -132,7 +124,7 @@ export function parseDocument(doc: RemoteDoc, markdown: string): BlogDocument | 
     data.comments = meta.comments === true
     // Link records are maintained in the existing Links section, independently of page copy.
   }
-  let body = normalizeMarkdown(markdown.replace(text, '').trim(), !!string('migrationRevision'))
+  let body = normalizeMarkdown(markdown.replace(text, '').trim())
   if (body.startsWith(`# ${title}\n`)) body = body.slice(title.length + 3).trimStart()
   return {
     id: doc.id,
