@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { Modal, message } from 'ant-design-vue'
+import { confirmAction, notify } from '@/composables/useFeedback'
 
 import { api } from '@/api'
 import type { CategoryOption, SiteSettings, SocialIconOption } from '@/types'
@@ -30,7 +30,7 @@ export function useSettings() {
   const icons = ref<SocialIconOption[]>([])
   const categories = ref<CategoryOption[]>([])
 
-  const baseline = ref('')
+  const baseline = ref(JSON.stringify(settings.value))
   const dirty = computed(() => JSON.stringify(settings.value) !== baseline.value)
 
   const canSave = computed(() => !loading.value && !loadError.value)
@@ -62,9 +62,9 @@ export function useSettings() {
       baseline.value = JSON.stringify(settings.value)
       fileMissing.value = false
       fileError.value = ''
-      message.success('已保存')
+      notify.success('已保存')
     } catch (err) {
-      message.error(err instanceof Error ? err.message : String(err))
+      notify.error(err instanceof Error ? err.message : String(err))
     } finally {
       saving.value = false
     }
@@ -94,16 +94,11 @@ export function useSettings() {
 
   onBeforeRouteLeave(async () => {
     if (!dirty.value) return true
-    return new Promise<boolean>((resolve) => {
-      Modal.confirm({
-        title: '有未保存的修改',
-        content: '离开后修改会丢失。',
-        okText: '不保存并离开',
-        okType: 'danger',
-        cancelText: '取消',
-        onOk: () => resolve(true),
-        onCancel: () => resolve(false),
-      })
+    return confirmAction({
+      title: '有未保存的修改',
+      content: '离开后修改会丢失。',
+      confirmText: '不保存并离开',
+      danger: true,
     })
   })
 

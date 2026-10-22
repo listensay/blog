@@ -1,239 +1,152 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { message } from 'ant-design-vue'
-
 import { api } from '@/api'
+import { confirmAction, notify } from '@/composables/useFeedback'
 import type { ImageItem, UnusedImages } from '@/types'
 import { sizeText } from '@/utils/bytes'
-
+import UiAlert from './ui/UiAlert.vue'
+import UiButton from './ui/UiButton.vue'
+import UiLoading from './ui/UiLoading.vue'
+import UiModal from './ui/UiModal.vue'
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ done: [] }>()
-
 const loading = ref(false)
 const removing = ref(false)
+const loadError = ref('')
 const data = ref<UnusedImages | null>(null)
 const selected = ref<string[]>([])
-
 function selectAll(images: ImageItem[]) {
   selected.value = images.map((item) => item.name)
 }
-
 async function load() {
   loading.value = true
+  loadError.value = ''
+  selected.value = []
   try {
-    const result = await api.unusedImages()
-    data.value = result
-    selectAll(result.images)
+    data.value = await api.unusedImages()
+    selectAll(data.value.images)
   } catch (err) {
-    message.error(err instanceof Error ? err.message : String(err))
+    loadError.value = err instanceof Error ? err.message : String(err)
   } finally {
     loading.value = false
   }
 }
-
-watch(open, (isOpen) => {
-  if (isOpen) void load()
-})
-
+watch(
+  open,
+  (isOpen) => {
+    if (isOpen) void load()
+  },
+  { immediate: true },
+)
 const images = computed(() => data.value?.images ?? [])
-
 const selectedBytes = computed(() =>
   images.value
     .filter((item) => selected.value.includes(item.name))
     .reduce((sum, item) => sum + item.bytes, 0),
 )
-
 const allChecked = computed(
   () => images.value.length > 0 && selected.value.length === images.value.length,
 )
-
 const someChecked = computed(
   () => selected.value.length > 0 && selected.value.length < images.value.length,
 )
-
 function toggleAll(checked: boolean) {
   if (checked) selectAll(images.value)
   else selected.value = []
 }
-
-function toggle(name: string) {
-  selected.value = selected.value.includes(name)
-    ? selected.value.filter((item) => item !== name)
-    : [...selected.value, name]
-}
-
 async function remove() {
+  if (removing.value || loading.value || loadError.value || !selected.value.length) return
+  const names = [...selected.value]
+  if (
+    !(await confirmAction({
+      title: `永久删除选中的 ${names.length} 张图片？`,
+      content: '此操作无法撤销。',
+      confirmText: '删除',
+      danger: true,
+    }))
+  )
+    return
   removing.value = true
   try {
-    const result = await api.cleanupImages(selected.value)
-    message.success(`已删除 ${result.deleted.length} 张图片，释放 ${sizeText(result.bytes)}`)
+    const result = await api.cleanupImages(names)
+    notify.success(`已删除 ${result.deleted.length} 张图片，释放 ${sizeText(result.bytes)}`)
     data.value = result.remaining
     selectAll(result.remaining.images)
     emit('done')
   } catch (err) {
-    message.error(err instanceof Error ? err.message : String(err))
+    notify.error(err instanceof Error ? err.message : String(err))
   } finally {
     removing.value = false
   }
 }
 </script>
-
 <template>
-  <a-modal v-model:open="open" title="清理未引用图片" width="780px" :footer="null">
-    <a-spin :spinning="loading">
-      <div v-if="images.length" class="head">
-        <a-checkbox
-          :checked="allChecked"
-          :indeterminate="someChecked"
-          :disabled="!images.length"
-          @change="toggleAll(($event.target as HTMLInputElement).checked)"
+  <UiModal v-model:open="open" title="清理未引用图片" wide :busy="removing">
+    <UiLoading v-if="loading" />
+    <div v-else-if="loadError" class="space-y-3">
+      <UiAlert :message="loadError" /><UiButton icon="refresh" @click="load">重试</UiButton>
+    </div>
+    <template v-else>
+      <div v-if="images.length" class="mb-5 flex flex-wrap items-center gap-4 text-sm">
+        <label class="inline-flex min-h-11 cursor-pointer items-center gap-2"
+          ><input
+            type="checkbox"
+            :checked="allChecked"
+            :indeterminate="someChecked"
+            :disabled="removing"
+            class="size-4 accent-interactive"
+            @change="toggleAll(($event.target as HTMLInputElement).checked)"
+          />全选</label
         >
-          全选
-        </a-checkbox>
-
-        <span v-if="data" class="hint">
-          {{ images.length }} 张 · {{ sizeText(data.unusedBytes) }}
-        </span>
-
-        <span class="spacer" />
-
-        <a-tooltip v-if="data" :title="`扫描范围：${data.roots.join('、')}`">
-          <span class="hint">已扫描 {{ data.scanned }} 个文件</span>
-        </a-tooltip>
+        <span class="tabular-nums text-panel-muted"
+          >{{ images.length }} 张 · {{ sizeText(data?.unusedBytes ?? 0) }}</span
+        >
       </div>
-
-      <div v-if="!loading && !images.length" class="empty">
-        暂无未引用图片
-      </div>
-
-      <div v-else class="grid">
-        <div
+      <p v-if="!images.length" class="py-12 text-center text-sm text-panel-muted">暂无未引用图片</p>
+      <div
+        v-else
+        class="grid max-h-[55dvh] grid-cols-2 gap-3 overflow-y-auto p-1 sm:grid-cols-3 md:grid-cols-4"
+      >
+        <label
           v-for="item in images"
           :key="item.name"
-          class="card"
-          :class="{ 'card-on': selected.includes(item.name) }"
-          role="checkbox"
-          tabindex="0"
-          :aria-checked="selected.includes(item.name)"
-          @click="toggle(item.name)"
-          @keydown.enter.prevent="toggle(item.name)"
-          @keydown.space.prevent="toggle(item.name)"
+          class="relative flex min-w-0 cursor-pointer flex-col gap-2 rounded-sm border bg-panel-raised p-3 hover:border-interactive"
+          :class="
+            selected.includes(item.name)
+              ? 'border-interactive bg-interactive/10'
+              : 'border-panel-line'
+          "
         >
-          <a-checkbox class="pick" :checked="selected.includes(item.name)" />
-          <img :src="item.previewUrl" :alt="item.name" loading="lazy" />
-          <span class="name mono" :title="item.name">{{ item.name }}</span>
-          <span class="size">{{ sizeText(item.bytes) }}</span>
-        </div>
+          <input
+            v-model="selected"
+            type="checkbox"
+            :value="item.name"
+            :aria-label="`选择 ${item.name}`"
+            :disabled="removing"
+            class="absolute top-3 left-3 size-5 accent-interactive"
+          />
+          <img
+            :src="item.previewUrl"
+            alt=""
+            loading="lazy"
+            class="h-24 w-full rounded-sm object-contain"
+          /><span class="w-full truncate font-mono text-xs" :title="item.name">{{ item.name }}</span
+          ><span class="text-xs tabular-nums text-panel-muted">{{ sizeText(item.bytes) }}</span>
+        </label>
       </div>
-    </a-spin>
-
-    <div class="foot">
-      <a-button @click="open = false">关闭</a-button>
-
-      <a-popconfirm
-        :disabled="!selected.length"
-        :title="`永久删除选中的 ${selected.length} 张图片？此操作无法撤销。`"
-        ok-text="删除"
-        ok-type="danger"
-        cancel-text="取消"
-        @confirm="remove"
+    </template>
+    <div class="mt-5 flex flex-wrap justify-end gap-2 border-t border-panel-line pt-5">
+      <UiButton :disabled="removing" @click="open = false">关闭</UiButton>
+      <UiButton
+        variant="danger"
+        icon="trash"
+        :disabled="loading || !!loadError || !selected.length"
+        :loading="removing"
+        @click="remove"
+        >删除选中{{
+          selected.length ? ` ${selected.length} 张 · ${sizeText(selectedBytes)}` : ''
+        }}</UiButton
       >
-        <a-button danger type="primary" :disabled="!selected.length" :loading="removing">
-          删除选中{{ selected.length ? ` ${selected.length} 张 · ${sizeText(selectedBytes)}` : '' }}
-        </a-button>
-      </a-popconfirm>
     </div>
-  </a-modal>
+  </UiModal>
 </template>
-
-<style scoped>
-.head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.hint {
-  color: #8c8c8c;
-  font-size: 12px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  max-height: 440px;
-  overflow-y: auto;
-  padding: 2px;
-}
-
-.card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.card-on {
-  border-color: #1677ff;
-  background: #f0f7ff;
-}
-
-.card:focus-visible {
-  outline: 2px solid #1677ff;
-  outline-offset: 1px;
-}
-
-.pick {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 2px;
-  border-radius: 4px;
-  background: rgb(255 255 255 / 88%);
-  /* 整张卡片负责切换选中，勾选框只做显示。 */
-  pointer-events: none;
-}
-
-.card img {
-  width: 100%;
-  height: 88px;
-  object-fit: contain;
-  background: #fafafa;
-  border-radius: 4px;
-}
-
-.name {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.size {
-  color: #bfbfbf;
-  font-size: 11px;
-}
-
-.empty {
-  padding: 40px 0;
-  text-align: center;
-  color: #8c8c8c;
-}
-
-.foot {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-}
-</style>

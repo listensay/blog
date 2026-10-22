@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
-
+import UiAlert from './ui/UiAlert.vue'
+import UiButton from './ui/UiButton.vue'
+import UiLoading from './ui/UiLoading.vue'
 defineProps<{
   title: string
   loading: boolean
@@ -11,70 +12,46 @@ defineProps<{
   fileError: string
   fileMissing: boolean
 }>()
-
 const emit = defineEmits<{ reload: []; save: [] }>()
 </script>
-
 <template>
-  <a-spin :spinning="loading">
-    <a-alert v-if="loadError" type="error" show-icon :message="loadError" class="banner" />
-
-    <div class="head">
-      <span class="head-title">{{ title }}</span>
-      <a-tag v-if="dirty" color="orange">未保存</a-tag>
-
-      <span class="spacer" />
-
-      <a-button :loading="loading" @click="emit('reload')">
-        <template #icon><ReloadOutlined /></template>
-        刷新
-      </a-button>
-
-      <a-button type="primary" :loading="saving" :disabled="!canSave" @click="emit('save')">
-        <template #icon><SaveOutlined /></template>
-        保存 ⌘S
-      </a-button>
+  <section :aria-label="title" :aria-busy="loading || saving">
+    <div class="mb-6 flex flex-wrap items-center justify-end gap-2">
+      <span
+        v-if="dirty && !loading"
+        class="mr-auto rounded-xs bg-accent/25 px-2 py-1 text-xs text-warning-ink"
+        >未保存</span
+      >
+      <UiButton icon="refresh" :loading="loading" :disabled="saving" @click="emit('reload')"
+        >刷新</UiButton
+      >
+      <UiButton
+        variant="primary"
+        icon="save"
+        :loading="saving"
+        :disabled="!canSave"
+        aria-keyshortcuts="Meta+S Control+S"
+        @click="emit('save')"
+        >保存</UiButton
+      >
     </div>
-
-    <a-alert
-      v-if="fileMissing"
-      type="warning"
-      show-icon
-      class="banner"
-      message="文件不存在"
-      description="保存后自动创建。"
-    />
-
-    <a-alert
-      v-else-if="fileError"
-      type="error"
-      show-icon
-      class="banner"
-      message="文件解析失败，当前为默认值"
-      :description="`${fileError}。保存将覆盖该文件。`"
-    />
-
-    <slot />
-  </a-spin>
+    <UiAlert v-if="loadError" class="mb-5" :message="loadError" />
+    <UiLoading v-if="loading" />
+    <template v-else-if="!loadError">
+      <UiAlert
+        v-if="fileMissing"
+        tone="warning"
+        class="mb-5"
+        message="文件不存在"
+        description="保存后自动创建。"
+      />
+      <UiAlert
+        v-else-if="fileError"
+        class="mb-5"
+        message="文件解析失败"
+        :description="`${fileError}。保存将覆盖该文件。`"
+      />
+      <fieldset :disabled="saving" class="min-w-0 space-y-6 border-0 p-0"><slot /></fieldset>
+    </template>
+  </section>
 </template>
-
-<style scoped>
-.banner {
-  margin-bottom: 16px;
-}
-
-.head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.head-title {
-  font-weight: 600;
-}
-
-.spacer {
-  flex: 1;
-}
-</style>

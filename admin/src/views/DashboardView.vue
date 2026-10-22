@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
-import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons-vue'
+import UiAlert from '@/components/ui/UiAlert.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import UiLoading from '@/components/ui/UiLoading.vue'
 
 import { api } from '@/api'
 import TrendChart from '@/components/TrendChart.vue'
@@ -12,16 +13,18 @@ import { sizeText } from '@/utils/bytes'
 
 const router = useRouter()
 
-const loading = ref(false)
+const loading = ref(true)
+const loadError = ref('')
 const stats = ref<DashboardStats | null>(null)
 const cleanupOpen = ref(false)
 
 async function load() {
   loading.value = true
+  loadError.value = ''
   try {
     stats.value = await api.dashboard()
   } catch (err) {
-    message.error(err instanceof Error ? err.message : String(err))
+    loadError.value = err instanceof Error ? err.message : String(err)
   } finally {
     loading.value = false
   }
@@ -50,200 +53,123 @@ function formatTime(value: number): string {
 </script>
 
 <template>
-  <div class="toolbar">
-    <span class="spacer" />
-
-    <a-button :loading="loading" @click="load">
-      <template #icon><ReloadOutlined /></template>
-      刷新
-    </a-button>
-
-    <a-button danger @click="cleanupOpen = true">
-      <template #icon><DeleteOutlined /></template>
-      清理图片
-    </a-button>
+  <div class="mb-6 flex flex-wrap justify-end gap-2">
+    <UiButton icon="refresh" :loading="loading" @click="load">刷新</UiButton
+    ><UiButton variant="danger" icon="trash" @click="cleanupOpen = true">清理图片</UiButton>
   </div>
-
-  <a-spin :spinning="loading && !stats">
-    <div v-if="counts" class="cards">
-      <a-card class="card" size="small">
-        <a-statistic title="文章" :value="counts.posts" />
-        <div class="sub">已发布 {{ counts.published }} · 草稿 {{ counts.drafts }}</div>
-      </a-card>
-
-      <a-card class="card" size="small">
-        <a-statistic title="固定页面" :value="counts.pages" />
-        <div class="sub">分类 {{ counts.categories }} · 标签 {{ counts.tags }}</div>
-      </a-card>
-
-      <a-card class="card" size="small">
-        <a-statistic title="作品" :value="counts.projects" />
-      </a-card>
-
-      <a-card class="card" size="small">
-        <a-statistic title="图片" :value="counts.images" />
-        <div class="sub">{{ sizeText(counts.imageBytes) }}</div>
-      </a-card>
-
-      <a-card class="card" size="small">
-        <a-statistic
-          title="未被引用的图片"
-          :value="counts.unusedImages"
-          :value-style="counts.unusedImages ? { color: '#cf1322' } : undefined"
-        />
-        <div v-if="counts.unusedImages" class="sub">
+  <UiAlert v-if="loadError" class="mb-5" :message="loadError" />
+  <UiLoading v-if="loading && !stats" />
+  <div v-else-if="stats && counts" class="space-y-6" :aria-busy="loading">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section class="rounded-sm border border-panel-line bg-panel p-5">
+        <h2 class="text-sm text-panel-muted">文章</h2>
+        <p class="my-3 text-4xl font-bold tabular-nums">{{ counts.posts }}</p>
+        <p class="text-xs text-panel-muted">
+          已发布 {{ counts.published }} · 草稿 {{ counts.drafts }}
+        </p>
+      </section>
+      <section class="rounded-sm border border-panel-line bg-panel p-5">
+        <h2 class="text-sm text-panel-muted">固定页面</h2>
+        <p class="my-3 text-4xl font-bold tabular-nums">{{ counts.pages }}</p>
+        <p class="text-xs text-panel-muted">
+          分类 {{ counts.categories }} · 标签 {{ counts.tags }}
+        </p>
+      </section>
+      <section class="rounded-sm border border-panel-line bg-panel p-5">
+        <h2 class="text-sm text-panel-muted">作品</h2>
+        <p class="my-3 text-4xl font-bold tabular-nums">{{ counts.projects }}</p>
+      </section>
+      <section class="rounded-sm border border-panel-line bg-panel p-5">
+        <h2 class="text-sm text-panel-muted">图片</h2>
+        <p class="my-3 text-4xl font-bold tabular-nums">{{ counts.images }}</p>
+        <p class="text-xs text-panel-muted">{{ sizeText(counts.imageBytes) }}</p>
+      </section>
+      <section class="rounded-sm border border-panel-line bg-panel p-5">
+        <h2 class="text-sm text-panel-muted">未引用图片</h2>
+        <p
+          class="my-3 text-4xl font-bold tabular-nums"
+          :class="counts.unusedImages ? 'text-danger' : ''"
+        >
+          {{ counts.unusedImages }}
+        </p>
+        <p v-if="counts.unusedImages" class="text-xs text-panel-muted">
           可释放 {{ sizeText(counts.unusedBytes) }} ·
-          <a @click="cleanupOpen = true">查看</a>
-        </div>
-      </a-card>
+          <button
+            type="button"
+            class="cursor-pointer text-interactive hover:underline"
+            @click="cleanupOpen = true"
+          >
+            查看
+          </button>
+        </p>
+      </section>
     </div>
-
-    <a-card class="block" size="small" title="发文趋势">
-      <template #extra>
-        <span class="sub">近 12 个月共 {{ trendTotal }} 篇</span>
-      </template>
-      <TrendChart v-if="stats" :points="stats.trend" />
-    </a-card>
-
-    <div class="columns">
-      <a-card class="block" size="small" title="最近修改">
-        <a-list v-if="stats?.recent.length" :data-source="stats.recent" size="small" :split="false">
-          <template #renderItem="{ item }">
-            <a-list-item class="row">
-              <div class="row-main">
-                <a class="row-title" @click="openItem(item as RecentItem)">
-                  {{ (item as RecentItem).title }}
-                </a>
-                <a-tag v-if="(item as RecentItem).draft" color="orange">草稿</a-tag>
-                <a-tag v-if="(item as RecentItem).kind === 'page'">页面</a-tag>
-              </div>
-              <span class="mono sub">{{ formatTime((item as RecentItem).mtime) }}</span>
-            </a-list-item>
-          </template>
-        </a-list>
-        <a-empty v-else description="暂无内容" />
-      </a-card>
-
-      <a-card class="block" size="small" title="待办">
-        <div v-if="stats?.todos.length" class="todos">
-          <div v-for="todo in stats.todos" :key="todo.key" class="todo">
-            <div class="todo-head">
-              <span>{{ todo.label }}</span>
-              <a-tag color="warning">{{ todo.count }}</a-tag>
+    <section class="rounded-sm border border-panel-line bg-panel p-5">
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">发文趋势</h2>
+        <span class="text-xs text-panel-muted">近 12 个月共 {{ trendTotal }} 篇</span>
+      </div>
+      <TrendChart :points="stats.trend" />
+    </section>
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <section class="min-w-0 rounded-sm border border-panel-line bg-panel p-5">
+        <h2 class="mb-4 text-lg font-semibold">最近修改</h2>
+        <ul v-if="stats.recent.length" class="divide-y divide-panel-line">
+          <li
+            v-for="item in stats.recent"
+            :key="item.file"
+            class="flex flex-wrap items-center gap-2 py-3"
+          >
+            <button
+              type="button"
+              class="min-w-0 flex-1 cursor-pointer break-words text-left text-base hover:text-interactive"
+              @click="openItem(item)"
+            >
+              {{ item.title }}</button
+            ><span
+              v-if="item.draft"
+              class="rounded-xs bg-accent/25 px-2 py-1 text-xs text-warning-ink"
+              >草稿</span
+            ><span
+              v-if="item.kind === 'page'"
+              class="rounded-xs bg-panel-raised px-2 py-1 text-xs text-panel-muted"
+              >页面</span
+            ><time class="w-full text-xs tabular-nums text-panel-muted sm:w-auto">{{
+              formatTime(item.mtime)
+            }}</time>
+          </li>
+        </ul>
+        <p v-else class="py-10 text-center text-sm text-panel-muted">暂无内容</p>
+      </section>
+      <section class="min-w-0 rounded-sm border border-panel-line bg-panel p-5">
+        <h2 class="mb-4 text-lg font-semibold">待办</h2>
+        <div v-if="stats.todos.length" class="space-y-5">
+          <div v-for="todo in stats.todos" :key="todo.key">
+            <div class="mb-2 flex items-center gap-2 text-sm">
+              <span>{{ todo.label }}</span
+              ><span
+                class="rounded-xs bg-accent/25 px-2 py-1 text-xs tabular-nums text-warning-ink"
+                >{{ todo.count }}</span
+              >
             </div>
-            <div class="todo-items">
-              <a v-for="item in todo.items" :key="item.file" class="chip" @click="openItem(item)">
-                {{ item.title }}
-              </a>
-              <span v-if="todo.count > todo.items.length" class="sub">
-                其余 {{ todo.count - todo.items.length }} 条
-              </span>
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                v-for="item in todo.items"
+                :key="item.file"
+                type="button"
+                class="min-h-11 max-w-full cursor-pointer break-words rounded-sm border border-panel-line bg-panel-raised px-3 py-2 text-left text-sm text-panel-muted hover:border-interactive/40 hover:text-interactive"
+                @click="openItem(item)"
+              >
+                {{ item.title }}</button
+              ><span v-if="todo.count > todo.items.length" class="text-xs text-panel-muted"
+                >其余 {{ todo.count - todo.items.length }} 条</span
+              >
             </div>
           </div>
         </div>
-        <a-empty v-else description="暂无待办" />
-      </a-card>
+        <p v-else class="py-10 text-center text-sm text-panel-muted">暂无待办</p>
+      </section>
     </div>
-  </a-spin>
-
+  </div>
   <UnusedImagesModal v-model:open="cleanupOpen" @done="load" />
 </template>
-
-<style scoped>
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.card {
-  border-radius: 8px;
-}
-
-.sub {
-  color: #8c8c8c;
-  font-size: 12px;
-}
-
-.block {
-  margin-bottom: 16px;
-  border-radius: 8px;
-}
-
-.columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 16px;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 0;
-}
-
-.row-main {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.row-title {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.todos {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.todo-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: 13px;
-  color: #595959;
-}
-
-.todo-items {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.chip {
-  max-width: 100%;
-  padding: 2px 8px;
-  border: 1px solid #f0f0f0;
-  border-radius: 4px;
-  background: #fafafa;
-  font-size: 12px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.chip:hover {
-  border-color: #1677ff;
-  background: #f0f7ff;
-}
-</style>

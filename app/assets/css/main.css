@@ -1,37 +1,10 @@
 @import "tailwindcss";
+@import "./theme.css";
 
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --animate-triangle-jelly: triangle-jelly 520ms ease-out;
-  --color-canvas: #b6cf91;
-  --color-panel: #0c0c1c;
-  --color-panel-raised: #151525;
-  --color-panel-line: #242437;
-  --color-panel-text: #f1eff8;
-  --color-panel-muted: #a5a3ba;
-  --color-accent: #f4d47b;
-  --color-poster: #5144b4;
-  --color-danger: #f39a9f;
-  --color-brand-50: oklch(0.97 0.013 250);
-  --color-brand-100: oklch(0.93 0.03 250);
-  --color-brand-200: oklch(0.87 0.055 250);
-  --color-brand-300: oklch(0.78 0.085 250);
-  --color-brand-400: oklch(0.68 0.12 250);
-  --color-brand-500: oklch(0.59 0.15 250);
-  --color-brand-600: oklch(0.51 0.15 250);
-  --color-brand-700: oklch(0.43 0.13 250);
-  --color-brand-800: oklch(0.36 0.1 250);
-  --color-brand-900: oklch(0.29 0.075 250);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
-    "Noto Sans CJK SC", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
-  --container-prose: 46rem;
-}
 
 :root {
   --canvas-artwork: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='680' height='620' viewBox='0 0 680 620'%3E%3Cg fill='none' stroke='%23e9da95' stroke-width='2.5' opacity='.52'%3E%3Cpath d='M-60 85C60-10 166 9 142 95S15 189 65 259 280 183 257 71 341-22 414 16 559 117 659 61'/%3E%3Cpath d='M-40 445C73 343 82 483 188 436S170 276 264 287 375 419 482 375 471 205 569 212 689 312 721 226'/%3E%3Cpath d='M45 668C76 580 194 552 203 500S266 443 327 490 382 636 465 563 613 529 697 601'/%3E%3C/g%3E%3C/svg%3E");

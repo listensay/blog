@@ -1,0 +1,29 @@
+@theme {
+  --animate-triangle-jelly: triangle-jelly 520ms ease-out;
+  --color-canvas: #b6cf91;
+  --color-panel: #0c0c1c;
+  --color-panel-raised: #151525;
+  --color-panel-line: #242437;
+  --color-panel-text: #f1eff8;
+  --color-panel-muted: #a5a3ba;
+  --color-accent: #f4d47b;
+  --color-poster: #5144b4;
+  --color-danger: #f39a9f;
+  --color-success: #bdd998;
+  --color-brand-50: oklch(0.97 0.013 250);
+  --color-brand-100: oklch(0.93 0.03 250);
+  --color-brand-200: oklch(0.87 0.055 250);
+  --color-brand-300: oklch(0.78 0.085 250);
+  --color-brand-400: oklch(0.68 0.12 250);
+  --color-brand-500: oklch(0.59 0.15 250);
+  --color-brand-600: oklch(0.51 0.15 250);
+  --color-brand-700: oklch(0.43 0.13 250);
+  --color-brand-800: oklch(0.36 0.1 250);
+  --color-brand-900: oklch(0.29 0.075 250);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
+    "Noto Sans CJK SC", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  --container-prose: 46rem;
+}

@@ -1,20 +1,41 @@
-:root {
-  color-scheme: light;
-  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+@import 'tailwindcss';
+@import '../../../app/assets/css/theme.css';
+
+@theme {
+  --color-canvas: #f2f2f6;
+  --color-panel: #ffffff;
+  --color-panel-raised: #f6f6fa;
+  --color-panel-line: #dddde7;
+  --color-panel-text: #222333;
+  --color-panel-muted: #5e6275;
+  --color-interactive: #5144b4;
+  --color-interactive-hover: #433695;
+  --color-warning-ink: #805b14;
+  --color-danger: #b83c4a;
+  --color-success: #33714a;
 }
 
-html,
-body,
-#app {
-  height: 100%;
-  margin: 0;
-}
-
-body {
-  background: #f5f5f5;
-}
-
-.mono {
-  font-family: var(--mono);
-  font-size: 12px;
+@layer base {
+  html {
+    @apply min-h-full bg-canvas;
+  }
+  body {
+    @apply m-0 min-h-screen font-sans text-base text-panel-text antialiased;
+  }
+  input,
+  textarea,
+  select,
+  dialog {
+    @apply scheme-light;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-interactive;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      @apply animate-none scroll-auto transition-none;
+    }
+  }
 }

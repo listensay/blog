@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
-import { ExportOutlined, ReloadOutlined } from '@ant-design/icons-vue'
+import UiAlert from '@/components/ui/UiAlert.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import UiIcon from '@/components/ui/UiIcon.vue'
+import UiLoading from '@/components/ui/UiLoading.vue'
 
 const route = useRoute()
 const frame = ref<HTMLIFrameElement>()
@@ -52,20 +55,24 @@ onBeforeRouteLeave(async () => {
 </script>
 
 <template>
-  <section class="workspace">
-    <header class="workspace-bar">
-      <div><strong>AFFiNE 内容</strong></div>
-      <a-space>
-        <a-button v-if="error" @click="check"
-          ><template #icon><ReloadOutlined /></template>重试</a-button
+  <section class="flex min-h-[70dvh] flex-col md:h-[calc(100dvh-3rem)]">
+    <header
+      class="flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-panel-line px-5 py-4 md:px-8"
+    >
+      <h1 class="text-2xl font-bold tracking-tight">Blog管理</h1>
+      <div class="flex flex-wrap gap-2">
+        <UiButton v-if="error" icon="refresh" :loading="loading" @click="check">重试</UiButton
+        ><a
+          :href="source"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex min-h-11 items-center gap-2 rounded-sm border border-panel-line bg-panel-raised px-3 py-2 text-sm hover:border-panel-muted"
+          ><UiIcon name="external" />独立窗口</a
         >
-        <a-button :href="source" target="_blank" rel="noopener"
-          ><template #icon><ExportOutlined /></template>独立窗口</a-button
-        >
-      </a-space>
+      </div>
     </header>
-    <a-alert v-if="error" type="error" show-icon :message="error" />
-    <div v-if="loading" class="loading"><a-spin tip="正在打开 AFFiNE…" /></div>
+    <UiAlert v-if="error" :message="error" class="m-5" />
+    <UiLoading v-if="loading">正在打开 AFFiNE</UiLoading>
     <iframe
       v-if="ready"
       :key="attempt"
@@ -73,46 +80,7 @@ onBeforeRouteLeave(async () => {
       :src="source"
       title="AFFiNE 博客内容"
       allow="clipboard-read; clipboard-write; fullscreen"
+      class="min-h-[60dvh] w-full flex-1 border-0 md:min-h-0"
     />
   </section>
 </template>
-<style scoped>
-.workspace {
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: white;
-}
-.workspace-bar {
-  min-height: 56px;
-  padding: 10px 18px;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.workspace-bar strong {
-  font-size: 14px;
-}
-.workspace-bar span {
-  margin-left: 16px;
-  font-size: 12px;
-  color: #888;
-}
-iframe {
-  border: 0;
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-}
-.loading {
-  padding: 80px;
-  text-align: center;
-}
-@media (max-width: 1100px) {
-  .workspace-bar span {
-    display: none;
-  }
-}
-</style>

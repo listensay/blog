@@ -26,41 +26,50 @@ function labelOf(month: string, index: number, all: TrendPoint[]): string {
 function render() {
   if (!chart) return
 
+  const theme = getComputedStyle(host.value!)
+  const color = (token: string) => theme.getPropertyValue(`--color-${token}`).trim()
   const points = props.points
   const max = Math.max(...points.map((point) => point.count), 0)
 
   chart.setOption(
     {
+      animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      aria: { enabled: true },
       grid: { top: 16, right: 8, bottom: 24, left: 32 },
       tooltip: {
         trigger: 'axis',
+        renderMode: 'richText',
+        confine: true,
+        backgroundColor: color('panel'),
+        borderColor: color('panel-line'),
+        textStyle: { color: color('panel-text') },
         axisPointer: { type: 'shadow' },
         formatter: (params: unknown) => {
           const [first] = params as Array<{ dataIndex: number }>
           const point = points[first?.dataIndex ?? 0]
-          return point ? `${point.month}<br/>${point.count} 篇` : ''
+          return point ? `${point.month}\n${point.count} 篇` : ''
         },
       },
       xAxis: {
         type: 'category',
         data: points.map((point, index) => labelOf(point.month, index, points)),
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: '#f0f0f0' } },
-        axisLabel: { color: '#8c8c8c', fontSize: 12 },
+        axisLine: { lineStyle: { color: color('panel-line') } },
+        axisLabel: { color: color('panel-muted'), fontSize: 12 },
       },
       yAxis: {
         type: 'value',
         minInterval: 1,
         max: max < 4 ? 4 : null,
-        splitLine: { lineStyle: { color: '#f5f5f5' } },
-        axisLabel: { color: '#8c8c8c', fontSize: 12 },
+        splitLine: { lineStyle: { color: color('panel-line') } },
+        axisLabel: { color: color('panel-muted'), fontSize: 12 },
       },
       series: [
         {
           type: 'bar',
           data: points.map((point) => point.count),
           barMaxWidth: 32,
-          itemStyle: { color: '#1677ff', borderRadius: [4, 4, 0, 0] },
+          itemStyle: { color: color('interactive'), borderRadius: [4, 4, 0, 0] },
         },
       ],
     },
@@ -74,7 +83,10 @@ onMounted(() => {
   chart = echarts.init(host.value, undefined, { renderer: 'canvas' })
   render()
 
-  observer = new ResizeObserver(() => chart?.resize())
+  observer = new ResizeObserver(() => {
+    chart?.dispatchAction({ type: 'hideTip' })
+    chart?.resize()
+  })
   observer.observe(host.value)
 })
 
@@ -89,12 +101,10 @@ watch(() => props.points, render)
 </script>
 
 <template>
-  <div ref="host" class="chart" />
+  <div
+    ref="host"
+    class="h-56 w-full"
+    role="img"
+    :aria-label="`发文趋势：${points.map((point) => `${point.month}，${point.count} 篇`).join('；')}`"
+  />
 </template>
-
-<style scoped>
-.chart {
-  width: 100%;
-  height: 220px;
-}
-</style>

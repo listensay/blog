@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { Modal, message } from 'ant-design-vue'
-import {
-  DeleteOutlined,
-  DownOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SaveOutlined,
-  UpOutlined,
-} from '@ant-design/icons-vue'
+import { confirmAction, notify } from '@/composables/useFeedback'
 
 import { api } from '@/api'
+import SettingsShell from '@/components/SettingsShell.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import UiInput from '@/components/ui/UiInput.vue'
+import UiRowActions from '@/components/ui/UiRowActions.vue'
+import UiSelect from '@/components/ui/UiSelect.vue'
 import NavIcon from '@/components/NavIcon.vue'
 import type { NavIconOption, NavItem, PageSummary } from '@/types'
 
@@ -29,14 +26,14 @@ const dirty = computed(() => JSON.stringify(items.value) !== baseline.value)
 
 const pagePaths = ref<string[]>([])
 
-const BUILTIN_PATHS = ['/', '/blog', '/categories', '/tags'] as const
+const BUILTIN_PATHS = ['/', '/blog', '/journals', '/projects', '/categories', '/tags'] as const
 
 const pathOptions = computed(() => [
   ...BUILTIN_PATHS.map((value) => ({ value })),
   ...pagePaths.value.map((value) => ({ value })),
 ])
 
-const DEFAULT_COLOR = '#3b82f6'
+const DEFAULT_COLOR = '#f4d47b'
 
 async function load() {
   loading.value = true
@@ -85,16 +82,11 @@ function onBeforeUnload(event: BeforeUnloadEvent) {
 
 onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
-  return new Promise<boolean>((resolve) => {
-    Modal.confirm({
-      title: '有未保存的修改',
-      content: '离开后修改会丢失。',
-      okText: '不保存并离开',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: () => resolve(true),
-      onCancel: () => resolve(false),
-    })
+  return confirmAction({
+    title: '有未保存的修改',
+    content: '离开后修改会丢失。',
+    confirmText: '不保存并离开',
+    danger: true,
   })
 })
 
@@ -103,10 +95,7 @@ function update(index: number, patch: Partial<NavItem>) {
 }
 
 function add() {
-  items.value = [
-    ...items.value,
-    { label: '', to: '', icon: 'page', color: DEFAULT_COLOR },
-  ]
+  items.value = [...items.value, { label: '', to: '', icon: 'page', color: DEFAULT_COLOR }]
 }
 
 function remove(index: number) {
@@ -142,7 +131,7 @@ const duplicated = computed(() => {
 })
 
 async function save() {
-  if (saving.value) return
+  if (saving.value || loading.value || loadError.value) return
   saving.value = true
   try {
     const nav = await api.saveNav(items.value)
@@ -150,9 +139,9 @@ async function save() {
     baseline.value = JSON.stringify(items.value)
     fileMissing.value = false
     fileError.value = ''
-    message.success('已保存')
+    notify.success('已保存')
   } catch (err) {
-    message.error(err instanceof Error ? err.message : String(err))
+    notify.error(err instanceof Error ? err.message : String(err))
   } finally {
     saving.value = false
   }
@@ -160,345 +149,98 @@ async function save() {
 </script>
 
 <template>
-  <a-spin :spinning="loading">
-    <a-alert v-if="loadError" type="error" show-icon :message="loadError" class="banner" />
-
-    <div class="head">
-      <span class="head-title">顶部菜单</span>
-      <a-tag v-if="dirty" color="orange">未保存</a-tag>
-
-      <span class="spacer" />
-
-      <a-button :loading="loading" @click="load">
-        <template #icon><ReloadOutlined /></template>
-        刷新
-      </a-button>
-
-      <a-button type="primary" :loading="saving" @click="save">
-        <template #icon><SaveOutlined /></template>
-        保存 ⌘S
-      </a-button>
-    </div>
-
-    <a-alert
-      v-if="fileMissing"
-      type="warning"
-      show-icon
-      class="banner"
-      message="文件不存在"
-      description="保存后自动创建。"
-    />
-
-    <a-alert
-      v-else-if="fileError"
-      type="error"
-      show-icon
-      class="banner"
-      message="文件解析失败，当前显示为空菜单"
-      :description="`${fileError}。保存将覆盖该文件。`"
-    />
-
-    <div class="card">
-      <div class="card-title">预览</div>
-      <div class="preview-row">
-        <nav
-          class="preview"
-          aria-label="菜单预览"
+  <SettingsShell
+    title="菜单"
+    :loading="loading"
+    :saving="saving"
+    :dirty="dirty"
+    :can-save="!loading && !loadError"
+    :load-error="loadError"
+    :file-error="fileError"
+    :file-missing="fileMissing"
+    @reload="load"
+    @save="save"
+  >
+    <section class="rounded-sm border border-panel-line bg-panel p-5">
+      <h2 class="mb-4 text-lg font-semibold">预览</h2>
+      <nav aria-label="菜单预览" class="flex flex-wrap gap-3 rounded-sm bg-panel-raised p-4">
+        <span
+          v-for="(item, index) in items"
+          :key="index"
+          class="inline-flex items-center gap-2 px-2 py-1 text-sm"
+          ><NavIcon :name="item.icon" :size="18" :style="{ color: item.color }" />{{
+            item.label.trim() || '未命名'
+          }}</span
         >
-          <span v-for="(item, index) in items" :key="index" class="preview-item">
-            <NavIcon :name="item.icon" :size="16" :style="{ color: item.color }" />
-            {{
-              item.label.trim() ||
-              '未命名'
-            }}
-          </span>
-          <span v-if="!items.length" class="muted">暂无菜单项</span>
-        </nav>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">菜单项</div>
-
-      <div v-for="(item, index) in items" :key="index" class="row">
-        <span class="index mono">{{ index + 1 }}</span>
-
-        <div class="fields">
-          <div class="name-fields">
-            <label class="label-field">
-              <span>名称</span>
-              <a-input
-                :value="item.label"
-                class="label-input"
-                placeholder="首页"
-                aria-label="名称"
-                :maxlength="24"
-                @update:value="(v: string) => update(index, { label: v })"
-              />
-            </label>
-          </div>
-
-          <div class="to-field">
-            <a-auto-complete
-              :value="item.to"
-              class="mono-input"
+        <span v-if="!items.length" class="text-sm text-panel-muted">暂无菜单项</span>
+      </nav>
+    </section>
+    <section class="rounded-sm border border-panel-line bg-panel p-5">
+      <h2 class="mb-4 text-lg font-semibold">菜单项</h2>
+      <div
+        v-for="(item, index) in items"
+        :key="index"
+        class="flex flex-wrap items-start gap-3 border-b border-panel-line py-5 first:pt-0"
+      >
+        <span class="w-5 shrink-0 pt-9 text-sm tabular-nums text-panel-muted">{{ index + 1 }}</span>
+        <div
+          class="grid min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[1fr_1.4fr_180px_60px]"
+        >
+          <label class="flex min-w-0 flex-col gap-2 text-sm text-panel-muted"
+            >名称<UiInput
+              :model-value="item.label"
+              placeholder="首页"
+              :maxlength="24"
+              @update:model-value="update(index, { label: $event })"
+          /></label>
+          <label class="flex min-w-0 flex-col gap-2 text-sm text-panel-muted"
+            >路径<UiInput
+              :model-value="item.to"
+              list="menu-paths"
+              class="font-mono"
               placeholder="/about"
-              :options="pathOptions"
-              @update:value="(v: unknown) => update(index, { to: String(v ?? '') })"
-            />
-            <div v-if="duplicated.has(item.to)" class="field-error">与其他菜单项路径重复</div>
-            <div v-else-if="looksMissing(item.to)" class="field-warn">
-              页面不存在，请先创建或检查路径
-            </div>
+              :aria-invalid="duplicated.has(item.to) || undefined"
+              @update:model-value="update(index, { to: $event })"
+            /><span v-if="duplicated.has(item.to)" class="text-xs text-danger"
+              >与其他菜单项路径重复</span
+            ><span v-else-if="looksMissing(item.to)" class="text-xs text-warning-ink"
+              >页面不存在，请检查路径</span
+            ></label
+          >
+          <div class="space-y-2">
+            <span class="block text-sm text-panel-muted">图标</span
+            ><UiSelect
+              :model-value="item.icon"
+              :options="icons"
+              label="菜单图标"
+              @update:model-value="update(index, { icon: $event })"
+              ><template #icon><NavIcon :name="item.icon" /></template
+              ><template #option="{ option }"
+                ><NavIcon :name="option.value" />{{ option.label }}</template
+              ></UiSelect
+            >
           </div>
-
-          <a-select
-            :value="item.icon"
-            class="icon-select"
-            show-search
-            option-filter-prop="label"
-            @update:value="(v: unknown) => update(index, { icon: String(v) })"
-          >
-            <a-select-option
-              v-for="option in icons"
-              :key="option.value"
-              :value="option.value"
-              :label="option.label"
-            >
-              <span class="icon-option">
-                <NavIcon :name="option.value" :size="16" />
-                {{ option.label }}
-              </span>
-            </a-select-option>
-          </a-select>
-
-          <a-input
-            :value="item.color"
-            class="color-input mono-input"
-            type="color"
-            @update:value="(v: string) => update(index, { color: v })"
-          />
+          <label class="flex flex-col gap-2 text-sm text-panel-muted"
+            >颜色<UiInput
+              type="color"
+              :model-value="item.color"
+              class="h-11 cursor-pointer px-1"
+              @update:model-value="update(index, { color: $event })"
+          /></label>
         </div>
-
-        <div class="ops">
-          <a-tooltip title="上移">
-            <a-button type="text" size="small" :disabled="index === 0" @click="move(index, -1)">
-              <template #icon><UpOutlined /></template>
-            </a-button>
-          </a-tooltip>
-          <a-tooltip title="下移">
-            <a-button
-              type="text"
-              size="small"
-              :disabled="index === items.length - 1"
-              @click="move(index, 1)"
-            >
-              <template #icon><DownOutlined /></template>
-            </a-button>
-          </a-tooltip>
-          <a-popconfirm
-            :title="`删除「${item.label || '当前项'}」？`"
-            ok-text="删除"
-            cancel-text="取消"
-            @confirm="remove(index)"
-          >
-            <a-button type="text" size="small" danger>
-              <template #icon><DeleteOutlined /></template>
-            </a-button>
-          </a-popconfirm>
-        </div>
+        <UiRowActions
+          class="ml-auto sm:pt-7"
+          :first="index === 0"
+          :last="index === items.length - 1"
+          :label="item.label"
+          @move="move(index, $event)"
+          @remove="remove(index)"
+        />
       </div>
-
-      <a-button type="dashed" block class="add" @click="add">
-        <template #icon><PlusOutlined /></template>
-        添加菜单项
-      </a-button>
-    </div>
-  </a-spin>
+      <UiButton icon="plus" class="mt-5 w-full" @click="add">添加菜单项</UiButton>
+      <datalist id="menu-paths">
+        <option v-for="option in pathOptions" :key="option.value" :value="option.value" />
+      </datalist>
+    </section>
+  </SettingsShell>
 </template>
-
-<style scoped>
-.banner {
-  margin-bottom: 16px;
-}
-
-.head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.head-title {
-  font-weight: 600;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.card {
-  margin-bottom: 16px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 8px;
-}
-
-.card-title {
-  margin-bottom: 12px;
-  font-weight: 600;
-}
-
-.preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 12px;
-  background: #fafafa;
-  border-radius: 8px;
-  flex: 1;
-  min-width: 0;
-}
-
-.preview-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.preview-row + .preview-row {
-  margin-top: 10px;
-}
-
-.preview-label {
-  width: 48px;
-  flex: none;
-  color: #595959;
-  font-size: 13px;
-}
-
-.preview-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: #fff;
-  border: 1px solid #f0f0f0;
-  border-radius: 999px;
-  font-size: 13px;
-}
-
-.icon-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.index {
-  padding-top: 8px;
-  width: 18px;
-  color: #bfbfbf;
-  text-align: right;
-}
-
-.fields {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.name-fields {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.label-field {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 6px;
-  color: #595959;
-  font-size: 12px;
-}
-
-.field-hint {
-  margin: 0 0 16px;
-  color: #595959;
-  font-size: 13px;
-}
-
-@media (max-width: 640px) {
-  .name-fields {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.label-input {
-  flex: 1;
-  min-width: 0;
-}
-
-.to-field {
-  flex: 1.4;
-  min-width: 0;
-}
-
-.to-field :deep(.ant-select) {
-  width: 100%;
-}
-
-.icon-select {
-  flex: none;
-  width: 140px;
-}
-
-.color-input {
-  flex: none;
-  width: 52px;
-  padding: 2px 4px;
-}
-
-.ops {
-  flex: none;
-  display: flex;
-  align-items: center;
-  padding-top: 2px;
-}
-
-.add {
-  margin-top: 12px;
-}
-
-.field-error {
-  margin-top: 4px;
-  color: #cf1322;
-  font-size: 12px;
-}
-
-.field-warn {
-  margin-top: 4px;
-  color: #d46b08;
-  font-size: 12px;
-}
-
-.mono-input {
-  font-family: var(--mono);
-}
-
-.muted {
-  color: #bfbfbf;
-  font-size: 13px;
-}
-</style>

@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import {
-  DeleteOutlined,
-  DownOutlined,
-  PictureOutlined,
-  PlusOutlined,
-  UpOutlined,
-} from '@ant-design/icons-vue'
 
+import UiButton from './ui/UiButton.vue'
+import UiInput from './ui/UiInput.vue'
+import UiRowActions from './ui/UiRowActions.vue'
 import ImagePickerModal from './ImagePickerModal.vue'
 import type { FriendLink } from '@/types'
 import { toSitePreviewSrc } from '@/utils/markdown'
@@ -59,175 +55,69 @@ const initial = (name: string) => [...(name || '?')][0] ?? '?'
 </script>
 
 <template>
-  <div class="friends">
-    <div v-for="(item, index) in friends" :key="index" class="row">
-      <div class="avatar">
-        <img v-if="previewOf(item.avatar)" :src="previewOf(item.avatar)" :alt="item.name" />
-        <span v-else class="avatar-fallback">{{ initial(item.name) }}</span>
+  <div class="space-y-4">
+    <div
+      v-for="(item, index) in friends"
+      :key="index"
+      class="flex flex-wrap items-start gap-4 rounded-sm border border-panel-line bg-panel-raised/40 p-4"
+    >
+      <div
+        class="mt-7 grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-poster text-lg font-semibold text-white"
+      >
+        <img
+          v-if="previewOf(item.avatar)"
+          :src="previewOf(item.avatar)"
+          :alt="item.name"
+          class="size-full object-cover"
+        /><span v-else>{{ initial(item.name) }}</span>
       </div>
-
-      <div class="fields">
-        <div class="line">
-          <a-input
-            :value="item.name"
-            placeholder="站点名称"
-            @update:value="(v: string) => update(index, { name: v })"
-          />
-          <a-input
-            :value="item.url"
-            class="mono-input"
-            placeholder="https://example.com 或 /about"
-            @update:value="(v: string) => update(index, { url: v })"
-          />
-        </div>
-
-        <div class="line">
-          <a-input
-            :value="item.description"
-            placeholder="描述（可选）"
-            @update:value="(v: string) => update(index, { description: v })"
-          />
-          <a-space-compact class="avatar-field">
-            <a-input
-              :value="item.avatar ?? ''"
-              class="mono-input"
-              placeholder="头像地址（可选）"
-              @update:value="(v: string) => update(index, { avatar: v })"
+      <div class="grid min-w-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
+        <label class="flex flex-col gap-2 text-sm text-panel-muted"
+          >站点名称<UiInput
+            :model-value="item.name"
+            @update:model-value="update(index, { name: $event })"
+        /></label>
+        <label class="flex flex-col gap-2 text-sm text-panel-muted"
+          >地址<UiInput
+            :model-value="item.url"
+            class="font-mono"
+            placeholder="https://example.com"
+            @update:model-value="update(index, { url: $event })"
+        /></label>
+        <label class="flex flex-col gap-2 text-sm text-panel-muted"
+          >描述<UiInput
+            :model-value="item.description"
+            @update:model-value="update(index, { description: $event })"
+        /></label>
+        <div class="space-y-2">
+          <label :for="`friend-avatar-${index}`" class="text-sm text-panel-muted">头像地址</label>
+          <div class="flex gap-2">
+            <UiInput
+              :id="`friend-avatar-${index}`"
+              :model-value="item.avatar ?? ''"
+              class="font-mono"
+              placeholder="/images/avatar.jpg"
+              @update:model-value="update(index, { avatar: $event })"
+            /><UiButton
+              icon="image"
+              title="选择图片"
+              aria-label="选择头像图片"
+              @click="pickingFor = index"
             />
-            <a-tooltip title="选择图片">
-              <a-button @click="pickingFor = index">
-                <template #icon><PictureOutlined /></template>
-              </a-button>
-            </a-tooltip>
-          </a-space-compact>
+          </div>
         </div>
       </div>
-
-      <div class="ops">
-        <a-tooltip title="上移">
-          <a-button type="text" size="small" :disabled="index === 0" @click="move(index, -1)">
-            <template #icon><UpOutlined /></template>
-          </a-button>
-        </a-tooltip>
-        <a-tooltip title="下移">
-          <a-button
-            type="text"
-            size="small"
-            :disabled="index === friends.length - 1"
-            @click="move(index, 1)"
-          >
-            <template #icon><DownOutlined /></template>
-          </a-button>
-        </a-tooltip>
-        <a-popconfirm
-          :title="`删除「${item.name || '当前项'}」？`"
-          ok-text="删除"
-          cancel-text="取消"
-          @confirm="remove(index)"
-        >
-          <a-button type="text" size="small" danger>
-            <template #icon><DeleteOutlined /></template>
-          </a-button>
-        </a-popconfirm>
-      </div>
+      <UiRowActions
+        class="ml-auto lg:pt-7"
+        :first="index === 0"
+        :last="index === friends.length - 1"
+        :label="item.name"
+        @move="move(index, $event)"
+        @remove="remove(index)"
+      />
     </div>
-
-    <p v-if="!friends.length" class="empty">暂无友情链接</p>
-
-    <a-button type="dashed" block @click="add">
-      <template #icon><PlusOutlined /></template>
-      添加链接
-    </a-button>
-
+    <p v-if="!friends.length" class="py-8 text-center text-sm text-panel-muted">暂无友情链接</p>
+    <UiButton icon="plus" class="w-full" @click="add">添加链接</UiButton>
     <ImagePickerModal v-model:open="pickerOpen" @select="pickAvatar($event.name)" />
   </div>
 </template>
-
-<style scoped>
-.friends {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-}
-
-.avatar {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: #e6f4ff;
-}
-
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar-fallback {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  color: #1677ff;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.fields {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.line {
-  display: flex;
-  gap: 8px;
-}
-
-.line > * {
-  flex: 1;
-  min-width: 0;
-}
-
-.avatar-field {
-  display: flex;
-}
-
-.ops {
-  flex: none;
-  display: flex;
-  align-items: center;
-}
-
-.mono-input {
-  font-family: var(--mono);
-}
-
-.empty {
-  margin: 0;
-  color: #bfbfbf;
-  font-size: 13px;
-}
-
-.hint {
-  margin: 0;
-  color: #8c8c8c;
-  font-size: 12px;
-  line-height: 1.7;
-}
-</style>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { Modal, message } from 'ant-design-vue'
-import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
+import { confirmAction, notify } from '@/composables/useFeedback'
 
 import { api } from '@/api'
+import UiAlert from '@/components/ui/UiAlert.vue'
+import SettingsShell from '@/components/SettingsShell.vue'
 import FriendLinksEditor from '@/components/FriendLinksEditor.vue'
 import type { FriendLink, PageDetail } from '@/types'
 
@@ -75,9 +76,9 @@ async function save() {
   saving.value = true
   try {
     fill(await api.saveLinks(friends.value))
-    message.success('已保存')
+    notify.success('已保存')
   } catch (err) {
-    message.error(err instanceof Error ? err.message : String(err))
+    notify.error(err instanceof Error ? err.message : String(err))
   } finally {
     saving.value = false
   }
@@ -96,86 +97,39 @@ function onBeforeUnload(event: BeforeUnloadEvent) {
 
 onBeforeRouteLeave(async () => {
   if (!dirty.value) return true
-  return new Promise<boolean>((resolve) => {
-    Modal.confirm({
-      title: '有未保存的修改',
-      content: '离开后修改会丢失。',
-      okText: '不保存并离开',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: () => resolve(true),
-      onCancel: () => resolve(false),
-    })
+  return confirmAction({
+    title: '有未保存的修改',
+    content: '离开后修改会丢失。',
+    confirmText: '不保存并离开',
+    danger: true,
   })
 })
 </script>
 
 <template>
-  <a-spin :spinning="loading">
-    <a-alert v-if="loadError" type="error" show-icon :message="loadError" class="banner" />
-
-    <div class="head">
-      <span class="head-title">友情链接</span>
-      <a-tag v-if="dirty" color="orange">未保存</a-tag>
-
-      <span class="spacer" />
-
-      <a-button :loading="loading" @click="load">
-        <template #icon><ReloadOutlined /></template>
-        刷新
-      </a-button>
-
-      <a-button type="primary" :loading="saving" :disabled="!savable" @click="save">
-        <template #icon><SaveOutlined /></template>
-        保存 ⌘S
-      </a-button>
-    </div>
-
-    <a-alert
+  <SettingsShell
+    title="友情链接"
+    :loading="loading"
+    :saving="saving"
+    :dirty="dirty"
+    :can-save="savable"
+    :load-error="loadError"
+    :file-error="''"
+    :file-missing="false"
+    @reload="load"
+    @save="save"
+  >
+    <UiAlert
       v-if="missing"
-      type="warning"
-      show-icon
-      class="banner"
+      tone="warning"
       message="页面不存在"
       description="请在 AFFiNE 中创建 slug 为 links 的页面并同步。"
     />
-
-    <div class="card">
+    <section v-else class="rounded-sm border border-panel-line bg-panel p-5">
       <FriendLinksEditor v-model="friends" />
-      <div class="count">共 {{ friends.length }} 条</div>
-    </div>
-  </a-spin>
+      <p v-if="friends.length" class="mt-4 text-xs tabular-nums text-panel-muted">
+        共 {{ friends.length }} 条
+      </p>
+    </section>
+  </SettingsShell>
 </template>
-
-<style scoped>
-.banner {
-  margin-bottom: 16px;
-}
-
-.head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.head-title {
-  font-weight: 600;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.card {
-  padding: 16px;
-  background: #fff;
-  border-radius: 8px;
-}
-
-.count {
-  margin-top: 12px;
-  color: #bfbfbf;
-  font-size: 12px;
-}
-</style>
