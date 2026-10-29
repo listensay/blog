@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { api } from '@/api'
 import { notify } from '@/composables/useFeedback'
+import { useDataRefresh } from '@/composables/useDataRefresh'
 import type { ImageItem } from '@/types'
 import { sizeText } from '@/utils/bytes'
 import UiAlert from './ui/UiAlert.vue'
@@ -35,6 +36,7 @@ watch(
   },
   { immediate: true },
 )
+useDataRefresh(load, () => open.value && !uploading.value)
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
   return kw ? images.value.filter((image) => image.name.toLowerCase().includes(kw)) : images.value

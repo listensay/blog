@@ -111,8 +111,6 @@ function validateFriends(input: FriendLink[] | undefined): FriendLink[] {
     const avatar = item?.avatar?.trim() ?? ''
 
     const description = item?.description?.trim() ?? ''
-    if (!name && !url && !avatar && !description) continue
-
     if (!name) throw badRequest(`${at}的名称不能为空`)
     if (!url) throw badRequest(`${at}（${name}）的网址不能为空`)
     if (!USABLE_LINK.test(url)) {

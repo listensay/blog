@@ -11,9 +11,6 @@ tags:
 draft: false
 ---
 
-> 2026-10-02 新增Axis AI站点
-> 2026-09-19 JustDoWork、SeekAI 恢复可用
-
 以下站点都是本人收集整理，没有收取任何费用，也不存在付费推广。
 
 站点的评价内容纯主观个人体验，仅供参考。
@@ -44,21 +41,11 @@ https://agentrouter.org/register?aff=QieS
 
 这是一家老牌的中转站，稳定性一般，速度较慢。
 
-目前仅CC可用，其他的需要挤。
-
 每天签到可获得25余额，邀请一个用户可获50余额。
 
 使用以下链接注册可获50额度。
 
 https://anyrouter.top/register?aff=78Jy
-
-### Axis AI
-
-评价：**顶级**
-
-免费使用。请求响应速度快，部分模型opus可能是假的模型，目测gpt6和qwen模型都是真的。
-
-https://ai.onyxaxis.org/register?invite=Y3M452R3
 
 ### 哈吉米AI
 
@@ -102,8 +89,6 @@ https://api.justwoker.icu/register?aff=Qk1K
 
 https://build.nvidia.com/models
 
-![](/affine-assets/78ba948efbf09ad6035644ad48e53b0cab0df516f514dfd5a9ac58a3edf1be29.png)
-
 ### FreeBuff
 
 评价：**顶级**
@@ -128,14 +113,6 @@ https://freebuff.com/get-started?ref=ref-249b9117-b0e0-439d-bac9-0762fd289053\&r
 
 https://www.tokenrouter.com/
 
-![](/affine-assets/d9288b5003fa992236570076dcf5f56b551853238a4f02e0eee4feedd0a78935.png)
-
-这里我推荐Hermas agent去使用这个API，你可以在前面让Agent记忆一下（直接打字让他记住），如果模型输出文字错乱的话就重新输出。
-
-![](/affine-assets/9169559dea7daf0f2eb8a411311e9a09bc842f57dc5f75fd447ae9bffe0a7c40.png)
-
-总而言之这个网站的免费模型输出阅读性不好，工作是没有问题的。
-
 ### OrcaRouter
 
 评价：**夯**
@@ -143,8 +120,6 @@ https://www.tokenrouter.com/
 虽然有点限制，但是可以忽略，免费模型不多，整体体验下来速度非常快。
 
 https://www.orcarouter.ai/
-
-![](/affine-assets/e5a0d6ece6ede30744083ae9a8b84df31ca75422ee4306e201876d4e5bf44918.png)
 
 ## 一些不明来历的AI，但是能用
 
@@ -156,12 +131,8 @@ https://www.orcarouter.ai/
 
 http://20.115.208.7:4000/v1
 
-![](/affine-assets/5bd33b9110de54988325d54f55e2f9c367d1d85998bd55942521e3f8bfd50a73.png)
-
 ### http://130.210.35.157:4000/v1
 
 同样不需要输入密钥使用这些模型
 
 http://130.210.35.157:4000/v1
-
-![](/affine-assets/074c5376163a91c262c2e53dc05b0ec44b6bbc2ca5cc270e6ce3e81426ce372e.png)

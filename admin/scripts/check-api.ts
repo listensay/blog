@@ -59,6 +59,14 @@ try {
     assert.equal((await fetch(`${base}/api/projects`, { method })).status, 404)
   console.log('✓ 后台数据可读，旧文章/页面/作品/AI 写入接口已移除')
 
+  const eventsAbort = new AbortController()
+  const events = await fetch(`${base}/api/events`, {
+    signal: AbortSignal.any([eventsAbort.signal, AbortSignal.timeout(10000)]),
+  })
+  assert.equal(events.headers.get('content-type'), 'text/event-stream')
+  const eventReader = events.body!.getReader()
+  assert.match(new TextDecoder().decode((await eventReader.read()).value), /connected/)
+
   const linksFile = path.join(root, 'content/pages/links.md')
   const before = await readFile(linksFile, 'utf8')
   const response = await fetch(`${base}/api/links`, {
@@ -73,8 +81,35 @@ try {
   assert.equal(response.status, 200)
   const page = await response.json()
   assert.equal(page.friends.length, 1)
+  try {
+    assert.match(new TextDecoder().decode((await eventReader.read()).value), /data: changed/)
+  } finally {
+    await eventReader.cancel()
+    eventsAbort.abort()
+  }
+  assert.equal(
+    (
+      await fetch(`${base}/api/events`, {
+        headers: { origin: 'https://example.com' },
+      })
+    ).status,
+    403,
+  )
+  console.log('✓ 内容写入后推送数据更新事件，事件订阅拒绝跨站访问')
   assert.ok(!page.body.includes('不能覆盖'))
   assert.ok(before.includes(page.title))
+  const savedLinks = await readFile(linksFile, 'utf8')
+  const emptyDraft = await fetch(`${base}/api/links`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ friends: [{ name: '', url: '', description: '' }] }),
+  })
+  assert.equal(emptyDraft.status, 400, 'empty draft rows must not disappear after autosave')
+  assert.equal(
+    await readFile(linksFile, 'utf8'),
+    savedLinks,
+    'incomplete drafts preserve saved links',
+  )
   assert.equal(
     (
       await fetch(`${base}/api/links`, {

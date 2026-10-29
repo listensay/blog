@@ -1,109 +1,37 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
-import { confirmAction, notify } from '@/composables/useFeedback'
-
+import { ref } from 'vue'
 import { api } from '@/api'
+import { useAutoSave } from '@/composables/useAutoSave'
+import { useDataRefresh } from '@/composables/useDataRefresh'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import SettingsShell from '@/components/SettingsShell.vue'
 import FriendLinksEditor from '@/components/FriendLinksEditor.vue'
-import type { FriendLink, PageDetail } from '@/types'
+import type { FriendLink } from '@/types'
 
-const loading = ref(true)
-const saving = ref(false)
-const loadError = ref('')
 const missing = ref(false)
-
 const friends = ref<FriendLink[]>([])
-
-function snapshot(): string {
-  const text = (value: string | null | undefined) => value ?? ''
-  return JSON.stringify(
-    friends.value.map((item) => [
-      text(item.name),
-      text(item.url),
-      text(item.description),
-      text(item.avatar),
-    ]),
-  )
-}
-
-const baseline = ref(snapshot())
-const dirty = computed(() => snapshot() !== baseline.value)
-
-const savable = computed(() => !loading.value && !missing.value && !loadError.value)
-
-async function load() {
-  loading.value = true
-  loadError.value = ''
-  missing.value = false
-
-  try {
-    fill(await api.getLinks())
-  } catch (err) {
-    const text = err instanceof Error ? err.message : String(err)
-    if (text.includes('不存在')) {
+const state = useAutoSave({
+  value: friends,
+  enabled: () => !missing.value,
+  read: async () => {
+    try {
+      const detail = await api.getLinks()
+      missing.value = false
+      return detail.friends
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes('不存在')) throw error
       missing.value = true
-      friends.value = []
-      baseline.value = snapshot()
-    } else {
-      loadError.value = text
+      return []
     }
-  } finally {
-    loading.value = false
-  }
-}
-
-function fill(detail: PageDetail) {
-  friends.value = detail.friends.map((item) => ({ ...item }))
-  baseline.value = snapshot()
-}
-
-onMounted(() => {
-  void load()
-  window.addEventListener('keydown', onKeydown)
-  window.addEventListener('beforeunload', onBeforeUnload)
+  },
+  write: async (value) => (await api.saveLinks(value)).friends,
 })
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('beforeunload', onBeforeUnload)
-})
-
-async function save() {
-  if (saving.value || !savable.value) return
-
-  saving.value = true
-  try {
-    fill(await api.saveLinks(friends.value))
-    notify.success('已保存')
-  } catch (err) {
-    notify.error(err instanceof Error ? err.message : String(err))
-  } finally {
-    saving.value = false
-  }
+const { loading, saving, dirty, saved, loadError, saveError, refreshError } = state
+useDataRefresh(state.refresh)
+async function retry() {
+  if (dirty.value) await state.flush()
+  else await state.refresh()
 }
-
-function onKeydown(event: KeyboardEvent) {
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-    event.preventDefault()
-    void save()
-  }
-}
-
-function onBeforeUnload(event: BeforeUnloadEvent) {
-  if (dirty.value) event.preventDefault()
-}
-
-onBeforeRouteLeave(async () => {
-  if (!dirty.value) return true
-  return confirmAction({
-    title: '有未保存的修改',
-    content: '离开后修改会丢失。',
-    confirmText: '不保存并离开',
-    danger: true,
-  })
-})
 </script>
 
 <template>
@@ -112,12 +40,13 @@ onBeforeRouteLeave(async () => {
     :loading="loading"
     :saving="saving"
     :dirty="dirty"
-    :can-save="savable"
+    :saved="saved && !missing"
+    :save-error="saveError"
+    :refresh-error="refreshError"
     :load-error="loadError"
     :file-error="''"
     :file-missing="false"
-    @reload="load"
-    @save="save"
+    @retry="retry"
   >
     <UiAlert
       v-if="missing"

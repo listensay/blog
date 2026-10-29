@@ -7,35 +7,33 @@ defineProps<{
   loading: boolean
   saving: boolean
   dirty: boolean
-  canSave: boolean
+  saved: boolean
+  saveError: string
+  refreshError: string
+  blocked?: boolean
   loadError: string
   fileError: string
   fileMissing: boolean
 }>()
-const emit = defineEmits<{ reload: []; save: [] }>()
+const emit = defineEmits<{ retry: [] }>()
 </script>
 <template>
   <section :aria-label="title" :aria-busy="loading || saving">
-    <div class="mb-6 flex flex-wrap items-center justify-end gap-2">
-      <span
-        v-if="dirty && !loading"
-        class="mr-auto rounded-xs bg-accent/25 px-2 py-1 text-xs text-warning-ink"
-        >未保存</span
-      >
-      <UiButton icon="refresh" :loading="loading" :disabled="saving" @click="emit('reload')"
-        >刷新</UiButton
-      >
-      <UiButton
-        variant="primary"
-        icon="save"
-        :loading="saving"
-        :disabled="!canSave"
-        aria-keyshortcuts="Meta+S Control+S"
-        @click="emit('save')"
-        >保存</UiButton
-      >
-    </div>
-    <UiAlert v-if="loadError" class="mb-5" :message="loadError" />
+    <p
+      v-if="!loading && !saveError && (dirty || saving || (saved && !fileMissing && !fileError))"
+      role="status"
+      aria-live="polite"
+      class="mb-5 text-sm text-panel-muted"
+    >
+      {{ saving ? '保存中…' : dirty ? '待保存' : '已保存' }}
+    </p>
+    <UiAlert
+      v-if="loadError || saveError || refreshError"
+      class="mb-5"
+      :message="loadError || saveError || refreshError"
+    >
+      <UiButton class="mt-3" :loading="loading || saving" @click="emit('retry')">重试</UiButton>
+    </UiAlert>
     <UiLoading v-if="loading" />
     <template v-else-if="!loadError">
       <UiAlert
@@ -43,15 +41,10 @@ const emit = defineEmits<{ reload: []; save: [] }>()
         tone="warning"
         class="mb-5"
         message="文件不存在"
-        description="保存后自动创建。"
+        description="修改后自动创建。"
       />
-      <UiAlert
-        v-else-if="fileError"
-        class="mb-5"
-        message="文件解析失败"
-        :description="`${fileError}。保存将覆盖该文件。`"
-      />
-      <fieldset :disabled="saving" class="min-w-0 space-y-6 border-0 p-0"><slot /></fieldset>
+      <UiAlert v-else-if="fileError" class="mb-5" message="文件解析失败" :description="fileError" />
+      <fieldset :disabled="blocked" class="min-w-0 space-y-6 border-0 p-0"><slot /></fieldset>
     </template>
   </section>
 </template>

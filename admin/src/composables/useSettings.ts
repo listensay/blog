@@ -1,12 +1,11 @@
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
-import { confirmAction, notify } from '@/composables/useFeedback'
-
+import { ref } from 'vue'
 import { api } from '@/api'
+import { useAutoSave } from './useAutoSave'
+import { useDataRefresh } from './useDataRefresh'
 import type { CategoryOption, SiteSettings, SocialIconOption } from '@/types'
 
-function emptySettings(): SiteSettings {
-  return {
+export function useSettings() {
+  const settings = ref<SiteSettings>({
     profile: { name: '', bio: '', avatar: '', socials: [] },
     site: {
       title: '',
@@ -16,104 +15,28 @@ function emptySettings(): SiteSettings {
       utcOffset: '+08:00',
       home: { postLimit: 5, hiddenCategories: [] },
     },
-  }
-}
-
-export function useSettings() {
-  const loading = ref(true)
-  const saving = ref(false)
-  const loadError = ref('')
-  const fileError = ref('')
-  const fileMissing = ref(false)
-
-  const settings = ref<SiteSettings>(emptySettings())
+  })
   const icons = ref<SocialIconOption[]>([])
   const categories = ref<CategoryOption[]>([])
-
-  const baseline = ref(JSON.stringify(settings.value))
-  const dirty = computed(() => JSON.stringify(settings.value) !== baseline.value)
-
-  const canSave = computed(() => !loading.value && !loadError.value)
-
-  async function load() {
-    loading.value = true
-    loadError.value = ''
-    try {
+  const fileError = ref('')
+  const fileMissing = ref(false)
+  const state = useAutoSave({
+    value: settings,
+    enabled: () => !fileError.value,
+    read: async () => {
       const data = await api.getSettings()
-      settings.value = data.settings
       icons.value = data.icons
       categories.value = data.categories ?? []
       fileMissing.value = data.missing === true
       fileError.value = data.error ?? ''
-      baseline.value = JSON.stringify(settings.value)
-    } catch (err) {
-      loadError.value = err instanceof Error ? err.message : String(err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function save() {
-    if (saving.value || !canSave.value) return
-    saving.value = true
-    try {
-      const data = await api.saveSettings(settings.value)
-      settings.value = data.settings
-      baseline.value = JSON.stringify(settings.value)
-      fileMissing.value = false
-      fileError.value = ''
-      notify.success('已保存')
-    } catch (err) {
-      notify.error(err instanceof Error ? err.message : String(err))
-    } finally {
-      saving.value = false
-    }
-  }
-
-  function onKeydown(event: KeyboardEvent) {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-      event.preventDefault()
-      void save()
-    }
-  }
-
-  function onBeforeUnload(event: BeforeUnloadEvent) {
-    if (dirty.value) event.preventDefault()
-  }
-
-  onMounted(() => {
-    void load()
-    window.addEventListener('keydown', onKeydown)
-    window.addEventListener('beforeunload', onBeforeUnload)
+      return data.settings
+    },
+    write: async (value) => (await api.saveSettings(value)).settings,
   })
-
-  onBeforeUnmount(() => {
-    window.removeEventListener('keydown', onKeydown)
-    window.removeEventListener('beforeunload', onBeforeUnload)
-  })
-
-  onBeforeRouteLeave(async () => {
-    if (!dirty.value) return true
-    return confirmAction({
-      title: '有未保存的修改',
-      content: '离开后修改会丢失。',
-      confirmText: '不保存并离开',
-      danger: true,
-    })
-  })
-
-  return {
-    loading,
-    saving,
-    loadError,
-    fileError,
-    fileMissing,
-    settings,
-    icons,
-    categories,
-    dirty,
-    canSave,
-    load,
-    save,
+  useDataRefresh(state.refresh)
+  async function retry() {
+    if (state.dirty.value) await state.flush()
+    else await state.refresh()
   }
+  return { ...state, settings, icons, categories, fileError, fileMissing, retry }
 }

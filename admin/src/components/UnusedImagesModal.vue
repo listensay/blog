@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { api } from '@/api'
+import { useDataRefresh } from '@/composables/useDataRefresh'
 import { confirmAction, notify } from '@/composables/useFeedback'
 import type { ImageItem, UnusedImages } from '@/types'
 import { sizeText } from '@/utils/bytes'
@@ -18,13 +19,16 @@ const selected = ref<string[]>([])
 function selectAll(images: ImageItem[]) {
   selected.value = images.map((item) => item.name)
 }
-async function load() {
+async function load(preserveSelection = false) {
   loading.value = true
   loadError.value = ''
-  selected.value = []
+  if (!preserveSelection) selected.value = []
   try {
     data.value = await api.unusedImages()
-    selectAll(data.value.images)
+    if (preserveSelection) {
+      const names = new Set(data.value.images.map((item) => item.name))
+      selected.value = selected.value.filter((name) => names.has(name))
+    } else selectAll(data.value.images)
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err)
   } finally {
@@ -37,6 +41,10 @@ watch(
     if (isOpen) void load()
   },
   { immediate: true },
+)
+useDataRefresh(
+  () => load(true),
+  () => open.value && !removing.value,
 )
 const images = computed(() => data.value?.images ?? [])
 const selectedBytes = computed(() =>
@@ -84,7 +92,7 @@ async function remove() {
   <UiModal v-model:open="open" title="清理未引用图片" wide :busy="removing">
     <UiLoading v-if="loading" />
     <div v-else-if="loadError" class="space-y-3">
-      <UiAlert :message="loadError" /><UiButton icon="refresh" @click="load">重试</UiButton>
+      <UiAlert :message="loadError" /><UiButton icon="refresh" @click="load()">重试</UiButton>
     </div>
     <template v-else>
       <div v-if="images.length" class="mb-5 flex flex-wrap items-center gap-4 text-sm">

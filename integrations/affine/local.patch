@@ -1071,6 +1071,16 @@ index 6a81eef..9aba4a7 100644
 -
 +export const LocalDemoTips = (_props: LocalDemoTipsProps) => null;
  export default LocalDemoTips;
+diff --git a/packages/frontend/component/src/ui/input/index.ts b/packages/frontend/component/src/ui/input/index.ts
+index 24d79b8..c27a6e9 100644
+--- a/packages/frontend/component/src/ui/input/index.ts
++++ b/packages/frontend/component/src/ui/input/index.ts
+@@ -1,4 +1,5 @@
+ export * from './input';
+ export * from './row-input';
++export { inputWrapper as inputSurface } from './style.css';
+ import { Input } from './input';
+ export default Input;
 diff --git a/packages/frontend/core/src/blocksuite/ai/_common/config.ts b/packages/frontend/core/src/blocksuite/ai/_common/config.ts
 index 28af0c3..b364a86 100644
 --- a/packages/frontend/core/src/blocksuite/ai/_common/config.ts
@@ -3784,11 +3794,13 @@ index a368a0d..bfc2e1e 100644
  };
 diff --git a/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-cover-upload.tsx b/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-cover-upload.tsx
 new file mode 100644
-index 0000000..7c61615
+index 0000000..e374096
 --- /dev/null
 +++ b/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-cover-upload.tsx
-@@ -0,0 +1,142 @@
+@@ -0,0 +1,114 @@
 +import { useEffect, useRef, useState } from 'react';
++import { Button, ErrorMessage } from '@affine/component';
++import * as styles from './blog-publish.css';
 +
 +const imageTypes: Record<string, string> = {
 +  png: 'image/png',
@@ -3835,28 +3847,16 @@ index 0000000..7c61615
 +
 +  const src = file ? preview : previewUrl(value);
 +  return (
-+    <div style={{ display: 'grid', gap: 10 }}>
++    <div className={styles.cover}>
 +      <span>封面</span>
-+      {src && (
-+        <img
-+          src={src}
-+          alt="封面预览"
-+          style={{
-+            width: '100%',
-+            height: 160,
-+            objectFit: 'contain',
-+            borderRadius: 8,
-+            background: '#8881',
-+          }}
-+        />
-+      )}
++      {src && <img src={src} alt="封面预览" className={styles.coverPreview} />}
 +      <input
 +        ref={input}
 +        type="file"
 +        aria-label="上传封面"
 +        accept={Object.values(imageTypes).join(',')}
 +        disabled={disabled}
-+        style={{ display: 'none' }}
++        className={styles.fileInput}
 +        onChange={event => {
 +          const selected = event.currentTarget.files?.[0];
 +          event.currentTarget.value = '';
@@ -3879,64 +3879,47 @@ index 0000000..7c61615
 +          onChange(new File([selected], selected.name, { type: mime }));
 +        }}
 +      />
-+      <div
-+        style={{
-+          display: 'flex',
-+          alignItems: 'center',
-+          gap: 10,
-+          flexWrap: 'wrap',
-+        }}
-+      >
-+        <button
-+          type="button"
++      <div className={styles.coverActions}>
++        <Button
++          size="extraLarge"
 +          disabled={disabled}
-+          style={buttonStyle}
++          className={styles.actionButton}
 +          onClick={() => input.current?.click()}
 +        >
 +          {file || value ? '更换封面' : '上传封面'}
-+        </button>
++        </Button>
 +        {(file || value) && (
-+          <button
-+            type="button"
++          <Button
++            size="extraLarge"
 +            disabled={disabled}
-+            style={buttonStyle}
++            className={styles.actionButton}
 +            onClick={() => {
 +              setError('');
 +              onRemove();
 +            }}
 +          >
 +            移除封面
-+          </button>
++          </Button>
 +        )}
-+        {file && <span style={{ overflowWrap: 'anywhere' }}>{file.name}</span>}
++        {file && <span className={styles.coverFilename}>{file.name}</span>}
 +      </div>
-+      <span style={{ fontSize: 12, color: '#888' }}>
-+        支持 PNG、JPG、WebP、GIF、SVG、AVIF，最大 10 MB。确认发布时上传保存。
-+      </span>
++      <span className={styles.coverHint}>最大 10 MB</span>
 +      {error && (
-+        <span role="alert" style={{ color: '#c62828' }}>
-+          {error}
-+        </span>
++        <div role="alert">
++          <ErrorMessage className={styles.error}>{error}</ErrorMessage>
++        </div>
 +      )}
 +    </div>
 +  );
 +}
-+
-+const buttonStyle = {
-+  border: '1px solid #aaa5',
-+  borderRadius: 7,
-+  padding: '7px 12px',
-+  cursor: 'pointer',
-+  background: 'transparent',
-+  color: 'inherit',
-+};
 diff --git a/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.css.ts b/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.css.ts
 new file mode 100644
-index 0000000..c28d815
+index 0000000..95c36a0
 --- /dev/null
 +++ b/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.css.ts
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,183 @@
 +import { cssVarV2 } from '@toeverything/theme/v2';
++import { inputSurface } from '@affine/component/ui/input';
 +import { style } from '@vanilla-extract/css';
 +
 +export const actions = style({
@@ -3994,16 +3977,148 @@ index 0000000..c28d815
 +  ':hover': { color: cssVarV2('text/primary') },
 +  ':focus-visible': { outline: '2px solid currentColor', outlineOffset: 2 },
 +});
++
++// AFFiNE's React bundle has no Tailwind pipeline. Keep only local layout and
++// typography here; its shared components own surfaces, borders and interactions.
++export const dialog = style({
++  display: 'flex',
++  flexDirection: 'column',
++  overflow: 'hidden',
++});
++
++export const form = style({
++  display: 'flex',
++  flexDirection: 'column',
++  flex: '1 1 auto',
++  minHeight: 0,
++  overflow: 'hidden',
++  gap: 20,
++  fontSize: 16,
++  lineHeight: '24px',
++});
++
++export const fields = style({
++  display: 'grid',
++  gap: 20,
++  minWidth: 0,
++  minHeight: 0,
++  flex: '1 1 auto',
++  overflowY: 'auto',
++  margin: 0,
++  padding: 0,
++  border: 0,
++});
++
++export const fieldGrid = style({
++  display: 'grid',
++  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
++  alignItems: 'start',
++  gap: 16,
++  '@media': {
++    '(max-width: 520px)': { gridTemplateColumns: 'minmax(0, 1fr)' },
++  },
++});
++
++export const field = style({
++  display: 'grid',
++  gridTemplateRows: '24px auto',
++  gap: 8,
++  minWidth: 0,
++  selectors: {
++    '&[data-full-width]': { gridColumn: '1 / -1' },
++  },
++});
++
++export const control = style({
++  width: '100%',
++  minWidth: 0,
++  fontSize: 16,
++  fontWeight: 400,
++  lineHeight: '24px',
++  selectors: {
++    '&.extra-large': { fontWeight: 400 },
++  },
++});
++
++export const menuContent = style({ fontSize: 16 });
++export const menuItem = style({ lineHeight: '24px' });
++
++// AFFiNE has no multiline Input; retain its input surface and focus states.
++export const description = style([
++  inputSurface,
++  {
++    display: 'block',
++    minHeight: 96,
++    height: 'auto',
++    padding: '8px 12px',
++    font: 'inherit',
++    resize: 'vertical',
++  },
++]);
++
++export const choice = style({
++  justifySelf: 'start',
++  minHeight: 40,
++  gap: 8,
++  borderRadius: 4,
++  ':focus-within': {
++    outline: `2px solid ${cssVarV2('button/primary')}`,
++    outlineOffset: 2,
++  },
++});
++
++export const choiceLabel = style({
++  cursor: 'pointer',
++  fontSize: 'inherit',
++  lineHeight: 'inherit',
++});
++
++export const footer = style({
++  display: 'flex',
++  flexWrap: 'wrap',
++  justifyContent: 'flex-end',
++  gap: 12,
++  flexShrink: 0,
++});
++
++export const actionButton = style({ fontSize: 16 });
++export const error = style({ margin: 0, fontSize: 16, lineHeight: '24px' });
++
++export const cover = style({ display: 'grid', minWidth: 0, gap: 8 });
++export const coverPreview = style({
++  width: '100%',
++  height: 160,
++  objectFit: 'contain',
++  borderRadius: 4,
++  background: cssVarV2('layer/background/secondary'),
++});
++export const coverActions = style({
++  display: 'flex',
++  alignItems: 'center',
++  flexWrap: 'wrap',
++  gap: 12,
++});
++export const coverFilename = style({ minWidth: 0, overflowWrap: 'anywhere' });
++export const coverHint = style({ color: cssVarV2('text/secondary') });
++export const fileInput = style({ display: 'none' });
 diff --git a/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.tsx b/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.tsx
 new file mode 100644
-index 0000000..db31dc9
+index 0000000..48dc90d
 --- /dev/null
 +++ b/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.tsx
-@@ -0,0 +1,410 @@
-+import { useState } from 'react';
-+import { createPortal } from 'react-dom';
-+import { notify } from '@affine/component';
-+import { Button } from '@affine/component/ui/button';
+@@ -0,0 +1,443 @@
++import { useId, useRef, useState } from 'react';
++import {
++  Button,
++  Checkbox,
++  ErrorMessage,
++  Input,
++  Menu,
++  MenuItem,
++  MenuTrigger,
++  Modal,
++  notify,
++} from '@affine/component';
 +import { createTransformer } from '@affine/core/components/hooks/affine/use-export-page';
 +import {
 +  setBlogContentMetadata,
@@ -4020,7 +4135,7 @@ index 0000000..db31dc9
 +import * as styles from './blog-publish.css';
 +
 +type Metadata = {
-+  kind: string;
++  kind: BlogContentKind;
 +  slug: string;
 +  directory: string;
 +  date: string;
@@ -4055,8 +4170,11 @@ index 0000000..db31dc9
 +}) {
 +  const [meta, setMeta] = useState<Metadata | null>(null);
 +  const [coverFile, setCoverFile] = useState<File | null>(null);
++  const [tagsText, setTagsText] = useState('');
 +  const [busy, setBusy] = useState(false);
 +  const [error, setError] = useState('');
++  const formId = useId();
++  const publishButton = useRef<HTMLButtonElement>(null);
 +  const journalService = useService(JournalService);
 +  const journalDate = useLiveData(journalService.journalDate$(page.id));
 +  const { status, refresh, readSavedVersion } = useBlogSaveStatus(
@@ -4068,13 +4186,13 @@ index 0000000..db31dc9
 +    try {
 +      setError('');
 +      setCoverFile(null);
-+      setMeta(
-+        await invoke<Metadata>('blog_metadata', {
-+          workspaceId: workspace.id,
-+          docId: page.id,
-+          journalDate,
-+        })
-+      );
++      const metadata = await invoke<Metadata>('blog_metadata', {
++        workspaceId: workspace.id,
++        docId: page.id,
++        journalDate,
++      });
++      setMeta(metadata);
++      setTagsText(metadata.tags.join(', '));
 +    } catch (error: any) {
 +      notify.error({ title: '发布设置未能打开', message: error.message });
 +    }
@@ -4085,7 +4203,9 @@ index 0000000..db31dc9
 +    setError('');
 +    try {
 +      if (meta.kind === 'journal' && journalDate !== meta.date)
-+        throw new Error('日记日期已变化，请重新打开发布设置；已发布日记请恢复原日期。');
++        throw new Error(
++          '日记日期已变化，请重新打开发布设置；已发布日记请恢复原日期。'
++        );
 +      const std = document.querySelector('editor-host')?.std;
 +      if (!std) throw new Error('请等待编辑器载入');
 +      const version = await readSavedVersion();
@@ -4102,9 +4222,20 @@ index 0000000..db31dc9
 +        const blob = transformer.assets?.get(id);
 +        if (!blob || !transformer.assets)
 +          throw new Error('有附件未能读取，请稍后重试');
-+        assets.push(await encodeAsset(`assets/${getAssetName(transformer.assets, id)}`, blob));
++        assets.push(
++          await encodeAsset(
++            `assets/${getAssetName(transformer.assets, id)}`,
++            blob
++          )
++        );
 +      }
-+      const metadata = { ...meta };
++      const metadata = {
++        ...meta,
++        tags: tagsText
++          .split(/[,，]/)
++          .map(tag => tag.trim())
++          .filter(Boolean),
++      };
 +      if (coverFile && ['post', 'project', 'journal'].includes(meta.kind)) {
 +        metadata.cover = `assets/cover-${crypto.randomUUID()}`;
 +        assets.push(await encodeAsset(metadata.cover, coverFile));
@@ -4138,17 +4269,28 @@ index 0000000..db31dc9
 +      setBusy(false);
 +    }
 +  };
-+  const field = (key: keyof Metadata, label: string, placeholder = '') => (
-+    <label style={{ display: 'grid', gap: 6 }}>
-+      {label}
-+      <input
-+        aria-label={label}
-+        style={inputStyle}
++  const field = (
++    key: keyof Metadata,
++    label: string,
++    placeholder = '',
++    fullWidth = false
++  ) => (
++    <div className={styles.field} data-full-width={fullWidth || undefined}>
++      <label htmlFor={`${formId}-${key}`}>{label}</label>
++      <Input
++        id={`${formId}-${key}`}
++        size="extraLarge"
++        className={styles.control}
++        inputStyle={{ font: 'inherit' }}
++        disabled={busy}
 +        value={String(meta?.[key] ?? '')}
 +        placeholder={placeholder}
-+        onChange={(e) => setMeta((m) => m && { ...m, [key]: e.target.value })}
++        onChange={value =>
++          setMeta(current => current && { ...current, [key]: value })
++        }
++        onEnter={() => void publish()}
 +      />
-+    </label>
++    </div>
 +  );
 +  return (
 +    <>
@@ -4193,6 +4335,7 @@ index 0000000..db31dc9
 +          )}
 +        </span>
 +        <Button
++          ref={publishButton}
 +          onClick={open}
 +          variant="secondary"
 +          className={styles.publishButton}
@@ -4201,116 +4344,142 @@ index 0000000..db31dc9
 +          {compact ? '发布' : '发布到博客'}
 +        </Button>
 +      </div>
-+      {meta &&
-+        createPortal(
-+          <div
-+            role="dialog"
-+            aria-modal="true"
-+            aria-label="发布到博客"
-+            onKeyDown={(e) => {
-+              e.stopPropagation();
-+              if (e.key === 'Escape' && !busy) setMeta(null);
-+            }}
-+            style={{
-+              position: 'fixed',
-+              inset: 0,
-+              zIndex: 10000,
-+              background: '#0005',
-+              display: 'grid',
-+              placeItems: 'center',
-+            }}
-+          >
-+            <form
-+              onSubmit={(e) => {
-+                e.preventDefault();
-+                void publish();
-+              }}
-+              style={{
-+                width: 580,
-+                maxWidth: '92vw',
-+                maxHeight: '90vh',
-+                overflow: 'auto',
-+                background: 'var(--affine-background-primary-color, white)',
-+                padding: 28,
-+                borderRadius: 14,
-+                boxShadow: '0 20px 80px #0003',
-+                display: 'grid',
-+                gap: 18,
-+                fontSize: 14,
-+              }}
-+            >
-+              <h2 style={{ margin: 0 }}>发布到博客</h2>
-+              <div
-+                style={{
-+                  display: 'grid',
-+                  gridTemplateColumns: '1fr 1fr',
-+                  gap: 16,
-+                }}
-+              >
-+                <label>
-+                  内容类型
-+                  <select
-+                    aria-label="内容类型"
-+                    style={inputStyle}
-+                    value={meta.kind}
-+                    disabled={meta.kind === 'journal' || !!journalDate}
-+                    onChange={(e) => setMeta({ ...meta, kind: e.target.value })}
-+                  >
-+                    <option value="post">文章</option>
-+                    <option value="page">页面</option>
-+                    <option value="project">作品</option>
-+                    <option value="journal" disabled>日记</option>
-+                  </select>
-+                </label>
-+
-+                {meta.kind !== 'journal' && field('slug', meta.kind === 'project' ? '作品标识' : '地址名称', meta.kind === 'project' ? 'my-project' : 'my-article')}
-+                {meta.kind === 'journal' && (
-+                  <label style={{ gridColumn: '1 / -1' }}>
-+                    日记日期
-+                    <input aria-label="日记日期" type="date" style={inputStyle} value={meta.date} readOnly />
++      {meta && (
++        <Modal
++          open
++          title="发布到博客"
++          width={600}
++          persistent={busy}
++          closeButtonOptions={{ disabled: busy, 'aria-label': '关闭' }}
++          contentOptions={{
++            className: styles.dialog,
++            'aria-label': '发布到博客',
++            onKeyDown: event => event.stopPropagation(),
++            onCloseAutoFocus: event => {
++              event.preventDefault();
++              publishButton.current?.focus();
++            },
++          }}
++          onOpenChange={isOpen => {
++            if (!isOpen && !busy) setMeta(null);
++          }}
++        >
++          <div role="form" aria-label="发布设置" className={styles.form}>
++            <fieldset disabled={busy} className={styles.fields}>
++              <div className={styles.fieldGrid}>
++                <div className={styles.field}>
++                  <label id={`${formId}-kind-label`} htmlFor={`${formId}-kind`}>
++                    内容类型
 +                  </label>
++                  <Menu
++                    contentOptions={{ className: styles.menuContent }}
++                    items={(
++                      [
++                        { value: 'post', label: '文章' },
++                        { value: 'page', label: '页面' },
++                        { value: 'project', label: '作品' },
++                      ] as const
++                    ).map(option => (
++                      <MenuItem
++                        key={option.value}
++                        className={styles.menuItem}
++                        selected={meta.kind === option.value}
++                        onSelect={() =>
++                          setMeta({ ...meta, kind: option.value })
++                        }
++                      >
++                        {option.label}
++                      </MenuItem>
++                    ))}
++                  >
++                    <MenuTrigger
++                      id={`${formId}-kind`}
++                      aria-labelledby={`${formId}-kind-label`}
++                      size="extraLarge"
++                      className={styles.control}
++                      disabled={
++                        busy || meta.kind === 'journal' || !!journalDate
++                      }
++                    >
++                      {
++                        {
++                          post: '文章',
++                          page: '页面',
++                          project: '作品',
++                          journal: '日记',
++                        }[meta.kind]
++                      }
++                    </MenuTrigger>
++                  </Menu>
++                </div>
++                {meta.kind !== 'journal' &&
++                  field(
++                    'slug',
++                    meta.kind === 'project' ? '作品标识' : '地址名称',
++                    meta.kind === 'project' ? 'my-project' : 'my-article'
++                  )}
++                {meta.kind === 'journal' && (
++                  <div className={styles.field}>
++                    <label htmlFor={`${formId}-date`}>日记日期</label>
++                    <Input
++                      id={`${formId}-date`}
++                      type="date"
++                      size="extraLarge"
++                      className={styles.control}
++                      inputStyle={{ font: 'inherit' }}
++                      disabled={busy}
++                      value={meta.date}
++                      readOnly
++                    />
++                  </div>
 +                )}
 +                {meta.kind === 'post' &&
 +                  field('directory', '文章目录', 'notes')}
 +                {meta.kind === 'post' &&
 +                  field('date', '发布日期', '2026-10-17 12:00')}
-+                {meta.kind === 'post' && field('category', '分类')}
-+                {meta.kind === 'project' && field('demoUrl', '演示链接', 'https://demo.example.com')}
-+                {meta.kind === 'project' && field('repoUrl', '源码链接', 'https://github.com/example/project')}
++                {meta.kind === 'post' && field('category', '分类', '', true)}
++                {meta.kind === 'project' &&
++                  field('demoUrl', '演示链接', 'https://demo.example.com')}
++                {meta.kind === 'project' &&
++                  field(
++                    'repoUrl',
++                    '源码链接',
++                    'https://github.com/example/project'
++                  )}
 +              </div>
-+              <label>
-+                {meta.kind === 'project' ? '简介' : '摘要'}
++              <div className={styles.field}>
++                <label htmlFor={`${formId}-description`}>
++                  {meta.kind === 'project' ? '简介' : '摘要'}
++                </label>
 +                <textarea
-+                  aria-label={meta.kind === 'project' ? '简介' : '摘要'}
++                  id={`${formId}-description`}
 +                  rows={3}
-+                  style={{ ...inputStyle, resize: 'vertical' }}
++                  className={`${styles.description} default${busy ? ' disabled' : ''}`}
++                  disabled={busy}
 +                  value={meta.description}
-+                  onChange={(e) =>
-+                    setMeta({ ...meta, description: e.target.value })
++                  onChange={event =>
++                    setMeta({ ...meta, description: event.target.value })
 +                  }
 +                />
-+              </label>
-+
++              </div>
 +              {['post', 'project', 'journal'].includes(meta.kind) && (
 +                <>
-+                  <label>
-+                    {meta.kind === 'project' ? '技术标签' : '标签'}
-+                    <input
-+                      aria-label={meta.kind === 'project' ? '技术标签' : '标签'}
-+                      style={inputStyle}
-+                      value={meta.tags.join(', ')}
++                  <div className={styles.field}>
++                    <label htmlFor={`${formId}-tags`}>
++                      {meta.kind === 'project' ? '技术标签' : '标签'}
++                    </label>
++                    <Input
++                      id={`${formId}-tags`}
++                      size="extraLarge"
++                      className={styles.control}
++                      inputStyle={{ font: 'inherit' }}
++                      disabled={busy}
++                      value={tagsText}
 +                      placeholder="Vue, TypeScript"
-+                      onChange={(e) =>
-+                        setMeta({
-+                          ...meta,
-+                          tags: e.target.value
-+                            .split(/[,，]/)
-+                            .map((s) => s.trim())
-+                            .filter(Boolean),
-+                        })
-+                      }
++                      onChange={setTagsText}
++                      onEnter={() => void publish()}
 +                    />
-+                  </label>
++                  </div>
 +                  <BlogCoverUpload
 +                    value={meta.cover}
 +                    file={coverFile}
@@ -4321,95 +4490,66 @@ index 0000000..db31dc9
 +                      setMeta({ ...meta, cover: '' });
 +                    }}
 +                  />
-+                  <label>
-+                    <input
-+                      type="checkbox"
-+                      style={{
-+                        appearance: 'auto',
-+                        width: 16,
-+                        height: 16,
-+                        marginRight: 6,
-+                      }}
-+                      checked={meta.draft}
-+                      onChange={(e) =>
-+                        setMeta({ ...meta, draft: e.target.checked })
-+                      }
-+                    />{' '}
-+                    保存为草稿
-+                  </label>
++                  <Checkbox
++                    role="presentation"
++                    name={`${formId}-draft`}
++                    label="保存为草稿"
++                    checked={meta.draft}
++                    disabled={busy}
++                    className={styles.choice}
++                    labelClassName={styles.choiceLabel}
++                    onChange={(_event, checked) =>
++                      setMeta({ ...meta, draft: checked })
++                    }
++                  />
 +                </>
 +              )}
 +              {meta.kind === 'page' && (
-+                <label>
-+                  <input
-+                    type="checkbox"
-+                    style={{
-+                      appearance: 'auto',
-+                      width: 16,
-+                      height: 16,
-+                      marginRight: 6,
-+                    }}
-+                    checked={meta.comments}
-+                    onChange={(e) =>
-+                      setMeta({ ...meta, comments: e.target.checked })
-+                    }
-+                  />{' '}
-+                  启用评论
-+                </label>
-+              )}
-+              {error && (
-+                <p role="alert" style={{ margin: 0, color: '#c62828' }}>
-+                  {error}
-+                </p>
-+              )}
-+              <div
-+                style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}
-+              >
-+                <button
-+                  type="button"
++                <Checkbox
++                  role="presentation"
++                  name={`${formId}-comments`}
++                  label="启用评论"
++                  checked={meta.comments}
 +                  disabled={busy}
-+                  onClick={() => setMeta(null)}
-+                  style={buttonStyle}
-+                >
-+                  取消
-+                </button>
-+                <button
-+                  disabled={busy}
-+                  style={{
-+                    ...buttonStyle,
-+                    background: '#1e6de5',
-+                    color: 'white',
-+                  }}
-+                >
-+                  {busy ? '正在发布…' : '确认发布'}
-+                </button>
++                  className={styles.choice}
++                  labelClassName={styles.choiceLabel}
++                  onChange={(_event, checked) =>
++                    setMeta({ ...meta, comments: checked })
++                  }
++                />
++              )}
++            </fieldset>
++            {error && (
++              <div role="alert">
++                <ErrorMessage className={styles.error}>{error}</ErrorMessage>
 +              </div>
-+            </form>
-+          </div>,
-+          document.body
-+        )}
++            )}
++            <div className={styles.footer}>
++              <Button
++                size="extraLarge"
++                className={styles.actionButton}
++                disabled={busy}
++                onClick={() => setMeta(null)}
++              >
++                取消
++              </Button>
++              <Button
++                variant="primary"
++                size="extraLarge"
++                className={styles.actionButton}
++                disabled={busy}
++                loading={busy}
++                onClick={() => void publish()}
++              >
++                {busy ? '正在发布…' : '确认发布'}
++              </Button>
++            </div>
++          </div>
++        </Modal>
++      )}
 +    </>
 +  );
 +}
-+const inputStyle = {
-+  display: 'block',
-+  width: '100%',
-+  padding: '8px 10px',
-+  borderRadius: 6,
-+  border: '1px solid #aaa7',
-+  background: 'transparent',
-+  color: 'inherit',
-+  marginTop: 4,
-+};
-+const buttonStyle = {
-+  border: '1px solid #aaa5',
-+  borderRadius: 7,
-+  padding: '7px 12px',
-+  cursor: 'pointer',
-+  background: 'transparent',
-+  color: 'inherit',
-+  whiteSpace: 'nowrap' as const,
-+};
 diff --git a/packages/frontend/core/src/desktop/pages/workspace/detail-page/detail-page-header.tsx b/packages/frontend/core/src/desktop/pages/workspace/detail-page/detail-page-header.tsx
 index b8e8f1f..5e4f052 100644
 --- a/packages/frontend/core/src/desktop/pages/workspace/detail-page/detail-page-header.tsx

@@ -1,94 +1,51 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
-import { confirmAction, notify } from '@/composables/useFeedback'
-
+import { computed, ref } from 'vue'
 import { api } from '@/api'
+import { useAutoSave } from '@/composables/useAutoSave'
+import { useDataRefresh } from '@/composables/useDataRefresh'
 import SettingsShell from '@/components/SettingsShell.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiInput from '@/components/ui/UiInput.vue'
 import UiRowActions from '@/components/ui/UiRowActions.vue'
 import UiSelect from '@/components/ui/UiSelect.vue'
 import NavIcon from '@/components/NavIcon.vue'
-import type { NavIconOption, NavItem, PageSummary } from '@/types'
-
-const loading = ref(true)
-const saving = ref(false)
-const loadError = ref('')
-const fileError = ref('')
-const fileMissing = ref(false)
+import type { NavIconOption, NavItem } from '@/types'
 
 const items = ref<NavItem[]>([])
 const icons = ref<NavIconOption[]>([])
-
-const baseline = ref('[]')
-const dirty = computed(() => JSON.stringify(items.value) !== baseline.value)
-
 const pagePaths = ref<string[]>([])
+const fileError = ref('')
+const fileMissing = ref(false)
+const state = useAutoSave({
+  value: items,
+  enabled: () => !fileError.value,
+  read: async () => {
+    const nav = await api.getNav()
+    icons.value = nav.icons
+    fileMissing.value = nav.missing === true
+    fileError.value = nav.error ?? ''
+    try {
+      pagePaths.value = (await api.listPages()).pages.map((page) => page.path)
+    } catch {
+      // Path suggestions are optional; retain the last successful catalog.
+    }
+    return nav.items
+  },
+  write: async (value) => (await api.saveNav(value)).items,
+})
+const { loading, saving, dirty, saved, loadError, saveError, refreshError } = state
+useDataRefresh(state.refresh)
+async function retry() {
+  if (dirty.value) await state.flush()
+  else await state.refresh()
+}
 
 const BUILTIN_PATHS = ['/', '/blog', '/journals', '/projects', '/categories', '/tags'] as const
-
 const pathOptions = computed(() => [
   ...BUILTIN_PATHS.map((value) => ({ value })),
   ...pagePaths.value.map((value) => ({ value })),
 ])
-
 const DEFAULT_COLOR = '#f4d47b'
-
-async function load() {
-  loading.value = true
-  loadError.value = ''
-  try {
-    const nav = await api.getNav()
-    items.value = nav.items.map((item) => ({ ...item }))
-    icons.value = nav.icons
-    fileMissing.value = nav.missing === true
-    fileError.value = nav.error ?? ''
-    baseline.value = JSON.stringify(items.value)
-  } catch (err) {
-    loadError.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    loading.value = false
-  }
-
-  try {
-    pagePaths.value = (await api.listPages()).pages.map((page: PageSummary) => page.path)
-  } catch {
-    pagePaths.value = []
-  }
-}
-
-onMounted(() => {
-  void load()
-  window.addEventListener('keydown', onKeydown)
-  window.addEventListener('beforeunload', onBeforeUnload)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('beforeunload', onBeforeUnload)
-})
-
-function onKeydown(event: KeyboardEvent) {
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-    event.preventDefault()
-    void save()
-  }
-}
-
-function onBeforeUnload(event: BeforeUnloadEvent) {
-  if (dirty.value) event.preventDefault()
-}
-
-onBeforeRouteLeave(async () => {
-  if (!dirty.value) return true
-  return confirmAction({
-    title: '有未保存的修改',
-    content: '离开后修改会丢失。',
-    confirmText: '不保存并离开',
-    danger: true,
-  })
-})
 
 function update(index: number, patch: Partial<NavItem>) {
   items.value = items.value.map((item, i) => (i === index ? { ...item, ...patch } : item))
@@ -129,23 +86,6 @@ const duplicated = computed(() => {
   }
   return dupes
 })
-
-async function save() {
-  if (saving.value || loading.value || loadError.value) return
-  saving.value = true
-  try {
-    const nav = await api.saveNav(items.value)
-    items.value = nav.items.map((item) => ({ ...item }))
-    baseline.value = JSON.stringify(items.value)
-    fileMissing.value = false
-    fileError.value = ''
-    notify.success('已保存')
-  } catch (err) {
-    notify.error(err instanceof Error ? err.message : String(err))
-  } finally {
-    saving.value = false
-  }
-}
 </script>
 
 <template>
@@ -154,12 +94,14 @@ async function save() {
     :loading="loading"
     :saving="saving"
     :dirty="dirty"
-    :can-save="!loading && !loadError"
+    :saved="saved"
+    :save-error="saveError"
+    :refresh-error="refreshError"
+    :blocked="!!fileError"
     :load-error="loadError"
     :file-error="fileError"
     :file-missing="fileMissing"
-    @reload="load"
-    @save="save"
+    @retry="retry"
   >
     <section class="rounded-sm border border-panel-line bg-panel p-5">
       <h2 class="mb-4 text-lg font-semibold">预览</h2>

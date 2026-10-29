@@ -6,6 +6,7 @@ import UiButton from '@/components/ui/UiButton.vue'
 import UiLoading from '@/components/ui/UiLoading.vue'
 
 import { api } from '@/api'
+import { useDataRefresh } from '@/composables/useDataRefresh'
 import TrendChart from '@/components/TrendChart.vue'
 import UnusedImagesModal from '@/components/UnusedImagesModal.vue'
 import type { DashboardStats, RecentItem, TodoItem } from '@/types'
@@ -31,6 +32,7 @@ async function load() {
 }
 
 onMounted(load)
+useDataRefresh(load)
 
 const counts = computed(() => stats.value?.counts ?? null)
 
@@ -54,10 +56,11 @@ function formatTime(value: number): string {
 
 <template>
   <div class="mb-6 flex flex-wrap justify-end gap-2">
-    <UiButton icon="refresh" :loading="loading" @click="load">刷新</UiButton
-    ><UiButton variant="danger" icon="trash" @click="cleanupOpen = true">清理图片</UiButton>
+    <UiButton variant="danger" icon="trash" @click="cleanupOpen = true">清理图片</UiButton>
   </div>
-  <UiAlert v-if="loadError" class="mb-5" :message="loadError" />
+  <UiAlert v-if="loadError" class="mb-5" :message="loadError">
+    <UiButton class="mt-3" :loading="loading" @click="load">重试</UiButton>
+  </UiAlert>
   <UiLoading v-if="loading && !stats" />
   <div v-else-if="stats && counts" class="space-y-6" :aria-busy="loading">
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">

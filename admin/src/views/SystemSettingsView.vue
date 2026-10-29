@@ -19,9 +19,10 @@ const {
   settings,
   categories,
   dirty,
-  canSave,
-  load,
-  save,
+  saved,
+  saveError,
+  refreshError,
+  retry,
 } = useSettings()
 
 const site = computed(() => settings.value.site)
@@ -59,12 +60,14 @@ const urlWarning = computed(() => {
     :loading="loading"
     :saving="saving"
     :dirty="dirty"
-    :can-save="canSave"
+    :saved="saved"
+    :save-error="saveError"
+    :refresh-error="refreshError"
+    :blocked="!!fileError"
     :load-error="loadError"
     :file-error="fileError"
     :file-missing="fileMissing"
-    @reload="load"
-    @save="save"
+    @retry="retry"
   >
     <section class="rounded-sm border border-panel-line bg-panel p-5">
       <h2 class="mb-5 text-lg font-semibold">站点信息</h2>

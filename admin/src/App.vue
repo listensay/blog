@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { api } from '@/api'
+import { useDataRefresh } from '@/composables/useDataRefresh'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiFeedback from '@/components/ui/UiFeedback.vue'
 import UiIcon from '@/components/ui/UiIcon.vue'
@@ -28,13 +29,16 @@ watch(
   () => content.value?.scrollTo({ top: 0, left: 0, behavior: 'instant' }),
   { flush: 'post' },
 )
-onMounted(async () => {
+async function load() {
   try {
     info.value = await api.workspace()
+    loadError.value = ''
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err)
   }
-})
+}
+onMounted(load)
+useDataRefresh(load)
 </script>
 <template>
   <div class="h-dvh overflow-hidden p-3 md:p-6">

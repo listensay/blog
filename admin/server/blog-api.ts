@@ -5,6 +5,7 @@ import path from 'node:path'
 
 import type { WorkspaceInfo } from '../src/types.ts'
 import { LocalAffineService } from './affine-local/service.ts'
+import { WorkspaceChanges } from './changes.ts'
 import { serveAffineApp } from './affine-local/assets.ts'
 import { loadEnv } from 'vite'
 import { exportForAffine } from './affine/export.ts'
@@ -40,6 +41,7 @@ const LOCAL_HOSTS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 interface Context {
   ws: Workspace
   affine: LocalAffineService
+  changes: WorkspaceChanges
 }
 
 type Handler = (
@@ -49,6 +51,9 @@ type Handler = (
 ) => Promise<void>
 
 const routes: Record<string, Handler> = {
+  'GET /events': async (_req, res, { changes }) => {
+    changes.connect(res)
+  },
   'GET /workspace': async (_req, res, { ws }) => {
     const [{ posts }, { pages }, { items: projects }, images] = await Promise.all([
       listPosts(ws),
@@ -75,7 +80,8 @@ const routes: Record<string, Handler> = {
   },
   'POST /affine-local/invoke': async (req, res, { affine }) => {
     const input = await readJson<{ command: unknown; args: Record<string, unknown> }>(req)
-    if (!input || !input.args || typeof input.args !== 'object' || Array.isArray(input.args)) throw new HttpError(400, '工作区请求无效')
+    if (!input || !input.args || typeof input.args !== 'object' || Array.isArray(input.args))
+      throw new HttpError(400, '工作区请求无效')
     sendJson(res, 200, await affine.invoke(input.command, input.args))
   },
   'GET /affine/export': async (_req, res, { ws }) => {
@@ -210,10 +216,14 @@ export function blogAdminApi(): Plugin {
       const url = parseUrl(req)
       const isApi = url.pathname === API_PREFIX || url.pathname.startsWith(`${API_PREFIX}/`)
       const isPublic = url.pathname.startsWith(`${PUBLIC_MOUNT}/`)
-      const isAffine = url.pathname === '/affine-workspace' || url.pathname.startsWith('/affine-workspace/')
+      const isAffine =
+        url.pathname === '/affine-workspace' || url.pathname.startsWith('/affine-workspace/')
       if (!isApi && !isPublic && !isAffine) return next()
 
-      if (!isLocal(req) || !/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(req.headers.host ?? '')) {
+      if (
+        !isLocal(req) ||
+        !/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(req.headers.host ?? '')
+      ) {
         sendJson(res, 403, { error: '这个后台只允许本机访问' })
         return
       }
@@ -251,7 +261,11 @@ export function blogAdminApi(): Plugin {
     configResolved(config) {
       const ws = resolveWorkspace(config.root)
 
-      ctx = { ws, affine: new LocalAffineService(ws, loadEnv(config.mode, config.envDir, 'AFFINE_AI_')) }
+      ctx = {
+        ws,
+        affine: new LocalAffineService(ws, loadEnv(config.mode, config.envDir, 'AFFINE_AI_')),
+        changes: new WorkspaceChanges(ws),
+      }
     },
 
     configureServer(server: ViteDevServer) {
@@ -260,11 +274,22 @@ export function blogAdminApi(): Plugin {
       )
       const dim = (text: string) => `\x1b[2m${text}\x1b[0m`
       server.config.logger.info(`  \x1b[32m➜\x1b[0m  ${dim('blog 仓库:')} ${ctx.ws.blogRoot}`)
-      server.httpServer?.once('close', () => ctx.affine.stop())
+      server.httpServer?.once('close', () => {
+        ctx.changes.close()
+        ctx.affine.stop()
+      })
     },
 
     configurePreviewServer(server) {
       server.middlewares.use(middleware((msg, err) => console.error(msg, err)))
+      server.httpServer.once('close', () => {
+        ctx.changes.close()
+        ctx.affine.stop()
+      })
+    },
+
+    closeBundle() {
+      ctx?.changes.close()
     },
   }
 }
