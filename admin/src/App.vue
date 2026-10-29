@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { api } from '@/api'
 import UiAlert from '@/components/ui/UiAlert.vue'
@@ -9,6 +9,7 @@ import type { WorkspaceInfo } from '@/types'
 const route = useRoute()
 const info = ref<WorkspaceInfo | null>(null)
 const loadError = ref('')
+const content = ref<HTMLElement>()
 const sections = [
   { name: 'dashboard', label: '概览', icon: 'dashboard', path: '/' },
   { name: 'affine', label: 'Blog管理', icon: 'article', path: '/affine' },
@@ -22,6 +23,11 @@ const active = computed(() =>
     item.path === '/' ? route.path === '/' : route.path.startsWith(item.path),
   ),
 )
+watch(
+  () => route.path,
+  () => content.value?.scrollTo({ top: 0, left: 0, behavior: 'instant' }),
+  { flush: 'post' },
+)
 onMounted(async () => {
   try {
     info.value = await api.workspace()
@@ -31,12 +37,12 @@ onMounted(async () => {
 })
 </script>
 <template>
-  <div class="min-h-screen p-3 md:p-6">
+  <div class="h-dvh overflow-hidden p-3 md:p-6">
     <div
-      class="mx-auto min-h-[calc(100dvh-1.5rem)] max-w-[1600px] rounded-sm border border-panel-line bg-panel shadow-[0_12px_40px_rgb(34_35_51_/_5%)] md:flex md:min-h-[calc(100dvh-3rem)]"
+      class="mx-auto flex h-full max-w-[1600px] flex-col overflow-hidden rounded-sm border border-panel-line bg-panel shadow-[0_12px_40px_rgb(34_35_51_/_5%)] md:flex-row"
     >
       <aside
-        class="border-b border-panel-line p-4 md:sticky md:top-6 md:h-[calc(100dvh-3rem)] md:w-52 md:shrink-0 md:overflow-y-auto md:border-r md:border-b-0 md:p-5"
+        class="max-h-[40dvh] shrink-0 overflow-y-auto overscroll-contain border-b border-panel-line p-4 md:max-h-none md:w-52 md:border-r md:border-b-0 md:p-5"
       >
         <nav aria-label="管理导航" class="grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-1">
           <RouterLink
@@ -55,14 +61,22 @@ onMounted(async () => {
           </RouterLink>
         </nav>
       </aside>
-      <div class="min-w-0 flex-1">
+      <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <header
           v-if="active?.name !== 'affine'"
-          class="flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-panel-line px-5 py-4 md:px-8"
+          class="flex min-h-20 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-panel-line px-5 py-4 md:px-8"
         >
           <h1 class="text-2xl font-bold tracking-tight">{{ active?.label }}</h1>
         </header>
-        <main :class="active?.name === 'affine' ? 'p-0' : 'bg-panel-raised/60 p-5 md:p-8'">
+        <main
+          ref="content"
+          class="min-h-0 flex-1 overscroll-contain"
+          :class="
+            active?.name === 'affine'
+              ? 'flex flex-col overflow-hidden p-0'
+              : 'overflow-y-auto bg-panel-raised/60 p-5 md:p-8'
+          "
+        >
           <UiAlert v-if="loadError" class="mb-5" message="无法读取博客" :description="loadError" />
           <RouterView />
         </main>

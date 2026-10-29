@@ -55,9 +55,9 @@ onBeforeRouteLeave(async () => {
 </script>
 
 <template>
-  <section class="flex min-h-[70dvh] flex-col md:h-[calc(100dvh-3rem)]">
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
     <header
-      class="flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-panel-line px-5 py-4 md:px-8"
+      class="flex min-h-20 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-panel-line px-5 py-4 md:px-8"
     >
       <h1 class="text-2xl font-bold tracking-tight">Blog管理</h1>
       <div class="flex flex-wrap gap-2">
@@ -80,7 +80,7 @@ onBeforeRouteLeave(async () => {
       :src="source"
       title="AFFiNE 博客内容"
       allow="clipboard-read; clipboard-write; fullscreen"
-      class="min-h-[60dvh] w-full flex-1 border-0 md:min-h-0"
+      class="block min-h-0 w-full flex-1 border-0"
     />
   </section>
 </template>

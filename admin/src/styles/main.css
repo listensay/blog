@@ -17,10 +17,10 @@
 
 @layer base {
   html {
-    @apply min-h-full bg-canvas;
+    @apply h-full overflow-hidden bg-canvas;
   }
   body {
-    @apply m-0 min-h-screen font-sans text-base text-panel-text antialiased;
+    @apply m-0 h-full overflow-hidden font-sans text-base text-panel-text antialiased;
   }
   input,
   textarea,
