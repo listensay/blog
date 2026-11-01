@@ -9,9 +9,11 @@
     "preview": "nuxt preview",
     "deploy": "nuxt build && wrangler deploy",
     "affine:build": "node scripts/affine/build.mjs",
+    "affine:clean": "node scripts/affine/clean.mjs",
     "affine:patch": "node scripts/affine/patch.mjs",
     "admin": "npm --prefix admin run dev",
-    "check:site": "node scripts/check-site.mjs"
+    "check:site": "node scripts/check-site.mjs",
+    "check:affine-build": "node --test scripts/affine/artifacts.test.mjs"
   },
   "dependencies": {
     "@nuxt/content": "^3.15.2",
