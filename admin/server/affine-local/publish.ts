@@ -27,6 +27,10 @@ export function isEnglishBinding(binding: Binding | null | undefined) {
 }
 export function chineseMetadata(metadata: Record<string, unknown>) {
   const { locale, titleEn, descriptionEn, ...chinese } = metadata
+  if (chinese.kind === 'journal') {
+    const { description, tags, cover, ...journal } = chinese
+    return journal
+  }
   return chinese
 }
 export const bindingKey = (workspaceId: string, docId: string) =>
@@ -79,10 +83,12 @@ export function metadataFor(file: string, data: Record<string, unknown>) {
     slug: post ? data.slug : relative.replace(/\.md$/, ''),
     directory: post && path.posix.dirname(relative) !== '.' ? path.posix.dirname(relative) : '',
     date: journal ? relative.replace(/\.md$/, '') : String(data.date ?? new Date().toISOString().slice(0, 10)),
-    description: data.description ?? '',
     category: data.category ?? '随笔',
-    tags: data.tags ?? [],
-    cover: data.cover ?? '',
+    ...(!journal ? {
+      description: data.description ?? '',
+      tags: data.tags ?? [],
+      cover: data.cover ?? '',
+    } : {}),
     comments: data.comments === true,
     draft: data.draft === true,
     demoUrl: data.demoUrl ?? '',
@@ -357,8 +363,13 @@ export async function publish(
       doc.body = doc.body.replaceAll(name, targetUrl)
     }
     if (before !== null) doc.data = { ...splitFrontmatter(before).data, ...doc.data }
+    if (settings.kind === 'journal') {
+      delete doc.data.description
+      delete doc.data.tags
+      delete doc.data.cover
+    }
     const publishedSettings = { ...settings }
-    if ((settings.kind === 'post' || settings.kind === 'journal') && typeof settings.cover === 'string') {
+    if (settings.kind === 'post' && typeof settings.cover === 'string') {
       const cover = assetReplacements.get(settings.cover.trim()) ?? settings.cover.trim()
       if (cover) doc.data.cover = cover
       else delete doc.data.cover

@@ -55,7 +55,21 @@ const feed = await get('/feed.xml')
 assert.ok(feed.includes('<language>zh-CN</language>'))
 assert.ok(!feed.includes(`${origin}/en/`), 'RSS excludes English')
 // If journals exist, verify their detail pages as well; an empty diary remains a valid state.
+const journalList = await get('/journals')
 for (const loc of locations.filter(loc => /\/journals\/\d{4}-\d{2}-\d{2}$/.test(loc))) {
-  assert.ok((await get(new URL(loc).pathname)).includes('<article'), `${loc}: readable journal`)
+  const path = new URL(loc).pathname
+  const html = await get(path)
+  const article = html.match(/<article\b[\s\S]*?<\/article>/)?.[0] || ''
+  assert.ok(article, `${loc}: readable journal`)
+  const header = article.match(/<header\b[\s\S]*?<\/header>/)?.[0] || ''
+  assert.ok(!/<(?:p|ul|img)\b/.test(header), `${loc}: no journal summary, tags or cover in header`)
+  const beforeBody = article.split(/<div\b[^>]*\bprose-cn\b/)[0]
+  assert.ok(!/<img\b/.test(beforeBody), `${loc}: no standalone journal cover`)
+  assert.ok(tags(journalList, 'a').some(link => link.href === path), `${loc}: detail link in journal timeline`)
+  const firstParagraph = article.match(/<p\b[^>]*>[\s\S]*?<\/p>/)?.[0]
+  if (firstParagraph) assert.ok(journalList.includes(firstParagraph), `${loc}: journal body rendered in timeline`)
+  const json = [...html.matchAll(/<script\b[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)]
+    .map(([, data]) => JSON.parse(data)).find(data => data['@type'] === 'BlogPosting')
+  assert.ok(json && !('description' in json), `${loc}: no journal summary in structured data`)
 }
 console.log('站点检查通过：中文页面、菜单、正文、日记、canonical、RSS、站点地图及英文地址 404。')

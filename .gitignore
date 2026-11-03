@@ -26,6 +26,7 @@ logs
 # Local tool state
 .freebuff
 .obsidian
+.playwright-cli
 
 # Local env files
 .env

@@ -92,7 +92,8 @@ export function parseDocument(doc: RemoteDoc, markdown: string): BlogDocument | 
       : file !== defaultFile)
   )
     fail('file 必须与文章目录或页面路径一致')
-  const data: Record<string, unknown> = { title, description: string('description') }
+  const data: Record<string, unknown> = { title }
+  if (kind !== 'journal') data.description = string('description')
   for (const key of ['draft', 'comments']) {
     if (meta[key] !== undefined && typeof meta[key] !== 'boolean')
       fail(`${key} 必须是 true 或 false`)
@@ -107,19 +108,20 @@ export function parseDocument(doc: RemoteDoc, markdown: string): BlogDocument | 
       parsed.toISOString().slice(0, 10) !== match?.[1]
     )
       fail('date 须为有效的 YYYY-MM-DD 或 YYYY-MM-DD HH:mm')
-    const tags = meta.tags ?? []
-    if (!Array.isArray(tags) || tags.some((tag) => typeof tag !== 'string'))
-      fail('tags 须为文本数组')
     Object.assign(data, {
       date,
       slug,
       path: target,
-      ...(kind === 'post' ? { category: string('category', '未分类') } : {}),
-      tags,
       draft: meta.draft === true,
     })
-    const cover = string('cover')
-    if (cover) data.cover = cover
+    if (kind === 'post') {
+      const tags = meta.tags ?? []
+      if (!Array.isArray(tags) || tags.some((tag) => typeof tag !== 'string'))
+        fail('tags 须为文本数组')
+      Object.assign(data, { category: string('category', '未分类'), tags })
+      const cover = string('cover')
+      if (cover) data.cover = cover
+    }
   } else {
     data.comments = meta.comments === true
     // Link records are maintained in the existing Links section, independently of page copy.

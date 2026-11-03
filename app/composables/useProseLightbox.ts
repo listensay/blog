@@ -1,7 +1,7 @@
 
 type Gallery = ReturnType<typeof import('lightgallery').default>
 
-export function useProseLightbox(container: Ref<HTMLElement | undefined | null>) {
+export function useProseLightbox(container: Ref<HTMLElement | undefined | null>, selector = 'img') {
   if (import.meta.server) return
 
   let gallery: Gallery | undefined
@@ -24,14 +24,14 @@ export function useProseLightbox(container: Ref<HTMLElement | undefined | null>)
   }
 
   function start(el: HTMLElement) {
-    if (el.querySelector('img')) {
+    if (el.querySelector(selector)) {
       init(el)
       return
     }
 
     stopObserving()
     observer = new MutationObserver(() => {
-      if (!el.querySelector('img')) return
+      if (!el.querySelector(selector)) return
       stopObserving()
       init(el)
     })
@@ -41,7 +41,7 @@ export function useProseLightbox(container: Ref<HTMLElement | undefined | null>)
   async function init(el: HTMLElement) {
     if (current === el) return
 
-    const images = [...el.querySelectorAll<HTMLImageElement>('img')]
+    const images = [...el.querySelectorAll<HTMLImageElement>(selector)]
     if (!images.length) return
 
     current = el
@@ -69,7 +69,7 @@ export function useProseLightbox(container: Ref<HTMLElement | undefined | null>)
     if (disposed || gen !== generation) return
 
     gallery = lg.default(el, {
-      selector: 'img',
+      selector,
       plugins: [zoom.default, thumbnail.default, fullscreen.default],
       licenseKey: 'GPLv3',
       exThumbImage: 'data-thumb',

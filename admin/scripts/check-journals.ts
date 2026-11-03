@@ -23,9 +23,12 @@ for (const collection of ['journals']) {
   assert.ok(!JSON.stringify(publicData).includes('PRIVATE_'), 'journal drafts must not enter the public query database')
   assert.equal(publicData.draft, true)
   const published = { ...privateEntry, draft: false }
-  assert.deepEqual(await journalPrivacy.transform(published, {}), published)
+  const { description, tags, cover, ...expected } = published
+  assert.deepEqual(await journalPrivacy.transform(published, {}), { ...expected, description: '' })
 }
-console.log('✓ 日记草稿正文、标题、摘要、封面、标签和额外元数据不会进入公开查询数据')
+const post = { id: 'blog/example.md', description: '文章摘要', tags: ['文章标签'], cover: '/images/post.png' }
+assert.deepEqual(await journalPrivacy.transform(post, {}), post, 'article metadata remains unchanged')
+console.log('✓ 日记草稿不公开，已发布日记不包含摘要、标签与封面，文章元数据保持不变')
 
 assert.equal(isJournalDate('2024-02-29'), true)
 for (const date of ['2026-02-29', '2026-13-01', '2026-04-31', '2026-1-1', '../2026-10-19']) {
@@ -33,6 +36,8 @@ for (const date of ['2026-02-29', '2026-13-01', '2026-04-31', '2026-1-1', '../20
   assert.equal(isContentFile(`journals/${date}.md`), false)
 }
 assert.throws(() => parseDocument({ id: 'page', title: '日记' }, '```yaml\nblog: true\nkind: page\nslug: journals\n```'), /内置路由/)
+const parsedJournal = parseDocument({ id: 'journal', title: '日记' }, '```yaml\nblog: true\nkind: journal\ndate: 2026-10-19\ndescription: 123\ntags: ignored\ncover: []\n```\n\n日记正文')!
+for (const key of ['description', 'tags', 'cover']) assert.ok(!(key in parsedJournal.data))
 const root = await mkdtemp(path.join(tmpdir(), 'blog-journals-check-'))
 let service: LocalAffineService | undefined
 try {
@@ -47,6 +52,7 @@ try {
   assert.equal(metadata.kind, 'journal')
   assert.equal(metadata.date, date)
   assert.equal(metadata.slug, date)
+  for (const key of ['description', 'tags', 'cover']) assert.ok(!(key in metadata))
   const input = {
     workspaceId: 'local', docId: 'today', journalDate: date, title: date,
     documentRevision: save('today'), markdown: '# 2026-10-19\n\n日记正文\n\n![图片](assets/photo.png)',
@@ -60,16 +66,17 @@ try {
   const { data, body } = splitFrontmatter(source)
   assert.equal(data.date, date)
   assert.equal(data.draft, false)
-  assert.match(String(data.cover), /^\/affine-assets\/[a-f0-9]+\.png$/)
-  assert.ok(body.includes(String(data.cover)))
-  assert.equal(await readFile(path.join(root, 'public', String(data.cover)), 'utf8'), 'journal image')
+  for (const key of ['description', 'tags', 'cover']) assert.ok(!(key in data))
+  const imagePath = body.match(/\/affine-assets\/[a-f0-9]+\.png/)?.[0]
+  assert.ok(imagePath, 'body images remain available without a cover')
+  assert.equal(await readFile(path.join(root, 'public', imagePath), 'utf8'), 'journal image')
   assert.ok(!body.startsWith(`# ${date}`), 'the native date title is not repeated')
   assert.deepEqual(await invoke('blog_documents', { workspaceId: 'local' }), [{ docId: 'today', kind: 'journal' }])
   for (const [journalDate, published] of [[date, true], ['2026-10-20', false], ['', false]] as const) {
     assert.equal((await invoke('blog_publication_status', { workspaceId: 'local', docId: 'today', journalDate }) as { published: boolean }).published, published)
   }
   const reopened = await invoke('blog_metadata', { workspaceId: 'local', docId: 'today', journalDate: date }) as Record<string, unknown>
-  assert.equal(reopened.cover, data.cover)
+  for (const key of ['description', 'tags', 'cover']) assert.ok(!(key in reopened))
   await assert.rejects(invoke('blog_publish', { ...input, docId: 'duplicate', documentRevision: save('duplicate') }), /已被修改|地址已被其他/)
   await assert.rejects(invoke('blog_publish', { ...input, journalDate: '2026-10-20' }), /日期必须与 AFFiNE/)
   await assert.rejects(invoke('blog_publish', { ...input, journalDate: '2026-10-20', metadata: { ...input.metadata, date: '2026-10-20' } }), /日期不可更改/)
@@ -84,7 +91,7 @@ try {
   service = new LocalAffineService(ws)
   assert.equal((await invoke('blog_metadata', { workspaceId: 'local', docId: 'today', journalDate: date }) as Record<string, unknown>).kind, 'journal')
   assert.ok(service.storage.get('blog-bindings', bindingKey('local', 'today')))
-  console.log('✓ AFFiNE 日记识别、按日发布、图片/封面、草稿撤回、日期锁定、去重与重启持久化')
+  console.log('✓ AFFiNE 日记识别、按日发布、正文图片、草稿撤回、日期锁定、去重与重启持久化')
 
   await assert.rejects(invoke('blog_publish', { ...input, docId: 'english', documentRevision: save('english'), metadata: { ...input.metadata, locale: 'en' } }), /仅支持中文/)
   assert.equal(isContentFile(`en/journals/${date}.md`), false)
@@ -118,12 +125,38 @@ try {
   const imported = await invoke('blog_metadata', { workspaceId: 'local', docId: 'yesterday' }) as Record<string, unknown>
   assert.equal(imported.kind, 'journal')
   assert.equal(imported.draft, true)
+
+  // Existing files and cached bindings must not restore removed journal fields.
+  const legacyFile = 'journals/2026-10-17.md'
+  await writeFile(path.join(root, 'content', legacyFile), '---\ntitle: 旧日记\ndate: 2026-10-17\ndescription: LEGACY_SUMMARY\ntags: [LEGACY_TAG]\ncover: /images/legacy.png\n---\n旧正文\n')
+  await invoke('blog_bind', { workspaceId: 'local', docId: 'legacy', file: legacyFile })
+  const legacyKey = bindingKey('local', 'legacy')
+  const legacyBinding = service.storage.get<Record<string, unknown>>('blog-bindings', legacyKey)!
+  const legacyMetadata = { ...(legacyBinding.metadata as object), description: 'LEGACY_SUMMARY', tags: ['LEGACY_TAG'], cover: '/images/legacy.png' }
+  service.storage.set('blog-bindings', legacyKey, { ...legacyBinding, metadata: legacyMetadata })
+  const legacyReopened = await invoke('blog_metadata', { workspaceId: 'local', docId: 'legacy' }) as Record<string, unknown>
+  for (const key of ['description', 'tags', 'cover']) assert.ok(!(key in legacyReopened))
+  const legacyArchive = unzipSync(await exportForAffine(ws))
+  const legacyExport = Object.values(legacyArchive).map(bytes => strFromU8(bytes)).find(markdown => markdown.includes('# 旧日记'))!
+  assert.ok(legacyExport)
+  assert.ok(!/LEGACY_SUMMARY|LEGACY_TAG|legacy\.png/.test(legacyExport))
+  await invoke('blog_publish', {
+    workspaceId: 'local', docId: 'legacy', journalDate: '2026-10-17', title: '旧日记',
+    documentRevision: save('legacy'), markdown: '新正文', metadata: legacyMetadata, assets: [],
+  })
+  const legacySource = splitFrontmatter(await readFile(path.join(root, 'content', legacyFile), 'utf8'))
+  assert.equal(legacySource.body.trim(), '新正文')
+  for (const key of ['description', 'tags', 'cover']) {
+    assert.ok(!(key in legacySource.data))
+    assert.ok(!(key in service.storage.get<{ metadata: Record<string, unknown> }>('blog-bindings', legacyKey)!.metadata))
+  }
   await invoke('blog_seed_done', { workspaceId: 'local' })
   assert.deepEqual(await invoke('blog_seed', { workspaceId: 'local' }), [])
   const archive = unzipSync(await exportForAffine(ws))
   const journalExport = Object.entries(archive).find(([name]) => name.startsWith('content/journals/'))
   assert.ok(journalExport)
   assert.match(strFromU8(journalExport[1]), /kind: journal/)
+  assert.ok(!/^\s*(description|tags|cover):/m.test(strFromU8(journalExport[1])))
   console.log('✓ 英文发布禁用与旧绑定隔离、中文旧绑定兼容、外部修改保护、旧工作区增量导入、原生日记日期与备份导出')
 } finally {
   service?.stop()

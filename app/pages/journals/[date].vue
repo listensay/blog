@@ -22,15 +22,12 @@ const proseEl = ref<HTMLElement>()
 useProseLightbox(proseEl)
 useSeo({
   title: () => entry.value?.title === entry.value?.date ? `${formatDate(entry.value?.date)} · 日记` : entry.value?.title,
-  description: () => entry.value?.description,
-  image: () => entry.value?.cover,
   type: 'article',
   publishedTime: () => isoDateTime(entry.value?.date),
 })
 useJsonLd(() => ({
   '@type': 'BlogPosting',
   headline: entry.value?.title ?? '',
-  description: entry.value?.description ?? '',
   datePublished: isoDateTime(entry.value?.date),
   inLanguage: 'zh-CN',
   mainEntityOfPage: { '@type': 'WebPage', '@id': `${siteConfig.url}${entryPath.value}` },
@@ -46,12 +43,7 @@ useJsonLd(() => ({
     <header class="border-b border-panel-line pb-8">
       <time :datetime="entry.date" class="text-sm font-medium text-amber-700">{{ formatDate(entry.date) }}</time>
       <h1 class="mt-3 break-words text-2xl font-bold tracking-tight text-[#eeebf7] sm:text-3xl">{{ entry.title === entry.date ? '日记' : entry.title }}</h1>
-      <p v-if="entry.description" class="mt-4 whitespace-pre-line text-base leading-8 text-panel-muted">{{ entry.description }}</p>
-      <ul v-if="entry.tags?.length" class="mt-5 flex flex-wrap gap-2">
-        <li v-for="tag in entry.tags" :key="tag" class="rounded-md bg-amber-50 px-2.5 py-1 text-xs text-amber-800">{{ tag }}</li>
-      </ul>
     </header>
-    <img v-if="entry.cover" :src="entry.cover" :alt="entry.title" width="960" height="480" class="mt-8 max-h-96 w-full rounded-[5px] object-cover" />
     <div ref="proseEl" class="prose-cn mt-8 sm:mt-10">
       <ContentRenderer :value="entry" />
     </div>

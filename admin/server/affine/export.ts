@@ -18,16 +18,18 @@ export async function exportForAffine(ws: Workspace): Promise<Uint8Array> {
       blog: true,
       kind: isJournal ? 'journal' : isPost ? 'post' : 'page',
       title: data.title,
-      description: data.description ?? '',
+      ...(!isJournal ? { description: data.description ?? '' } : {}),
       slug: isPost ? data.slug : relative.replace(/\.md$/, ''),
       ...(isPost || isJournal
         ? {
             directory: path.posix.dirname(relative) === '.' ? '' : path.posix.dirname(relative),
             date: isJournal ? relative.replace(/\.md$/, '') : String(data.date),
-            category: data.category ?? '未分类',
-            tags: data.tags ?? [],
+            ...(isPost ? {
+              category: data.category ?? '未分类',
+              tags: data.tags ?? [],
+              ...(data.cover ? { cover: data.cover } : {}),
+            } : {}),
             draft: data.draft === true,
-            ...(data.cover ? { cover: data.cover } : {}),
           }
         : { comments: data.comments === true }),
       file,

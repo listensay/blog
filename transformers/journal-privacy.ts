@@ -7,14 +7,18 @@ export default defineTransformer({
   extensions: ['.md'],
   transform(file) {
     const entry = file as Record<string, unknown>
-    if (!/^journals\//.test(String(entry.id)) || entry.draft !== true) return file
+    if (!/^journals\//.test(String(entry.id))) return file
+    if (entry.draft !== true) {
+      const { description, tags, cover, ...journal } = entry
+      // Page collections otherwise retain an automatically generated excerpt.
+      return { ...journal, description: '' }
+    }
     return {
       id: file.id,
       date: entry.date,
       draft: true,
       title: '',
       description: '',
-      tags: [],
       body: { type: 'minimark', value: [], toc: { links: [] } },
     }
   },

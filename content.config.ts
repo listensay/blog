@@ -30,11 +30,8 @@ const pageSchema = z.object({
 
 const journalSchema = z.object({
   title: z.string(),
-  description: z.string().default(''),
   date: z.string(),
-  tags: z.array(z.string()).default([]),
   draft: z.boolean().default(false),
-  cover: z.string().optional(),
 })
 
 export default defineContentConfig({

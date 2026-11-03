@@ -4103,10 +4103,10 @@ index 0000000..95c36a0
 +export const fileInput = style({ display: 'none' });
 diff --git a/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.tsx b/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.tsx
 new file mode 100644
-index 0000000..48dc90d
+index 0000000..f629b18
 --- /dev/null
 +++ b/packages/frontend/core/src/desktop/pages/workspace/detail-page/blog-publish.tsx
-@@ -0,0 +1,443 @@
+@@ -0,0 +1,447 @@
 +import { useId, useRef, useState } from 'react';
 +import {
 +  Button,
@@ -4139,10 +4139,10 @@ index 0000000..48dc90d
 +  slug: string;
 +  directory: string;
 +  date: string;
-+  description: string;
++  description?: string;
 +  category: string;
-+  tags: string[];
-+  cover: string;
++  tags?: string[];
++  cover?: string;
 +  comments: boolean;
 +  draft: boolean;
 +  demoUrl?: string;
@@ -4192,7 +4192,7 @@ index 0000000..48dc90d
 +        journalDate,
 +      });
 +      setMeta(metadata);
-+      setTagsText(metadata.tags.join(', '));
++      setTagsText(metadata.tags?.join(', ') ?? '');
 +    } catch (error: any) {
 +      notify.error({ title: '发布设置未能打开', message: error.message });
 +    }
@@ -4229,14 +4229,14 @@ index 0000000..48dc90d
 +          )
 +        );
 +      }
-+      const metadata = {
++      const metadata = meta.kind === 'journal' ? { ...meta } : {
 +        ...meta,
 +        tags: tagsText
 +          .split(/[,，]/)
 +          .map(tag => tag.trim())
 +          .filter(Boolean),
 +      };
-+      if (coverFile && ['post', 'project', 'journal'].includes(meta.kind)) {
++      if (coverFile && ['post', 'project'].includes(meta.kind)) {
 +        metadata.cover = `assets/cover-${crypto.randomUUID()}`;
 +        assets.push(await encodeAsset(metadata.cover, coverFile));
 +      }
@@ -4447,22 +4447,24 @@ index 0000000..48dc90d
 +                    'https://github.com/example/project'
 +                  )}
 +              </div>
-+              <div className={styles.field}>
-+                <label htmlFor={`${formId}-description`}>
-+                  {meta.kind === 'project' ? '简介' : '摘要'}
-+                </label>
-+                <textarea
-+                  id={`${formId}-description`}
-+                  rows={3}
-+                  className={`${styles.description} default${busy ? ' disabled' : ''}`}
-+                  disabled={busy}
-+                  value={meta.description}
-+                  onChange={event =>
-+                    setMeta({ ...meta, description: event.target.value })
-+                  }
-+                />
-+              </div>
-+              {['post', 'project', 'journal'].includes(meta.kind) && (
++              {meta.kind !== 'journal' && (
++                <div className={styles.field}>
++                  <label htmlFor={`${formId}-description`}>
++                    {meta.kind === 'project' ? '简介' : '摘要'}
++                  </label>
++                  <textarea
++                    id={`${formId}-description`}
++                    rows={3}
++                    className={`${styles.description} default${busy ? ' disabled' : ''}`}
++                    disabled={busy}
++                    value={meta.description ?? ''}
++                    onChange={event =>
++                      setMeta({ ...meta, description: event.target.value })
++                    }
++                  />
++                </div>
++              )}
++              {['post', 'project'].includes(meta.kind) && (
 +                <>
 +                  <div className={styles.field}>
 +                    <label htmlFor={`${formId}-tags`}>
@@ -4481,7 +4483,7 @@ index 0000000..48dc90d
 +                    />
 +                  </div>
 +                  <BlogCoverUpload
-+                    value={meta.cover}
++                    value={meta.cover ?? ''}
 +                    file={coverFile}
 +                    disabled={busy}
 +                    onChange={setCoverFile}
@@ -4490,19 +4492,21 @@ index 0000000..48dc90d
 +                      setMeta({ ...meta, cover: '' });
 +                    }}
 +                  />
-+                  <Checkbox
-+                    role="presentation"
-+                    name={`${formId}-draft`}
-+                    label="保存为草稿"
-+                    checked={meta.draft}
-+                    disabled={busy}
-+                    className={styles.choice}
-+                    labelClassName={styles.choiceLabel}
-+                    onChange={(_event, checked) =>
-+                      setMeta({ ...meta, draft: checked })
-+                    }
-+                  />
 +                </>
++              )}
++              {['post', 'project', 'journal'].includes(meta.kind) && (
++                <Checkbox
++                  role="presentation"
++                  name={`${formId}-draft`}
++                  label="保存为草稿"
++                  checked={meta.draft}
++                  disabled={busy}
++                  className={styles.choice}
++                  labelClassName={styles.choiceLabel}
++                  onChange={(_event, checked) =>
++                    setMeta({ ...meta, draft: checked })
++                  }
++                />
 +              )}
 +              {meta.kind === 'page' && (
 +                <Checkbox
