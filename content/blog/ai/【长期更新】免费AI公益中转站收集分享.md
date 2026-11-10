@@ -57,26 +57,6 @@ https://anyrouter.top/register?aff=78Jy
 
 https://api.gemai.cc/sign-up?aff=GmYKJSLl
 
-### SeekAI
-
-评价：**拉完了**
-
-长期没有好模型可用，请求还不稳定。
-
-新用户使用邀请码注册可以获得200余额，每日签到可获得20余额，邀请一人可获得20余额（拉人就这点拉完了）。
-
-https://seekai.cc/sign-up?aff=fjxq
-
-### JustDoWork
-
-评价：**NPC**
-
-目前仅Claude-opus-4.8可用
-
-新用户使用邀请码注册可以获得200余额，每日签到随机5-9余额，邀请一人可获得40余额。
-
-https://api.justwoker.icu/register?aff=Qk1K
-
 ## 一些大牌AI
 
 ### Nvidia
