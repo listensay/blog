@@ -47,7 +47,7 @@ export class LocalAffineService {
         .length,
     }
   }
-  async invoke(command: unknown, args: Record<string, unknown>): Promise<unknown> {
+  async invoke(command: unknown, args: Record<string, unknown>, files: string[] = []): Promise<unknown> {
     const workspaceId = typeof args.workspaceId === 'string' ? args.workspaceId : ''
     const docId = typeof args.docId === 'string' ? args.docId : ''
     switch (command) {
@@ -156,7 +156,7 @@ export class LocalAffineService {
       case 'blog_publication_status':
         return publicationStatus(this.storage, workspaceId, docId, args.journalDate)
       case 'blog_publish':
-        return publish(this.ws, this.storage, args)
+        return publish(this.ws, this.storage, args, files)
       case 'affine_ai_request':
         return this.ai(args)
       case 'affine_ai_cancel':

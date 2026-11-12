@@ -29,6 +29,7 @@ import { listPages, readPage, writeFriends } from './pages.ts'
 import { readSettings, writeSettings } from './settings.ts'
 import { type Workspace, isInside } from './paths.ts'
 import { CommentAdmin } from './comments.ts'
+import { ContentGitSync } from './git-sync.ts'
 
 const API_PREFIX = '/api'
 
@@ -37,11 +38,19 @@ interface Context {
   affine: LocalAffineService
   changes: WorkspaceChanges
   comments: CommentAdmin
+  git: ContentGitSync
 }
 
 type Handler = (req: IncomingMessage, res: ServerResponse, ctx: Context) => Promise<void>
 
 const routes: Record<string, Handler> = {
+  'GET /git/status': async (_req, res, { git }) => {
+    sendJson(res, 200, await git.readStatus())
+  },
+  'POST /git/flush': async (_req, res, { git }) => {
+    await git.flush()
+    sendJson(res, 200, await git.readStatus())
+  },
   'GET /comments/session': async (_req, res, { comments }) => {
     sendJson(res, 200, await comments.session())
   },
@@ -75,11 +84,15 @@ const routes: Record<string, Handler> = {
   'GET /affine': async (_req, res, { affine }) => {
     sendJson(res, 200, await affine.status())
   },
-  'POST /affine-local/invoke': async (req, res, { affine }) => {
+  'POST /affine-local/invoke': async (req, res, { affine, git }) => {
     const input = await readJson<{ command: unknown; args: Record<string, unknown> }>(req)
     if (!input || !input.args || typeof input.args !== 'object' || Array.isArray(input.args))
       throw new HttpError(400, '工作区请求无效')
-    sendJson(res, 200, await affine.invoke(input.command, input.args))
+    const result =
+      input.command === 'blog_publish'
+        ? await git.save((files) => affine.invoke(input.command, input.args, files))
+        : await affine.invoke(input.command, input.args)
+    sendJson(res, 200, result)
   },
   'GET /pages': async (_req, res, { ws }) => {
     sendJson(res, 200, await listPages(ws))
@@ -87,37 +100,65 @@ const routes: Record<string, Handler> = {
   'GET /links': async (_req, res, { ws }) => {
     sendJson(res, 200, await readPage(ws, 'pages/links.md'))
   },
-  'PUT /links': async (req, res, { ws }) => {
+  'PUT /links': async (req, res, { ws, git }) => {
     const input = await readJson<{ friends: unknown }>(req)
-    sendJson(res, 200, await withSyncLock(ws, () => writeFriends(ws, input?.friends)))
+    sendJson(
+      res,
+      200,
+      await git.save(async (files) => {
+        const result = await withSyncLock(ws, () => writeFriends(ws, input?.friends))
+        files.push(path.join(ws.pagesDir, 'links.md'))
+        return result
+      }),
+    )
   },
 
   'GET /nav': async (_req, res, { ws }) => {
     sendJson(res, 200, await readNav(ws))
   },
 
-  'PUT /nav': async (req, res, { ws }) => {
+  'PUT /nav': async (req, res, { ws, git }) => {
     const input = await readJson<{ items: unknown }>(req)
-    sendJson(res, 200, await writeNav(ws, input.items))
+    sendJson(
+      res,
+      200,
+      await git.save(async (files) => {
+        const result = await writeNav(ws, input.items)
+        files.push(ws.navFile)
+        return result
+      }),
+    )
   },
 
   'GET /settings': async (_req, res, { ws }) => {
     sendJson(res, 200, await readSettings(ws))
   },
 
-  'PUT /settings': async (req, res, { ws }) => {
+  'PUT /settings': async (req, res, { ws, git }) => {
     const input = await readJson<{ settings: unknown }>(req)
-    sendJson(res, 200, await writeSettings(ws, input.settings))
+    sendJson(
+      res,
+      200,
+      await git.save(async (files) => {
+        const result = await writeSettings(ws, input.settings)
+        files.push(ws.siteFile)
+        return result
+      }),
+    )
   },
 
   'GET /images': async (_req, res, { ws }) => {
     sendJson(res, 200, { images: await listImages(ws) })
   },
 
-  'POST /images': async (req, res, { ws }) => {
+  'POST /images': async (req, res, { ws, git }) => {
     const name = requireQuery(parseUrl(req), 'name')
     const data = await readBody(req)
-    const { item, reused } = await saveImage(ws, name, data)
+    const { item, reused } = await git.save(async (files) => {
+      const result = await saveImage(ws, name, data)
+      files.push(path.join(ws.imagesDir, result.item.name))
+      return result
+    })
     sendJson(res, reused ? 200 : 201, { image: item, reused })
   },
 
@@ -125,9 +166,17 @@ const routes: Record<string, Handler> = {
     sendJson(res, 200, await findUnusedImages(ws))
   },
 
-  'POST /images/cleanup': async (req, res, { ws }) => {
+  'POST /images/cleanup': async (req, res, { ws, git }) => {
     const input = await readJson<{ names: unknown }>(req)
-    sendJson(res, 200, await deleteUnusedImages(ws, input.names))
+    sendJson(
+      res,
+      200,
+      await git.save(async (files) => {
+        const result = await deleteUnusedImages(ws, input.names)
+        files.push(...result.deleted.map((name) => path.join(ws.imagesDir, name)))
+        return result
+      }),
+    )
   },
 }
 
@@ -199,10 +248,12 @@ export function createAdminApi(
   affineRoot: string,
   env: Record<string, string> = {},
 ) {
+  const changes = new WorkspaceChanges(ws)
   const ctx: Context = {
     ws,
     affine: new LocalAffineService(ws, env, affineRoot),
-    changes: new WorkspaceChanges(ws),
+    changes,
+    git: new ContentGitSync(ws, (status) => changes.gitStatus(status)),
     comments: new CommentAdmin(ws),
   }
   return {
@@ -217,8 +268,9 @@ export function createAdminApi(
       await handler(req, res, ctx)
       return true
     },
-    close() {
+    async close() {
       ctx.changes.close()
+      await ctx.git.close()
       ctx.comments.close()
       ctx.affine.stop()
     },

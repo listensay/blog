@@ -122,7 +122,7 @@ export async function startDesktopServer(options: {
       server.listen(0, '127.0.0.1', resolve)
     })
   } catch (error) {
-    api.close()
+    await api.close()
     throw error
   }
   const address = server.address()
@@ -138,7 +138,7 @@ export async function startDesktopServer(options: {
         server.close(() => resolve())
         server.closeAllConnections()
       })
-      api.close()
+      await api.close()
     },
   }
 }

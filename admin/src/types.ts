@@ -211,3 +211,8 @@ export interface SettingsResponse {
   missing?: boolean
   error?: string
 }
+export interface GitSyncStatus {
+  phase: 'idle' | 'pending' | 'committing' | 'pushing' | 'synced' | 'error'
+  error: string
+  lastSyncedAt: string | null
+}

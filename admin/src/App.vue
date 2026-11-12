@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import UiFeedback from '@/components/ui/UiFeedback.vue'
 import UiIcon from '@/components/ui/UiIcon.vue'
 import UiButton from '@/components/ui/UiButton.vue'
+import GitSyncStatus from '@/components/GitSyncStatus.vue'
 import { chooseWorkspace } from '@/desktop'
 import { notify } from '@/composables/useFeedback'
 import { isTauri } from '@tauri-apps/api/core'
@@ -71,6 +72,7 @@ async function openWorkspace() {
         >
       </aside>
       <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <GitSyncStatus />
         <header
           v-if="active?.name !== 'affine'"
           class="flex min-h-20 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-panel-line px-5 py-4 md:px-8"

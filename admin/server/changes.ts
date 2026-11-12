@@ -1,6 +1,7 @@
 import { watch, type FSWatcher } from 'node:fs'
 import type { ServerResponse } from 'node:http'
 import type { Workspace } from './paths.ts'
+import type { GitSyncStatus } from '../src/types.ts'
 
 export class WorkspaceChanges {
   private clients = new Set<ServerResponse>()
@@ -32,6 +33,11 @@ export class WorkspaceChanges {
       clearInterval(heartbeat)
       this.clients.delete(response)
     })
+  }
+
+  gitStatus(status: GitSyncStatus) {
+    for (const client of this.clients)
+      client.write(`event: git-sync\ndata: ${JSON.stringify(status)}\n\n`)
   }
 
   close() {

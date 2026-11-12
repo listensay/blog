@@ -1,5 +1,6 @@
 import type {
   CleanupResult,
+  GitSyncStatus,
   DashboardStats,
   FriendLink,
   ImageItem,
@@ -54,6 +55,8 @@ const json = (body: unknown): RequestInit => ({
 })
 
 export const api = {
+  gitStatus: () => request<GitSyncStatus>('/api/git/status'),
+  gitFlush: () => request<GitSyncStatus>('/api/git/flush', json({})),
   commentSession: () => request<{ site: string; authed: boolean }>('/api/comments/session'),
   commentLogin: (site: string, password: string) =>
     request<{ site: string; authed: boolean }>('/api/comments/login', json({ site, password })),

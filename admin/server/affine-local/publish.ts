@@ -136,7 +136,7 @@ export async function bindFile(
   return binding
 }
 
-async function saveAssets(ws: Workspace, assets: unknown[]): Promise<Map<string, string>> {
+async function saveAssets(ws: Workspace, assets: unknown[], files: string[]): Promise<Map<string, string>> {
   const replacements = new Map<string, string>()
   for (const asset of assets as Record<string, unknown>[]) {
     if (
@@ -175,6 +175,7 @@ async function saveAssets(ws: Workspace, assets: unknown[]): Promise<Map<string,
       if (current === ws.publicDir) break
     }
     await atomicWrite(absolute, bytes)
+    files.push(absolute)
     replacements.set(asset.name, `/${file}`)
   }
   return replacements
@@ -184,6 +185,7 @@ export async function publish(
   ws: Workspace,
   storage: WorkspaceStorage,
   input: Record<string, unknown>,
+  files: string[] = [],
 ) {
   const { workspaceId, docId, title, markdown, metadata, assets, documentRevision } = input
   if (
@@ -239,7 +241,7 @@ export async function publish(
         : []
       const draft = settings.draft === true
 
-      const assetReplacements = await saveAssets(ws, assets)
+      const assetReplacements = await saveAssets(ws, assets, files)
       for (const [name, targetUrl] of assetReplacements) {
         description = description.replaceAll(name, targetUrl)
         cover = cover.replaceAll(name, targetUrl)
@@ -303,6 +305,7 @@ export async function publish(
         : [...currentProjects, projectItem]
 
       await writeProjects(ws, { items: nextProjects, revision: currentRevision })
+      files.push(path.join(ws.contentDir, 'data', 'projects.json'))
       const file = `projects/${slug}`
       const afterHash = hash(JSON.stringify(projectItem))
       storage.set('blog-bindings', key, {
@@ -358,7 +361,7 @@ export async function publish(
         : `/${file.replace('pages/', '').replace(/\.md$/, '')}`
       if (route === doc.path) throw conflict(`地址已被其他内容使用：${doc.path}`)
     }
-    const assetReplacements = await saveAssets(ws, assets)
+    const assetReplacements = await saveAssets(ws, assets, files)
     for (const [name, targetUrl] of assetReplacements) {
       doc.body = doc.body.replaceAll(name, targetUrl)
     }
@@ -389,6 +392,7 @@ export async function publish(
     )
       throw conflict('文件刚刚被修改，请重试')
     await atomicWrite(target, after)
+    files.push(target)
     try {
       storage.set('blog-bindings', key, {
         workspaceId,

@@ -7,6 +7,7 @@ import {
   flushDesktopSaves,
   installDesktopClose,
   registerDesktopSave,
+  registerDesktopSync,
 } from '../src/desktop.ts'
 
 const pause = (ms = 25) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -217,6 +218,27 @@ function model(text: string) {
 }
 
 console.log('✓ 自动保存防抖、串行写入、过期响应保护、保存后重读、失败重试与卸载清理')
+
+{
+  const actions: string[] = []
+  let failing = true
+  const unregisterSync = registerDesktopSync(async () => {
+    actions.push('push')
+    if (failing) throw new Error('push failed')
+  })
+  const unregisterSave = registerDesktopSave(async () => { actions.push('save') })
+  try {
+    await assert.rejects(flushDesktopSaves(), /push failed/)
+    assert.deepEqual(actions, ['save', 'push'], 'push only after every local save has finished')
+    failing = false
+    await flushDesktopSaves()
+    assert.deepEqual(actions, ['save', 'push', 'save', 'push'])
+  } finally {
+    unregisterSave()
+    unregisterSync()
+  }
+  console.log('✓ 退出和切换博客前先保存再推送，推送失败可重试')
+}
 
 {
   let saved = false

@@ -109,7 +109,13 @@ try {
   const page = await response.json()
   assert.equal(page.friends.length, 1)
   try {
-    assert.match(new TextDecoder().decode((await eventReader.read()).value), /data: changed/)
+    let updates = ''
+    while (!updates.includes('data: changed') || !updates.includes('event: git-sync')) {
+      const next = await eventReader.read()
+      assert.equal(next.done, false)
+      updates += new TextDecoder().decode(next.value)
+    }
+    assert.match(updates, /"phase":"pending"/)
   } finally {
     await eventReader.cancel()
     eventsAbort.abort()

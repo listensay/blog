@@ -1,6 +1,13 @@
 import { invoke, isTauri } from '@tauri-apps/api/core'
 
 const pendingSaves = new Set<() => Promise<boolean | void>>()
+let syncContent: (() => Promise<unknown>) | undefined
+export function registerDesktopSync(sync: () => Promise<unknown>) {
+  syncContent = sync
+  return () => {
+    if (syncContent === sync) syncContent = undefined
+  }
+}
 export function registerDesktopSave(save: () => Promise<boolean | void>) {
   pendingSaves.add(save)
   return () => pendingSaves.delete(save)
@@ -9,6 +16,7 @@ export async function flushDesktopSaves() {
   for (const save of pendingSaves) {
     if ((await save()) === false) throw new Error('修改尚未保存，请检查表单或重试。')
   }
+  await syncContent?.()
 }
 export async function chooseWorkspace() {
   await flushDesktopSaves()
