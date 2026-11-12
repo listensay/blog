@@ -24,7 +24,6 @@ export interface PostListResponse {
   posts: PostSummary[]
   categories: string[]
   tags: string[]
-  dirs: string[]
 }
 
 export interface ImageItem {
@@ -104,18 +103,6 @@ export interface DashboardStats {
   trend: TrendPoint[]
   recent: RecentItem[]
   todos: TodoGroup[]
-}
-
-export interface WorkspaceInfo {
-  blogRoot: string
-  postCount: number
-  pageCount: number
-  projectCount: number
-  imageCount: number
-}
-
-export interface ApiError {
-  error: string
 }
 
 export interface FriendLink {

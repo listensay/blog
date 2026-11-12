@@ -14,11 +14,11 @@ const router = createRouter({
       name: 'affine',
       component: () => import('@/views/AffineView.vue'),
     },
-    ...['/posts', '/new', '/edit', '/pages', '/pages/new', '/pages/edit', '/projects'].map((path) => ({
-      path,
-      redirect: '/affine',
-    })),
-
+    {
+      path: '/comments',
+      name: 'comments',
+      component: () => import('@/views/CommentsView.vue'),
+    },
     {
       path: '/menu',
       name: 'menu',

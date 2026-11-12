@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict'
 import { ref } from 'vue'
+import { clearMocks, mockIPC } from '@tauri-apps/api/mocks'
 import { createAutoSave } from '../src/composables/useAutoSave.ts'
+import {
+  chooseWorkspace,
+  flushDesktopSaves,
+  installDesktopClose,
+  registerDesktopSave,
+} from '../src/desktop.ts'
 
 const pause = (ms = 25) => new Promise((resolve) => setTimeout(resolve, ms))
 function deferred<T>() {
@@ -210,3 +217,77 @@ function model(text: string) {
 }
 
 console.log('✓ 自动保存防抖、串行写入、过期响应保护、保存后重读、失败重试与卸载清理')
+
+{
+  let saved = false
+  const unregister = registerDesktopSave(async () => saved)
+  await assert.rejects(flushDesktopSaves(), /尚未保存/)
+  saved = true
+  await flushDesktopSaves()
+  unregister()
+  const reject = registerDesktopSave(async () => {
+    throw new Error('editor write failed')
+  })
+  await assert.rejects(flushDesktopSaves(), /editor write failed/)
+  reject()
+  await flushDesktopSaves()
+  console.log('✓ 桌面退出等待保存、写入失败阻止退出、卸载后不再等待')
+}
+
+{
+  const originals = new Map(
+    ['window', 'document', 'isTauri'].map((name) => [
+      name,
+      Object.getOwnPropertyDescriptor(globalThis, name),
+    ]),
+  )
+  const host: { __BLOG_DESKTOP_CLOSE__?: () => Promise<void> } = {}
+  const element = { inert: false }
+  Object.defineProperties(globalThis, {
+    window: { configurable: true, value: host },
+    document: { configurable: true, value: { documentElement: element } },
+    isTauri: { configurable: true, value: true },
+  })
+  const calls: { command: string; args: unknown }[] = []
+  const errors: string[] = []
+  const gate = deferred<boolean>()
+  let fail = false
+  const unregister = registerDesktopSave(async () => {
+    if (fail) throw new Error('editor write failed')
+    return gate.promise
+  })
+  try {
+    mockIPC((command, args) => {
+      calls.push({ command, args })
+    })
+    installDesktopClose((message) => errors.push(message))
+    assert.ok(host.__BLOG_DESKTOP_CLOSE__)
+    const closing = host.__BLOG_DESKTOP_CLOSE__()
+    await pause()
+    assert.equal(element.inert, true, 'prevent new edits while closing')
+    assert.deepEqual(calls, [], 'do not exit while an editor is still saving')
+    gate.resolve(true)
+    await closing
+    assert.equal(element.inert, false)
+    assert.deepEqual(calls, [{ command: 'finish_close', args: { saved: true } }])
+
+    fail = true
+    await host.__BLOG_DESKTOP_CLOSE__()
+    assert.equal(element.inert, false, 'restore editing after a failed save')
+    assert.deepEqual(calls.at(-1), { command: 'finish_close', args: { saved: false } })
+    assert.deepEqual(errors, ['editor write failed'])
+    await assert.rejects(chooseWorkspace(), /editor write failed/)
+    assert.equal(calls.length, 2, 'a failed save also prevents switching blogs')
+    fail = false
+    await chooseWorkspace()
+    assert.equal(calls.at(-1)?.command, 'choose_workspace')
+    console.log('✓ 原生退出先完成保存、失败恢复编辑，以及切换博客前保存')
+  } finally {
+    unregister()
+    clearMocks()
+    for (const [name, descriptor] of originals) {
+      if (descriptor) Object.defineProperty(globalThis, name, descriptor)
+      else Reflect.deleteProperty(globalThis, name)
+    }
+  }
+}

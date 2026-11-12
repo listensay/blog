@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { api } from '@/api'
-import { useDataRefresh } from '@/composables/useDataRefresh'
-import UiAlert from '@/components/ui/UiAlert.vue'
 import UiFeedback from '@/components/ui/UiFeedback.vue'
 import UiIcon from '@/components/ui/UiIcon.vue'
-import type { WorkspaceInfo } from '@/types'
+import UiButton from '@/components/ui/UiButton.vue'
+import { chooseWorkspace } from '@/desktop'
+import { notify } from '@/composables/useFeedback'
+import { isTauri } from '@tauri-apps/api/core'
 const route = useRoute()
-const info = ref<WorkspaceInfo | null>(null)
-const loadError = ref('')
 const content = ref<HTMLElement>()
+const switching = ref(false)
 const sections = [
   { name: 'dashboard', label: '概览', icon: 'dashboard', path: '/' },
-  { name: 'affine', label: 'Blog管理', icon: 'article', path: '/affine' },
+  { name: 'affine', label: '内容', icon: 'article', path: '/affine' },
+  { name: 'comments', label: '评论', icon: 'comment', path: '/comments' },
   { name: 'links', label: '链接', icon: 'link', path: '/links' },
   { name: 'menu', label: '菜单', icon: 'menu', path: '/menu' },
   { name: 'settings-social', label: '社交设置', icon: 'social', path: '/settings/social' },
@@ -29,24 +29,26 @@ watch(
   () => content.value?.scrollTo({ top: 0, left: 0, behavior: 'instant' }),
   { flush: 'post' },
 )
-async function load() {
+async function openWorkspace() {
+  if (switching.value) return
+  switching.value = true
   try {
-    info.value = await api.workspace()
-    loadError.value = ''
-  } catch (err) {
-    loadError.value = err instanceof Error ? err.message : String(err)
+    await chooseWorkspace()
+  } catch (error) {
+    notify.error(error instanceof Error ? error.message : String(error))
+  } finally {
+    switching.value = false
   }
 }
-onMounted(load)
-useDataRefresh(load)
 </script>
 <template>
-  <div class="h-dvh overflow-hidden p-3 md:p-6">
+  <div class="h-dvh overflow-hidden">
     <div
-      class="mx-auto flex h-full max-w-[1600px] flex-col overflow-hidden rounded-sm border border-panel-line bg-panel shadow-[0_12px_40px_rgb(34_35_51_/_5%)] md:flex-row"
+      :inert="switching"
+      class="flex h-full w-full flex-col overflow-hidden bg-panel md:flex-row"
     >
       <aside
-        class="max-h-[40dvh] shrink-0 overflow-y-auto overscroll-contain border-b border-panel-line p-4 md:max-h-none md:w-52 md:border-r md:border-b-0 md:p-5"
+        class="flex max-h-[40dvh] shrink-0 flex-col gap-6 overflow-y-auto overscroll-contain border-b border-panel-line p-4 md:max-h-none md:w-52 md:border-r md:border-b-0 md:p-5"
       >
         <nav aria-label="管理导航" class="grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-1">
           <RouterLink
@@ -64,6 +66,9 @@ useDataRefresh(load)
             <UiIcon :name="item.icon" /><span>{{ item.label }}</span>
           </RouterLink>
         </nav>
+        <UiButton v-if="isTauri()" class="mt-auto" icon="folder" @click="openWorkspace"
+          >打开博客</UiButton
+        >
       </aside>
       <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <header
@@ -81,7 +86,6 @@ useDataRefresh(load)
               : 'overflow-y-auto bg-panel-raised/60 p-5 md:p-8'
           "
         >
-          <UiAlert v-if="loadError" class="mb-5" message="无法读取博客" :description="loadError" />
           <RouterView />
         </main>
       </div>

@@ -17,4 +17,3 @@ export async function atomicWrite(file: string, text: string | Uint8Array) {
     await rm(temp, { force: true })
   }
 }
-

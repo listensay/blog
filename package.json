@@ -24,7 +24,8 @@
     "affine:patch": "node scripts/affine/patch.mjs",
     "admin": "npm --prefix admin run dev",
     "check:site": "node scripts/check-site.mjs",
-    "check:affine-build": "node --test scripts/affine/artifacts.test.mjs"
+    "check:affine-build": "node --test scripts/affine/artifacts.test.mjs",
+    "admin:build": "npm --prefix admin run build"
   },
   "dependencies": {
     "@nuxt/content": "3.15.2",

@@ -1,13 +1,6 @@
 {
   "extends": "@tsconfig/node24/tsconfig.json",
-  "include": [
-    "vite.config.*",
-    "vitest.config.*",
-    "cypress.config.*",
-    "playwright.config.*",
-    "eslint.config.*",
-    "server/**/*"
-  ],
+  "include": ["vite.config.*", "eslint.config.*", "server/**/*"],
   "compilerOptions": {
     "module": "preserve",
     "moduleResolution": "bundler",

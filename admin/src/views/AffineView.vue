@@ -3,8 +3,8 @@ import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiButton from '@/components/ui/UiButton.vue'
-import UiIcon from '@/components/ui/UiIcon.vue'
 import UiLoading from '@/components/ui/UiLoading.vue'
+import { registerDesktopSave } from '@/desktop'
 
 const route = useRoute()
 const frame = ref<HTMLIFrameElement>()
@@ -41,7 +41,7 @@ onMounted(() => {
   window.addEventListener('message', receive)
 })
 onBeforeUnmount(() => window.removeEventListener('message', receive))
-onBeforeRouteLeave(async () => {
+async function flush() {
   const child = frame.value?.contentWindow as
     (Window & { __BLOG_LOCAL_NOTES_FLUSH__?: () => Promise<void> }) | undefined
   try {
@@ -51,7 +51,10 @@ onBeforeRouteLeave(async () => {
     error.value = '文档尚未保存成功，请稍后再切换。'
     return false
   }
-})
+}
+const unregister = registerDesktopSave(flush)
+onBeforeUnmount(unregister)
+onBeforeRouteLeave(flush)
 </script>
 
 <template>
@@ -59,16 +62,9 @@ onBeforeRouteLeave(async () => {
     <header
       class="flex min-h-20 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-panel-line px-5 py-4 md:px-8"
     >
-      <h1 class="text-2xl font-bold tracking-tight">Blog管理</h1>
+      <h1 class="text-2xl font-bold tracking-tight">内容</h1>
       <div class="flex flex-wrap gap-2">
-        <UiButton v-if="error" icon="refresh" :loading="loading" @click="check">重试</UiButton
-        ><a
-          :href="source"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex min-h-11 items-center gap-2 rounded-sm border border-panel-line bg-panel-raised px-3 py-2 text-sm hover:border-panel-muted"
-          ><UiIcon name="external" />独立窗口</a
-        >
+        <UiButton v-if="error" icon="refresh" :loading="loading" @click="check">重试</UiButton>
       </div>
     </header>
     <UiAlert v-if="error" :message="error" class="m-5" />

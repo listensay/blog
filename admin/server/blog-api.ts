@@ -1,14 +1,11 @@
-import type { Connect, Plugin, ViteDevServer } from 'vite'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createReadStream } from 'node:fs'
-import { stat } from 'node:fs/promises'
+import { realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
 
-import type { WorkspaceInfo } from '../src/types.ts'
 import { LocalAffineService } from './affine-local/service.ts'
 import { WorkspaceChanges } from './changes.ts'
 import { serveAffineApp } from './affine-local/assets.ts'
-import { loadEnv } from 'vite'
-import { exportForAffine } from './affine/export.ts'
 import { withSyncLock } from './affine/sync.ts'
 import { readDashboard } from './dashboard.ts'
 import {
@@ -28,49 +25,49 @@ import {
   sendJson,
 } from './http.ts'
 import { readNav, writeNav } from './nav.ts'
-import { readProjects } from './projects.ts'
 import { listPages, readPage, writeFriends } from './pages.ts'
-import { listPosts } from './posts.ts'
 import { readSettings, writeSettings } from './settings.ts'
-import { type Workspace, isInside, resolveWorkspace } from './paths.ts'
+import { type Workspace, isInside } from './paths.ts'
+import { CommentAdmin } from './comments.ts'
 
 const API_PREFIX = '/api'
-
-const LOCAL_HOSTS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1'])
 
 interface Context {
   ws: Workspace
   affine: LocalAffineService
   changes: WorkspaceChanges
+  comments: CommentAdmin
 }
 
-type Handler = (
-  req: Connect.IncomingMessage,
-  res: import('node:http').ServerResponse,
-  ctx: Context,
-) => Promise<void>
+type Handler = (req: IncomingMessage, res: ServerResponse, ctx: Context) => Promise<void>
 
 const routes: Record<string, Handler> = {
+  'GET /comments/session': async (_req, res, { comments }) => {
+    sendJson(res, 200, await comments.session())
+  },
+  'POST /comments/login': async (req, res, { comments }) => {
+    sendJson(res, 200, await comments.login(await readJson(req)))
+  },
+  'POST /comments/logout': async (_req, res, { comments }) => {
+    sendJson(res, 200, await comments.logout())
+  },
+  'GET /comments': async (req, res, { comments }) => {
+    const url = parseUrl(req)
+    sendJson(
+      res,
+      200,
+      await comments.list(
+        url.searchParams.get('status') || 'all',
+        url.searchParams.get('offset') || '0',
+      ),
+    )
+  },
+  'POST /comments/action': async (req, res, { comments }) => {
+    sendJson(res, 200, await comments.act(await readJson(req)))
+  },
   'GET /events': async (_req, res, { changes }) => {
     changes.connect(res)
   },
-  'GET /workspace': async (_req, res, { ws }) => {
-    const [{ posts }, { pages }, { items: projects }, images] = await Promise.all([
-      listPosts(ws),
-      listPages(ws),
-      readProjects(ws),
-      listImages(ws),
-    ])
-    const info: WorkspaceInfo = {
-      blogRoot: ws.blogRoot,
-      postCount: posts.length,
-      pageCount: pages.length,
-      projectCount: projects.length,
-      imageCount: images.length,
-    }
-    sendJson(res, 200, info)
-  },
-
   'GET /dashboard': async (_req, res, { ws }) => {
     sendJson(res, 200, await readDashboard(ws))
   },
@@ -83,13 +80,6 @@ const routes: Record<string, Handler> = {
     if (!input || !input.args || typeof input.args !== 'object' || Array.isArray(input.args))
       throw new HttpError(400, '工作区请求无效')
     sendJson(res, 200, await affine.invoke(input.command, input.args))
-  },
-  'GET /affine/export': async (_req, res, { ws }) => {
-    const archive = await exportForAffine(ws)
-    res.setHeader('content-type', 'application/zip')
-    res.setHeader('content-disposition', 'attachment; filename="affine-migration.zip"')
-    res.setHeader('cache-control', 'no-store')
-    res.end(Buffer.from(archive))
   },
   'GET /pages': async (_req, res, { ws }) => {
     sendJson(res, 200, await listPages(ws))
@@ -104,10 +94,6 @@ const routes: Record<string, Handler> = {
 
   'GET /nav': async (_req, res, { ws }) => {
     sendJson(res, 200, await readNav(ws))
-  },
-
-  'GET /projects': async (_req, res, { ws }) => {
-    sendJson(res, 200, await readProjects(ws))
   },
 
   'PUT /nav': async (req, res, { ws }) => {
@@ -146,8 +132,8 @@ const routes: Record<string, Handler> = {
 }
 
 async function servePublic(
-  req: Connect.IncomingMessage,
-  res: import('node:http').ServerResponse,
+  req: IncomingMessage,
+  res: ServerResponse,
   ws: Workspace,
 ): Promise<boolean> {
   const url = parseUrl(req)
@@ -172,12 +158,18 @@ async function servePublic(
   try {
     const stats = await stat(absolute)
     if (!stats.isFile()) throw new Error('not a file')
+    if (!isInside(await realpath(ws.publicDir), await realpath(absolute))) {
+      res.writeHead(403).end()
+      return true
+    }
 
     res.statusCode = 200
     res.setHeader('content-type', contentTypeOf(absolute))
     res.setHeader('content-length', String(stats.size))
     res.setHeader('cache-control', 'no-store')
-    createReadStream(absolute).pipe(res)
+    createReadStream(absolute)
+      .on('error', () => res.destroy())
+      .pipe(res)
   } catch {
     res.statusCode = 404
     res.end('not found')
@@ -202,94 +194,33 @@ function contentTypeOf(file: string): string {
   return MIME[path.extname(file).toLowerCase()] ?? 'application/octet-stream'
 }
 
-function isLocal(req: Connect.IncomingMessage): boolean {
-  const address = req.socket.remoteAddress
-  return !address || LOCAL_HOSTS.has(address)
-}
-
-export function blogAdminApi(): Plugin {
-  let ctx: Context
-
-  const middleware =
-    (log: (msg: string, err: unknown) => void): Connect.NextHandleFunction =>
-    async (req, res, next) => {
-      const url = parseUrl(req)
-      const isApi = url.pathname === API_PREFIX || url.pathname.startsWith(`${API_PREFIX}/`)
-      const isPublic = url.pathname.startsWith(`${PUBLIC_MOUNT}/`)
-      const isAffine =
-        url.pathname === '/affine-workspace' || url.pathname.startsWith('/affine-workspace/')
-      if (!isApi && !isPublic && !isAffine) return next()
-
-      if (
-        !isLocal(req) ||
-        !/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(req.headers.host ?? '')
-      ) {
-        sendJson(res, 403, { error: '这个后台只允许本机访问' })
-        return
-      }
-
-      const origin = req.headers.origin
-      if (origin && origin !== `http://${req.headers.host}`) {
-        sendJson(res, 403, { error: '不允许跨站访问本地后台' })
-        return
-      }
-
-      try {
-        if (await serveAffineApp(req, res, ctx.ws)) return
-        if (await servePublic(req, res, ctx.ws)) return
-
-        const key = `${req.method ?? 'GET'} ${url.pathname.slice(API_PREFIX.length) || '/'}`
-        const handler = routes[key]
-        if (!handler) throw notFound(`没有这个接口：${key}`)
-
-        await handler(req, res, ctx)
-      } catch (err) {
-        if (err instanceof HttpError) {
-          sendJson(res, err.status, { error: err.message })
-          return
-        }
-        log(`[blog-admin] ${url.pathname} 出错`, err)
-        const message = err instanceof Error ? err.message : String(err)
-        sendJson(res, 500, { error: message })
-      }
-    }
-
+export function createAdminApi(
+  ws: Workspace,
+  affineRoot: string,
+  env: Record<string, string> = {},
+) {
+  const ctx: Context = {
+    ws,
+    affine: new LocalAffineService(ws, env, affineRoot),
+    changes: new WorkspaceChanges(ws),
+    comments: new CommentAdmin(ws),
+  }
   return {
-    name: 'blog-admin-api',
-    apply: 'serve',
-
-    configResolved(config) {
-      const ws = resolveWorkspace(config.root)
-
-      ctx = {
-        ws,
-        affine: new LocalAffineService(ws, loadEnv(config.mode, config.envDir, 'AFFINE_AI_')),
-        changes: new WorkspaceChanges(ws),
-      }
+    async handle(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+      const url = parseUrl(req)
+      if (await serveAffineApp(req, res, affineRoot)) return true
+      if (await servePublic(req, res, ws)) return true
+      if (!url.pathname.startsWith(`${API_PREFIX}/`)) return false
+      const key = `${req.method ?? 'GET'} ${url.pathname.slice(API_PREFIX.length)}`
+      const handler = routes[key]
+      if (!handler) throw notFound('接口不存在')
+      await handler(req, res, ctx)
+      return true
     },
-
-    configureServer(server: ViteDevServer) {
-      server.middlewares.use(
-        middleware((msg, err) => server.config.logger.error(msg, { error: err as Error })),
-      )
-      const dim = (text: string) => `\x1b[2m${text}\x1b[0m`
-      server.config.logger.info(`  \x1b[32m➜\x1b[0m  ${dim('blog 仓库:')} ${ctx.ws.blogRoot}`)
-      server.httpServer?.once('close', () => {
-        ctx.changes.close()
-        ctx.affine.stop()
-      })
-    },
-
-    configurePreviewServer(server) {
-      server.middlewares.use(middleware((msg, err) => console.error(msg, err)))
-      server.httpServer.once('close', () => {
-        ctx.changes.close()
-        ctx.affine.stop()
-      })
-    },
-
-    closeBundle() {
-      ctx?.changes.close()
+    close() {
+      ctx.changes.close()
+      ctx.comments.close()
+      ctx.affine.stop()
     },
   }
 }

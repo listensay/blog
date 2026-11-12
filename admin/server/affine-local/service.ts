@@ -25,21 +25,26 @@ export class LocalAffineService {
   private controllers = new Map<string, AbortController>()
   readonly ws: Workspace
   readonly env: Record<string, string>
-  constructor(ws: Workspace, env: Record<string, string> = {}) {
+  readonly affineRoot: string
+  constructor(
+    ws: Workspace,
+    env: Record<string, string> = {},
+    affineRoot = path.join(ws.blogRoot, '.affine/web'),
+  ) {
     this.ws = ws
     this.env = env
+    this.affineRoot = affineRoot
     this.storage = new WorkspaceStorage(path.join(stateDir(ws), 'workspace.sqlite'))
   }
   async status() {
-    const built = await stat(path.join(this.ws.blogRoot, '.affine/web/index.html')).catch(
-      () => null,
-    )
+    const built = await stat(path.join(this.affineRoot, 'index.html')).catch(() => null)
     return {
       ready: !!built,
       mode: 'source',
       source: 'vendor/affine',
       version: '0.27.4',
-      documents: this.storage.all<Binding>('blog-bindings').filter(b => !isEnglishBinding(b)).length,
+      documents: this.storage.all<Binding>('blog-bindings').filter((b) => !isEnglishBinding(b))
+        .length,
     }
   }
   async invoke(command: unknown, args: Record<string, unknown>): Promise<unknown> {
@@ -107,12 +112,17 @@ export class LocalAffineService {
         return null
       }
       case 'blog_find':
-        return this.storage.all<Binding>('blog-bindings').find((b) => b.file === args.file && !isEnglishBinding(b)) ?? null
+        return (
+          this.storage
+            .all<Binding>('blog-bindings')
+            .find((b) => b.file === args.file && !isEnglishBinding(b)) ?? null
+        )
       case 'blog_retired_documents':
         if (!workspaceId) throw badRequest('工作区标识无效')
-        return this.storage.all<Binding>('blog-bindings')
-          .filter(binding => binding.workspaceId === workspaceId && isEnglishBinding(binding))
-          .map(binding => binding.docId)
+        return this.storage
+          .all<Binding>('blog-bindings')
+          .filter((binding) => binding.workspaceId === workspaceId && isEnglishBinding(binding))
+          .map((binding) => binding.docId)
       case 'blog_documents':
         if (!workspaceId) throw badRequest('工作区标识无效')
         return this.storage
@@ -137,7 +147,10 @@ export class LocalAffineService {
           (binding ? chineseMetadata(binding.metadata) : null) ??
           (isJournalDate(args.journalDate)
             ? metadataFor(`journals/${args.journalDate}.md`, { date: args.journalDate })
-            : metadataFor('blog/article.md', { slug: '', date: new Date().toISOString().slice(0, 10) }))
+            : metadataFor('blog/article.md', {
+                slug: '',
+                date: new Date().toISOString().slice(0, 10),
+              }))
         )
       }
       case 'blog_publication_status':

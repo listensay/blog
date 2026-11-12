@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+import { registerDesktopSave } from '../desktop.ts'
 
 interface AutoSaveOptions<T> {
   value: Ref<T>
@@ -178,6 +179,7 @@ export function createAutoSave<T>(options: AutoSaveOptions<T>) {
 
 export function useAutoSave<T>(options: AutoSaveOptions<T>) {
   const state = createAutoSave(options)
+  const unregister = registerDesktopSave(state.flush)
   function onBeforeUnload(event: BeforeUnloadEvent) {
     if (state.dirty.value || state.saving.value) {
       event.preventDefault()
@@ -200,6 +202,7 @@ export function useAutoSave<T>(options: AutoSaveOptions<T>) {
     document.addEventListener('visibilitychange', onVisibilityChange)
   })
   onBeforeUnmount(() => {
+    unregister()
     state.dispose()
     window.removeEventListener('beforeunload', onBeforeUnload)
     window.removeEventListener('keydown', onKeydown)

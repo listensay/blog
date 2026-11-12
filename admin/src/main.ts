@@ -4,5 +4,8 @@ import 'dayjs/locale/zh-cn'
 import App from './App.vue'
 import router from './router'
 import './styles/main.css'
+import { installDesktopClose } from './desktop'
+import { notify } from './composables/useFeedback'
 
+installDesktopClose(notify.error)
 createApp(App).use(router).mount('#app')

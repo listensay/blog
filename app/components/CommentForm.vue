@@ -86,7 +86,7 @@ async function submit() {
           maxlength="24"
           required
           autocomplete="nickname"
-          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent"
+          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent/50 focus:outline-none"
         >
       </label>
       <label class="block">
@@ -97,7 +97,7 @@ async function submit() {
           name="email"
           maxlength="120"
           autocomplete="email"
-          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent"
+          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent/50 focus:outline-none"
         >
       </label>
       <label class="block">
@@ -109,7 +109,7 @@ async function submit() {
           maxlength="200"
           autocomplete="url"
           placeholder="https://"
-          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent"
+          class="w-full rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent/50 focus:outline-none"
         >
       </label>
     </div>
@@ -129,7 +129,7 @@ async function submit() {
         rows="4"
         required
         placeholder="评论内容"
-        class="w-full resize-y rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent"
+        class="w-full resize-y rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-sm text-panel-text transition-colors placeholder:text-panel-muted hover:border-accent/50 focus:border-accent/50 focus:outline-none"
       />
     </label>
 

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const selectedMonth = ref('')
 const { data: entries, status, error, refresh } = await useAsyncData(
   'journals',
   () => queryCollection('journals')
@@ -8,15 +7,6 @@ const { data: entries, status, error, refresh } = await useAsyncData(
     .select('path', 'date', 'title', 'body')
     .all(),
 )
-const months = computed(() => [...new Set((entries.value ?? []).map(entry => entry.date.slice(0, 7)))])
-const visibleEntries = computed(() => (entries.value ?? [])
-  .filter(entry => !selectedMonth.value || entry.date.startsWith(selectedMonth.value)))
-watch(months, available => {
-  if (selectedMonth.value && !available.includes(selectedMonth.value)) selectedMonth.value = ''
-})
-const monthLabel = (month: string) => new Intl.DateTimeFormat('zh-CN', {
-  year: 'numeric', month: 'long', timeZone: 'UTC',
-}).format(new Date(`${month}-01T00:00:00Z`))
 const timelineEl = ref<HTMLElement>()
 useProseLightbox(timelineEl, '.prose-cn img')
 useSeo({ title: () => '日记', description: () => `${siteConfig.title}的日记列表` })
@@ -47,20 +37,11 @@ useSeo({ title: () => '日记', description: () => `${siteConfig.title}的日记
       <p>暂无日记</p>
     </div>
     <template v-else>
-      <div class="my-8 flex flex-wrap items-center justify-between gap-4">
-        <p class="text-sm text-panel-muted">{{ `已记录 ${entries.length} 天` }}</p>
-        <label class="flex items-center gap-3 text-sm text-panel-muted">
-          按月查看
-          <select v-model="selectedMonth" class="min-h-11 rounded-[5px] border border-panel-line bg-panel-raised px-3 py-2 text-panel-text focus-visible:outline-accent">
-            <option value="">全部月份</option>
-            <option v-for="month in months" :key="month" :value="month">{{ monthLabel(month) }}</option>
-          </select>
-        </label>
-      </div>
-      <ol :key="selectedMonth" ref="timelineEl" class="[&.lightbox-ready_.prose-cn_img]:cursor-zoom-in" aria-label="日记列表">
-        <li v-for="(entry, index) in visibleEntries" :key="entry.path" class="relative pb-6 pl-14 last:pb-0 sm:pb-8 sm:pl-16">
+      <p class="my-8 text-sm text-panel-muted">{{ `已记录 ${entries.length} 天` }}</p>
+      <ol ref="timelineEl" class="[&.lightbox-ready_.prose-cn_img]:cursor-zoom-in" aria-label="日记列表">
+        <li v-for="(entry, index) in entries" :key="entry.path" class="relative pb-6 pl-14 last:pb-0 sm:pb-8 sm:pl-16">
           <img :src="siteConfig.avatar" :alt="siteConfig.author" width="40" height="40" loading="lazy" class="absolute left-0 top-3 size-10 rounded-full bg-panel-raised object-cover" />
-          <span v-if="index < visibleEntries.length - 1" class="absolute -bottom-1 left-[19.5px] top-15 w-px bg-panel-muted/35" aria-hidden="true" />
+          <span v-if="index < entries.length - 1" class="absolute -bottom-1 left-[19.5px] top-15 w-px bg-panel-muted/35" aria-hidden="true" />
           <article :aria-labelledby="`journal-${entry.date}`" class="min-w-0 rounded-sm border border-panel-line bg-panel-raised p-4 sm:p-5">
             <h2 :id="`journal-${entry.date}`" class="mb-2">
               <NuxtLink :to="entry.path" class="group -my-2 inline-flex min-h-11 max-w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-xs transition-colors duration-150 hover:text-accent">

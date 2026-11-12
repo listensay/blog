@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Immki Blog",
+  "version": "0.1.0",
+  "identifier": "net.200205.blog.admin",
+  "build": {
+    "beforeDevCommand": "npm run desktop:prepare",
+    "beforeBuildCommand": "npm run type-check && npm run desktop:prepare",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "capabilities": ["desktop"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "externalBin": ["binaries/blog-node"],
+    "resources": { "resources/": "resources/" },
+    "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
+    "macOS": { "minimumSystemVersion": "12.0" }
+  }
+}

@@ -19,8 +19,8 @@ export const POSTS_PREFIX = 'blog'
 
 export const PAGES_PREFIX = 'pages'
 
-export function resolveWorkspace(adminRoot: string): Workspace {
-  const fromEnv = process.env.ADMIN_BLOG_ROOT?.trim()
+export function resolveWorkspace(adminRoot: string, selectedRoot?: string): Workspace {
+  const fromEnv = selectedRoot || process.env.ADMIN_BLOG_ROOT?.trim()
   const blogRoot = fromEnv ? path.resolve(adminRoot, fromEnv) : path.resolve(adminRoot, '..')
 
   const ws: Workspace = {

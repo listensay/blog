@@ -60,15 +60,9 @@ export async function listPosts(ws: Workspace): Promise<PostListResponse> {
 
   const categories = new Set<string>()
   const tags = new Set<string>()
-  const dirs = new Set<string>()
   for (const post of posts) {
     if (post.category) categories.add(post.category)
     for (const tag of post.tags) tags.add(tag)
-    if (post.dir) dirs.add(post.dir)
-  }
-
-  for (const entry of await readdir(ws.postsDir, { withFileTypes: true })) {
-    if (entry.isDirectory() && !entry.name.startsWith('.')) dirs.add(entry.name)
   }
 
   const byZh = (a: string, b: string) => a.localeCompare(b, 'zh-Hans-CN')
@@ -76,6 +70,5 @@ export async function listPosts(ws: Workspace): Promise<PostListResponse> {
     posts,
     categories: [...categories].sort(byZh),
     tags: [...tags].sort(byZh),
-    dirs: [...dirs].sort(byZh),
   }
 }

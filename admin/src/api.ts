@@ -10,8 +10,18 @@ import type {
   SettingsResponse,
   SiteSettings,
   UnusedImages,
-  WorkspaceInfo,
 } from '@/types'
+import type { AdminCommentsResponse } from '../../app/types/blog'
+
+export class ApiError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init)
@@ -31,7 +41,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
       data && typeof data === 'object' && 'error' in data
         ? String((data as { error: unknown }).error)
         : `请求失败（HTTP ${response.status}）`
-    throw new Error(message)
+    throw new ApiError(message, response.status)
   }
 
   return data as T
@@ -44,8 +54,14 @@ const json = (body: unknown): RequestInit => ({
 })
 
 export const api = {
-  workspace: () => request<WorkspaceInfo>('/api/workspace'),
-
+  commentSession: () => request<{ site: string; authed: boolean }>('/api/comments/session'),
+  commentLogin: (site: string, password: string) =>
+    request<{ site: string; authed: boolean }>('/api/comments/login', json({ site, password })),
+  commentLogout: () => request('/api/comments/logout', json({})),
+  comments: (status: string, offset: number) =>
+    request<AdminCommentsResponse>(`/api/comments?status=${status}&offset=${offset}`),
+  commentAction: (id: string, action: 'hide' | 'restore' | 'purge') =>
+    request('/api/comments/action', json({ id, action })),
   dashboard: () => request<DashboardStats>('/api/dashboard'),
 
   listPages: () => request<PageListResponse>('/api/pages'),
