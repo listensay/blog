@@ -1,6 +1,6 @@
 ---
 title: 调教AI实现更好的产品设计
-description: ""
+description: 别再反复调教 AI 了：用 AGENTS.md + DESIGN.md 统一项目设计规范
 date: 2026-11-14
 slug: aideign
 path: /blog/aideign
