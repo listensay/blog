@@ -24,7 +24,7 @@ cover: /affine-assets/eb7f0a7ace1f034af7fda50f0279c705872677a346f91bb2905456ad26
 
 **第二版：通过 AGENTS.md + DESIGN.md 约束 AI 的开发和设计行为。**
 
-![](/affine-assets/b86297a470e2bf0fdf88c8371037c23bd1d10395bc3c913727d3ad2f2accf064.png)
+![](/affine-assets/51ee3d5d660d3ef7614714597341ca746d933124893e5cf0d6419a60bad19058.png)
 
 对比之后，相信大部分人都能感受到第二版的变化：整体看起来更加清爽，信息层级更加清晰，视觉上也更加舒适。
 
